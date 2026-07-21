@@ -42,7 +42,7 @@ Güncelleme: 2026-07-21
 - **Denetim turu (2026-07-21):** create monorepo `file:` link + `e2e/create-smoke.mjs`; CSRF Origin/Referer dokümantasyonu; streaming TTFB unit test; `e2e/isr-smoke.mjs`; basic-app login + `requireSession`; action redirect + Set-Cookie düzeltmesi; `getSession` export
 - **Streaming SSR varsayılan (2026-07-21):** `earlyShell` kaldırıldı; SSR default stream + ~40ms shell gecikmesi; post-shell redirect → `window.location` script; `bufferHtml` opt-out; `/login` bufferHtml; `e2e/stream-redirect-smoke.mjs`
 - **GitHub Actions (2026-07-21):** `ci.yml`, `e2e.yml`, `release.yml`, `codeql.yml` kuruldu; Changesets (`@changesets/cli`); CI/E2E/CodeQL yeşil; Release `NPM_TOKEN` bekliyor (ENEEDAUTH beklenen); smoke orphan process tree kill düzeltmesi; branch protection önerisi CONTRIBUTING.md'de
-- **CodeQL uyarıları (2026-07-21):** 12 açık alert için düzeltmeler (henüz push edilmedi): `match.ts` slash trim regex→string; `parse.ts` script/style linear scan + `:global` unwrap; `create-pack-smoke` `execFileSync`; codegen `String()`→`'' +`; `stream.ts` OOO HTML `codeql[js/xss-through-dom]` (SSR payload)
+- **CodeQL uyarıları (2026-07-21):** 12 açık alert kapatıldı (`fdc5054`); kalan 3 için follow-up (`4cd6c5a`): `jsLiteral` HTML-script escape, `scopeCss` linear scan, XSS `codeql[...]` blank-line suppression
 
 ## Komutlar
 
