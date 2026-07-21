@@ -63,3 +63,11 @@ Routing is explicit via `defineRoutes([...])` in `src/routes.ts` (not file-based
 - Full VS Code language service for `.vex` (today: sibling `.vex.d.ts`)
 - Real Bun / Cloudflare / Vercel / Deno adapters (interface stubs only)
 - CSS-in-JS / Tailwind integrations
+
+## Community
+
+- [Contributing](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+- [Security](./SECURITY.md)
+- [Support](./SUPPORT.md)
+- [License (MIT)](./LICENSE)

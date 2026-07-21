@@ -35,6 +35,8 @@ Güncelleme: 2026-07-21
 - DoD: `pnpm install`, `pnpm build`, `pnpm test`, `pnpm test:smoke`, `pnpm test:e2e` geçti
 - `pnpm -F example build:app` → `build/client/index.html` (SSG `/`)
 - Server script client bundle’a sızmıyor (compiler leak testi + build kontrolü)
+- GitHub community standards (2026-07-21): MIT LICENSE, CoC, CONTRIBUTING, SECURITY, SUPPORT, issue/PR templates
+- Operatör adımı: GitHub’da private vulnerability reporting (ve isteğe bağlı Discussions) UI’dan açılmalı
 
 ## Komutlar
 
