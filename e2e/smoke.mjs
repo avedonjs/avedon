@@ -103,11 +103,11 @@ try {
   if (!allowedHtml.includes('data-avedon-csr')) throw new Error('CSR shell missing on admin')
 
   const avedonMod = await fetch('http://localhost:5173/src/pages/Home.ave?import')
-  const vexBody = await avedonMod.text()
-  if (vexBody.includes('<!doctype html>') || vexBody.includes('Not found')) {
+  const avedonModBody = await avedonMod.text()
+  if (avedonModBody.includes('<!doctype html>') || avedonModBody.includes('Not found')) {
     throw new Error('Home.ave module returned HTML page instead of JS')
   }
-  if (vexBody.includes('SUPER_SECRET') || vexBody.includes('from \'../lib/db\'')) {
+  if (avedonModBody.includes('SUPER_SECRET') || avedonModBody.includes('from \'../lib/db\'')) {
     // client transform of Home has no server script — ok
   }
 

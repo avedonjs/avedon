@@ -90,7 +90,7 @@ Practical limit: sealed cookie value must stay under **4096** bytes; `session.se
 // HandlerOptions
 session?: {
   secret: string
-  name?: string       // default 'vex_session'
+  name?: string       // default 'avedon_session'
   maxAge?: number     // seconds; default 60 * 60 * 24 * 7
   cookie?: CookieSerializeOptions
 }
