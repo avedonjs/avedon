@@ -14,13 +14,13 @@ Güncelleme: 2026-07-21
 - Scoped paketler: `@avedon/*` (shared, compiler, runtime, server, vite-plugin, adapter-*)
 - CLI: `avedon` (`packages/cli`, komutlar: `avedon dev|build|start|create`)
 - Scaffold: `create-avedon-app` → `pnpm create avedon-app`
-- Bileşen uzantısı: `.avedon` (eski `.vex`); tipler: `*.avedon.d.ts`
+- Bileşen uzantısı: `.ave` (eski `.vex`); tipler: `*.ave.d.ts`
 - Uygulama config: `avedon.config.ts`; cache: `.avedon/`
 - Runtime işaretleri: `__AVEDON_DATA__`, `%avedon.head%`, `%avedon.body%`, `data-avedon-*`, HMR `avedon:update`
 
 ## Kararlar
 
-- UI: `.avedon` (Svelte benzeri)
+- UI: `.ave` (Svelte benzeri)
 - Routing: `defineRoutes` + `route(path, config)`
 - Reaktivite: `@avedon/runtime`
 - Toolchain: Vite + `@avedon/vite-plugin`
@@ -31,7 +31,7 @@ Güncelleme: 2026-07-21
 
 ## Durum
 
-- **Rename tamamlandı** (2026-07-21): vexjs → avedon uçtan uca (kaynak; `node_modules` pnpm install ile yenilendi)
+- **Rename + GitHub (2026-07-21):** kaynak `avedonjs/avedon` (private); eski `hocestnonsatis/vexjs` silindi
 - DoD: `pnpm build`, `pnpm test`, `pnpm test:smoke` geçti (2026-07-21 rename sonrası)
 
 ## Komutlar

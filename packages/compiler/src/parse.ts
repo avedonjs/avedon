@@ -66,7 +66,7 @@ export function parse(source: string): ParsedAvedon {
 
 export type AvedonBlockKind = 'server' | 'client' | 'style' | 'template'
 
-/** Which `.avedon` blocks differ between two source versions. */
+/** Which `.ave` blocks differ between two source versions. */
 export function changedBlocks(prev: string, next: string): Set<AvedonBlockKind> {
   const a = parse(prev)
   const b = parse(next)

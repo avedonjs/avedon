@@ -2,11 +2,11 @@
 
 TypeScript-first full-stack web framework for building applications with colocated UI, styles, and server logic.
 
-avedon gives you a single component format (`.avedon`), explicit routing, hybrid rendering, and a Vite-based toolchain aimed at clear boundaries between client and server code.
+avedon gives you a single component format (`.ave`), explicit routing, hybrid rendering, and a Vite-based toolchain aimed at clear boundaries between client and server code.
 
 ## Features
 
-- **`.avedon` components** — template, scoped styles, client script, and server script in one file
+- **`.ave` components** — template, scoped styles, client script, and server script in one file
 - **Explicit routing** — `defineRoutes` in `routes.ts` with layouts, guards, and per-route render mode
 - **Hybrid rendering** — `ssr`, `ssg`, and `csr` on a per-route basis (default `ssr`)
 - **Colocated server APIs** — `load`, form `actions`, and `api_*` handlers next to the page UI
@@ -49,7 +49,7 @@ pnpm -F example start
 |-------|-------------|
 | [Documentation index](./docs/README.md) | Map of all docs |
 | [Getting started](./docs/guide.md) | Setup, CLI, and first app flow |
-| [`.avedon` components](./docs/avedon-components.md) | File format, scripts, styles, template |
+| [`.ave` components](./docs/avedon-components.md) | File format, scripts, styles, template |
 | [Routing](./docs/routing.md) | `defineRoutes`, `route()`, layouts, guards |
 | [Middleware](./docs/middleware.md) | `sequence`, CORS, logging, rate-limit |
 | [Rendering](./docs/rendering.md) | `ssr` / `ssg` / `csr` and when to use each |
@@ -61,7 +61,7 @@ pnpm -F example start
 | Package | Role |
 |---------|------|
 | `@avedon/shared` | Shared types and adapter interface |
-| `@avedon/compiler` | `.avedon` parse and codegen |
+| `@avedon/compiler` | `.ave` parse and codegen |
 | `@avedon/runtime` | Signals, hydration, client navigation, forms |
 | `@avedon/server` | Matching, guards, middleware, load/actions/api, SSR orchestration |
 | `@avedon/vite-plugin` | Vite transform, HMR, and middleware |
@@ -73,7 +73,7 @@ pnpm -F example start
 
 ## Example
 
-Minimal `.avedon` page with server `load` and client reactivity:
+Minimal `.ave` page with server `load` and client reactivity:
 
 ```avedon
 <script server>
@@ -104,8 +104,8 @@ Routes are declared explicitly. Prefer `route()` when you want typed `params` in
 
 ```ts
 import { defineRoutes, route } from '@avedon/server'
-import Home from './pages/Home.avedon'
-import Post from './pages/Post.avedon'
+import Home from './pages/Home.ave'
+import Post from './pages/Post.ave'
 
 export default defineRoutes([
   { path: '/', component: Home, render: 'ssg' },
@@ -121,7 +121,7 @@ See [`docs/routing.md`](./docs/routing.md) and [`examples/basic-app`](./examples
 
 ## Roadmap
 
-- Language service for `.avedon` (today: sibling `.avedon.d.ts` stubs)
+- Language service for `.ave` (today: sibling `.ave.d.ts` stubs)
 - Production adapters beyond Node (Bun, Cloudflare, and others)
 - First-class CSS tooling integrations
 

@@ -16,7 +16,7 @@ describe('load → Props.data dts', () => {
 </script>
 <template><h1>{data.post.title}</h1></template>
 `,
-      { filename: 'Post.avedon' },
+      { filename: 'Post.ave' },
     )
     expect(dts).toMatch(/data\?:/)
     expect(dts).not.toMatch(/data\?:\s*unknown\b/)
@@ -31,7 +31,7 @@ describe('load → Props.data dts', () => {
 </script>
 <template><p>{title}</p></template>
 `,
-      { filename: 'Home.avedon' },
+      { filename: 'Home.ave' },
     )
     expect(dts).not.toMatch(/\bdata\?:/)
     expect(dts).toMatch(/title\?:/)
@@ -53,7 +53,7 @@ describe('load → Props.data dts', () => {
 </script>
 <template><p>{data.post.id}</p></template>
 `,
-      { filename: 'Throw.avedon' },
+      { filename: 'Throw.ave' },
     )
     expect(dts).toMatch(/post:\s*Post/)
     expect(dts).not.toMatch(/data\?:\s*unknown\b/)

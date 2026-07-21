@@ -14,5 +14,5 @@
 
 <template>
   <h1>{title}</h1>
-  <p>Edit src/pages/Home.avedon to get started.</p>
+  <p>Edit src/pages/Home.ave to get started.</p>
 </template>

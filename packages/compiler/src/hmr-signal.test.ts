@@ -12,7 +12,7 @@ describe('HMR signal key injection', () => {
 </script>
 <template><p>{likes}</p></template>
 `,
-      { filename: 'Sig.avedon', hmr: true },
+      { filename: 'Sig.ave', hmr: true },
     )
     expect(code).toContain('signal(data.post.likes, "likes")')
     expect(code).toContain('getHmrState')
@@ -28,7 +28,7 @@ describe('HMR signal key injection', () => {
 </script>
 <template><p>{likes}</p></template>
 `,
-      { filename: 'Sig.avedon', hmr: false },
+      { filename: 'Sig.ave', hmr: false },
     )
     expect(code).not.toContain('getHmrState')
     expect(code).not.toContain('__hmrBeginSignalBag')

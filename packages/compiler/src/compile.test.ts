@@ -35,7 +35,7 @@ describe('compile', () => {
 <h1>{title}</h1>
 <button on:click={() => count++}>{count}</button>
 `,
-      { filename: 'Home.avedon' },
+      { filename: 'Home.ave' },
     )
     expect(cssHash.startsWith('avedon-')).toBe(true)
     expect(code).toContain('export function render')
@@ -59,7 +59,7 @@ describe('compile', () => {
 </script>
 <p>{title}</p>
 `,
-      { filename: 'Page.avedon' },
+      { filename: 'Page.ave' },
     )
     expect(code).toContain('export async function load')
     expect(code).toContain('GET /api/x')
@@ -77,7 +77,7 @@ describe('compile', () => {
 </script>
 {#await p}{:then v}<span>{v}</span>{/await}
 `,
-      { filename: 'Await.avedon' },
+      { filename: 'Await.ave' },
     )
     expect(code).toContain('__awaitBoundary')
     expect(code).toContain('Promise.resolve(p)')
@@ -94,7 +94,7 @@ describe('compile', () => {
 {#if show}<span>yes</span>{:else}<span>no</span>{/if}
 {#each items as item}<i>{item}</i>{/each}
 `,
-      { filename: 'List.avedon' },
+      { filename: 'List.ave' },
     )
     expect(code).toContain('show')
     expect(code).toContain('.map(')
@@ -103,7 +103,7 @@ describe('compile', () => {
   it('compiles slot to children prop', () => {
     const { code } = compileSsr(
       `<div class="wrap"><slot /></div>`,
-      { filename: 'Layout.avedon' },
+      { filename: 'Layout.ave' },
     )
     expect(code).toContain('__props.children')
     expect(code).toContain('__pipeChildren')
@@ -135,14 +135,14 @@ describe('compile', () => {
 </script>
 <template><h1>{title}</h1></template>
 `
-    const client = compile(source, { filename: 'Secret.avedon' })
+    const client = compile(source, { filename: 'Secret.ave' })
     expect(client.code).not.toContain(secret)
     expect(client.code).not.toContain('$lib/db')
     expect(client.code).not.toContain('api_GET')
     expect(client.code).not.toContain('export async function load')
     expect(client.code).not.toContain('SUPER_SECRET')
 
-    const ssr = compileSsr(source, { filename: 'Secret.avedon' })
+    const ssr = compileSsr(source, { filename: 'Secret.ave' })
     expect(ssr.code).toContain(secret)
     expect(ssr.code).toContain('api_GET')
     expect(ssr.code).toContain('const api =')

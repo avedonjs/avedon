@@ -1,6 +1,6 @@
-# `.avedon` components
+# `.ave` components
 
-A `.avedon` file is the unit of a page or layout: markup, styles, client logic, and optional server logic live together. The compiler splits client and server so server code never ships to the browser.
+A `.ave` file is the unit of a page or layout: markup, styles, client logic, and optional server logic live together. The compiler splits client and server so server code never ships to the browser.
 
 ## Sections
 
@@ -112,4 +112,4 @@ Server script must not appear in the client bundle. The compiler and tests enfor
 
 ## Full example
 
-See [`examples/basic-app/src/pages/Post.avedon`](../examples/basic-app/src/pages/Post.avedon) for `load`, actions, `api_GET`, and client signals together.
+See [`examples/basic-app/src/pages/Post.ave`](../examples/basic-app/src/pages/Post.ave) for `load`, actions, `api_GET`, and client signals together.

@@ -19,7 +19,7 @@ export interface CompileResult {
 }
 
 export function compile(source: string, options: CompileOptions = {}): CompileResult {
-  const filename = options.filename ?? 'Component.avedon'
+  const filename = options.filename ?? 'Component.ave'
   const generate = options.generate ?? 'client'
   if (generate === 'ssr') return compileSsr(source, { filename })
 
@@ -91,7 +91,7 @@ export default { render, mount, hydrate, css, cssHash };
 }
 
 export function compileSsr(source: string, options: { filename?: string } = {}): CompileResult {
-  const filename = options.filename ?? 'Component.avedon'
+  const filename = options.filename ?? 'Component.ave'
   const parsed = parse(source)
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const cssHash = hashStyle(parsed.style, filename)

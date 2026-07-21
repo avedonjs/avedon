@@ -11,14 +11,14 @@ export interface AvedonPluginOptions {
   root?: string
   routesId?: string
   appHtml?: string
-  /** Write sibling .avedon.d.ts next to sources (default true) */
+  /** Write sibling .ave.d.ts next to sources (default true) */
   writeDts?: boolean
 }
 
 export function avedon(options: AvedonPluginOptions = {}): Plugin {
   const root = options.root ?? process.cwd()
   const writeDts = options.writeDts !== false
-  /** Previous `.avedon` source for block-diff HMR. */
+  /** Previous `.ave` source for block-diff HMR. */
   const prevAvedonSource = new Map<string, string>()
   let isDev = false
 
@@ -43,10 +43,10 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
 
           const hooks = await loadOptional(devServer, path.join(root, 'src/hooks.server.ts'))
           const serverEntry = await loadOptional(devServer, path.join(root, 'src/server-entry.ts'))
-          const errorComponent = await loadOptional(devServer, path.join(root, 'src/error.avedon'))
+          const errorComponent = await loadOptional(devServer, path.join(root, 'src/error.ave'))
           const notFoundComponent = await loadOptional(
             devServer,
-            path.join(root, 'src/not-found.avedon'),
+            path.join(root, 'src/not-found.ave'),
           )
 
           const handler = createHandler({
@@ -86,7 +86,7 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
     },
     transform(code, id, opts) {
       const cleanId = id.split('?')[0]
-      if (!cleanId.endsWith('.avedon')) return null
+      if (!cleanId.endsWith('.ave')) return null
       if (!prevAvedonSource.has(cleanId)) prevAvedonSource.set(cleanId, code)
       const filename = path.basename(cleanId)
       const result = opts?.ssr
@@ -103,7 +103,7 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
       return { code: result.code, map: null }
     },
     async handleHotUpdate(ctx) {
-      if (!ctx.file.endsWith('.avedon')) return
+      if (!ctx.file.endsWith('.ave')) return
       const next = await ctx.read()
       const prev = prevAvedonSource.get(ctx.file) ?? next
       prevAvedonSource.set(ctx.file, next)

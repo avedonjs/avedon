@@ -8,4 +8,4 @@ build/
 test-results/
 playwright-report/
 playwright/.cache/
-*.avedon.d.ts
+*.ave.d.ts

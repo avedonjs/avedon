@@ -2,9 +2,9 @@
 
 > **For agentic workers:** Execute task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship a working avedon monorepo: `.avedon` compiler, Angular-style `routes.ts`, load/actions/api, hybrid SSR/SSG/CSR, Vite plugin, Node adapter, CLI, example app, and tests.
+**Goal:** Ship a working avedon monorepo: `.ave` compiler, Angular-style `routes.ts`, load/actions/api, hybrid SSR/SSG/CSR, Vite plugin, Node adapter, CLI, example app, and tests.
 
-**Architecture:** Vite-centric monorepo. `@avedon/compiler` splits `.avedon` into client/server modules and compiles templates to SSR HTML + client mount functions. `@avedon/server` matches `routes.ts` and runs the Web Standards request pipeline. `@avedon/adapter-node` packages production output.
+**Architecture:** Vite-centric monorepo. `@avedon/compiler` splits `.ave` into client/server modules and compiles templates to SSR HTML + client mount functions. `@avedon/server` matches `routes.ts` and runs the Web Standards request pipeline. `@avedon/adapter-node` packages production output.
 
 **Tech Stack:** TypeScript, Vite 6, Node 20+, Vitest, Playwright, npm workspaces
 
@@ -26,7 +26,7 @@ tsconfig.base.json
 packages/compiler/           # parse + codegen
 packages/runtime/            # stores, mount helpers
 packages/server/             # routes, pipeline, errors
-packages/vite-plugin/        # .avedon transform
+packages/vite-plugin/        # .ave transform
 packages/adapter-node/       # adapt() + node server template
 packages/cli/                # CLI (avedon)
 examples/basic/              # demo app
@@ -98,7 +98,7 @@ docs/guide.md                # user-facing docs
 - Create: `packages/adapter-node/src/index.ts`, `files/server.js` template
 - Create: `packages/cli/src/cli.ts`, `commands/*`
 
-- [ ] **Step 1:** Vite plugin: transform `.avedon` → client; virtual `?server` for server module
+- [ ] **Step 1:** Vite plugin: transform `.ave` → client; virtual `?server` for server module
 - [ ] **Step 2:** Dev middleware: SSR via `createHandler`
 - [ ] **Step 3:** `adapt(builder)` writes `build/server.js` + copies client assets
 - [ ] **Step 4:** CLI: `dev`, `build`, `preview`, `create`
@@ -121,7 +121,7 @@ docs/guide.md                # user-facing docs
 
 | Spec item | Task |
 |-----------|------|
-| `.avedon` format | 3 |
+| `.ave` format | 3 |
 | routes.ts hybrid | 4, 6 |
 | load/actions/api | 3, 4 |
 | Vite | 5 |

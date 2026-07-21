@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../examples/basic-app')
-const postAvedon = path.join(root, 'src/pages/Post.avedon')
+const postAvedon = path.join(root, 'src/pages/Post.ave')
 
 test('HMR preserves signal state on template edit (no full reload)', async ({ page }) => {
   const original = fs.readFileSync(postAvedon, 'utf8')

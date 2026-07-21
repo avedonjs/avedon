@@ -15,7 +15,7 @@ describe('prod HMR leak', () => {
 </script>
 <template><p>{n}</p></template>
 `,
-      { filename: 'X.avedon', hmr: false },
+      { filename: 'X.ave', hmr: false },
     )
     expect(code).not.toContain('getHmrState')
     expect(code).not.toContain('__hmr')

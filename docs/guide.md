@@ -74,7 +74,7 @@ pnpm test:e2e
 examples/basic-app/
 ├── src/
 │   ├── routes.ts          # defineRoutes([...])
-│   ├── pages/*.avedon        # Route components + layouts
+│   ├── pages/*.ave        # Route components + layouts
 │   ├── guards/            # Route guards
 │   ├── hooks.server.ts    # Middleware + optional handle
 │   ├── client.ts          # Client boot
@@ -85,7 +85,7 @@ examples/basic-app/
 
 ## Next steps
 
-1. Read [`.avedon` components](./avedon-components.md)
+1. Read [`.ave` components](./avedon-components.md)
 2. Configure routes in [Routing](./routing.md)
 3. Add cross-cutting middleware in [Middleware](./middleware.md)
 4. Pick render modes in [Rendering](./rendering.md)

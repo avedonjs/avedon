@@ -7,7 +7,7 @@ Official documentation for **avedon**, a TypeScript-first full-stack web framewo
 | Document | Audience |
 |----------|----------|
 | [Getting started](./guide.md) | New contributors and app authors |
-| [`.avedon` components](./avedon-components.md) | Writing pages and UI |
+| [`.ave` components](./avedon-components.md) | Writing pages and UI |
 | [Routing](./routing.md) | Declaring routes, layouts, and guards |
 | [Middleware](./middleware.md) | Logging, CORS, rate-limit (route-agnostic) |
 | [Session & cookies](./session.md) | Sealed session cookie + `requireSession` |

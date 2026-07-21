@@ -7,9 +7,9 @@
 
 avedon is a TypeScript-first full-stack web framework with:
 
-- A custom Svelte-like component language (`.avedon`)
+- A custom Svelte-like component language (`.ave`)
 - Angular-style explicit routing via `routes.ts` (not file-based)
-- Colocated server logic (`load`, `actions`, `api`) in the same `.avedon` file
+- Colocated server logic (`load`, `actions`, `api`) in the same `.ave` file
 - Hybrid rendering (`ssr` | `ssg` | `csr`)
 - Vite-based toolchain and an adapter model (Node first)
 
@@ -17,7 +17,7 @@ Public announcement happens only when the full skeleton below is complete.
 
 ## Goals
 
-- One mental model: page UI + styles + client + server in `.avedon`
+- One mental model: page UI + styles + client + server in `.ave`
 - Explicit routes in `routes.ts` with per-route render mode
 - Platform-agnostic server core (`Request`/`Response`); adapters for deploy targets
 - Strong TypeScript DX from day one
@@ -34,23 +34,23 @@ Public announcement happens only when the full skeleton below is complete.
 
 | Package | Responsibility |
 |---------|----------------|
-| `@avedon/compiler` | Parse `.avedon`, client/server codegen, scoped CSS |
+| `@avedon/compiler` | Parse `.ave`, client/server codegen, scoped CSS |
 | `@avedon/runtime` | Hydration, client navigation, form enhancement |
 | `@avedon/server` | Route match, guards, load/actions/api, SSR, hooks |
-| `@avedon/vite-plugin` | Vite transform + HMR for `.avedon` |
+| `@avedon/vite-plugin` | Vite transform + HMR for `.ave` |
 | `@avedon/adapter-node` | Production Node HTTP + static assets |
 | `avedon` (CLI) | `create`, `dev`, `build`, `preview` |
 
 ### Data flow
 
 ```
-.avedon ──► compiler ──► vite-plugin ──► client bundle + server bundle
+.ave ──► compiler ──► vite-plugin ──► client bundle + server bundle
 routes.ts ─────────────────────────► @avedon/server
 server bundle ──► adapter-node ──► Node HTTP
 client bundle ──────────────────► browser (hydrate)
 ```
 
-## `.avedon` file format
+## `.ave` file format
 
 ### Sections
 
@@ -83,7 +83,7 @@ Compile-time updates (no virtual DOM). Minimal runtime stores: `writable` / `rea
 
 ```ts
 import type { Routes } from '@avedon/server'
-import Home from './pages/Home.avedon'
+import Home from './pages/Home.ave'
 
 export const routes: Routes = [
   { path: '/', component: Home, render: 'ssr' },
@@ -93,7 +93,7 @@ export const routes: Routes = [
 ### Route fields
 
 - `path: string` — path-to-regexp style (`:id`, `*`)
-- `component` — `.avedon` module
+- `component` — `.ave` module
 - `render?: 'ssr' | 'ssg' | 'csr'` — default `ssr`
 - `layout?: Component` — optional layout wrapper
 - `children?: Routes` — nested routes
@@ -101,7 +101,7 @@ export const routes: Routes = [
 - `entries?: () => Promise<string[]> | string[]` — SSG param expansion
 - `error?` / `notFound?` — route-level overrides
 
-Global fallbacks: `src/error.avedon`, `src/not-found.avedon`.
+Global fallbacks: `src/error.ave`, `src/not-found.ave`.
 
 ### Render modes
 
@@ -143,9 +143,9 @@ my-app/
     app.html
     routes.ts
     hooks.server.ts
-    pages/*.avedon
-    error.avedon
-    not-found.avedon
+    pages/*.ave
+    error.ave
+    not-found.ave
   avedon.config.ts
   package.json
 ```
@@ -160,12 +160,12 @@ my-app/
 ## TypeScript
 
 - Packages and app code are TypeScript
-- `.avedon` scripts use `lang="ts"`
-- Generated `*.avedon.d.ts` (or equivalent) for component props / imports
+- `.ave` scripts use `lang="ts"`
+- Generated `*.ave.d.ts` (or equivalent) for component props / imports
 
 ## Testing
 
-- Compiler: fixture unit tests (`.avedon` → expected JS/CSS shape)
+- Compiler: fixture unit tests (`.ave` → expected JS/CSS shape)
 - Server: routing, load, actions, api with `Request`/`Response`
 - E2E: Playwright against `examples/basic` (dev and preview)
 

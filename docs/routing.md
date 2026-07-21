@@ -13,11 +13,11 @@ Two styles are supported; neither is deprecated.
 
 ```ts
 import { defineRoutes, route } from '@avedon/server'
-import Layout from './pages/Layout.avedon'
-import Home from './pages/Home.avedon'
-import Post from './pages/Post.avedon'
-import Admin from './pages/Admin.avedon'
-import AdminError from './pages/AdminError.avedon'
+import Layout from './pages/Layout.ave'
+import Home from './pages/Home.ave'
+import Post from './pages/Post.ave'
+import Admin from './pages/Admin.ave'
+import AdminError from './pages/AdminError.ave'
 import { requireAuth } from './guards/auth'
 
 export default defineRoutes([
@@ -59,15 +59,15 @@ route('/users/:userId', {
 })
 ```
 
-Inside a `.avedon` `<script server>` block, type `load` / `actions` with `LoadEvent<'/posts/:id'>` the same way (path is not known from `routes.ts` alone).
+Inside a `.ave` `<script server>` block, type `load` / `actions` with `LoadEvent<'/posts/:id'>` the same way (path is not known from `routes.ts` alone).
 
 ## Route fields
 
 | Field | Description |
 |-------|-------------|
 | `path` | Path pattern (`:param`, `:id?`, `*rest` / `*` supported in types) |
-| `component` | Page `.avedon` module |
-| `layout` | Optional layout `.avedon` wrapping the page |
+| `component` | Page `.ave` module |
+| `layout` | Optional layout `.ave` wrapping the page |
 | `render` | `'ssr'` \| `'ssg'` \| `'csr'` (see [Rendering](./rendering.md)) |
 | `getStaticPaths` | For `ssg` routes with params: `() => string[]` of full paths (alias: `entries`) |
 | `revalidate` | Optional ISR interval in seconds for `ssg` (stale-while-revalidate; see [Rendering](./rendering.md)) |
@@ -95,11 +95,11 @@ For cross-cutting concerns (logging, CORS, rate limits) that are not route-speci
 
 ## Layouts
 
-Layouts are `.avedon` components that wrap child pages. Share chrome (nav, shell) via `layout` instead of duplicating markup in every page.
+Layouts are `.ave` components that wrap child pages. Share chrome (nav, shell) via `layout` instead of duplicating markup in every page.
 
 ## Errors and not-found
 
-Apps can provide global and per-route error / not-found `.avedon` modules (see `examples/basic-app/src/error.avedon` and `not-found.avedon`). Prefer throwing helpers such as `notFound()` or `error(status)` from `@avedon/server` inside `load` or actions:
+Apps can provide global and per-route error / not-found `.ave` modules (see `examples/basic-app/src/error.ave` and `not-found.ave`). Prefer throwing helpers such as `notFound()` or `error(status)` from `@avedon/server` inside `load` or actions:
 
 - `notFound()` → status **404** and the nearest route `notFound` (else global `notFoundComponent`)
 - `error(status)` → that status and the nearest route `error` (else global `errorComponent`)

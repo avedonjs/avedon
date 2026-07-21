@@ -22,8 +22,8 @@ describe('scaffoldApp', () => {
 
     expect(fs.existsSync(path.join(app, 'package.json'))).toBe(true)
     expect(fs.existsSync(path.join(app, 'src/server-entry.ts'))).toBe(true)
-    expect(fs.existsSync(path.join(app, 'src/error.avedon'))).toBe(true)
-    expect(fs.existsSync(path.join(app, 'src/not-found.avedon'))).toBe(true)
+    expect(fs.existsSync(path.join(app, 'src/error.ave'))).toBe(true)
+    expect(fs.existsSync(path.join(app, 'src/not-found.ave'))).toBe(true)
     expect(fs.existsSync(path.join(app, 'tsconfig.json'))).toBe(true)
 
     const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))

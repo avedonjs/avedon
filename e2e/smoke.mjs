@@ -70,10 +70,10 @@ try {
   const likeHtml = await like.text()
   if (!likeHtml.includes('Hello avedon')) throw new Error('like action failed')
 
-  const avedonMod = await fetch('http://localhost:5173/src/pages/Home.avedon?import')
+  const avedonMod = await fetch('http://localhost:5173/src/pages/Home.ave?import')
   const vexBody = await avedonMod.text()
   if (vexBody.includes('<!doctype html>') || vexBody.includes('Not found')) {
-    throw new Error('Home.avedon module returned HTML page instead of JS')
+    throw new Error('Home.ave module returned HTML page instead of JS')
   }
   if (vexBody.includes('SUPER_SECRET') || vexBody.includes('from \'../lib/db\'')) {
     // client transform of Home has no server script — ok
@@ -103,7 +103,7 @@ try {
   const routeErrHtml = await routeErr.text()
   if (!routeErrHtml.includes('data-error-lab="route-error"')) throw new Error('route error UI missing')
   if (!routeErrHtml.includes('500: lab-boom')) throw new Error('route error message missing')
-  if (routeErrHtml.includes('>Error 500<')) throw new Error('should not use global error.avedon')
+  if (routeErrHtml.includes('>Error 500<')) throw new Error('should not use global error.ave')
 
   const nestedErr = await fetch('http://localhost:5173/error-lab/nested-boom')
   if (nestedErr.status !== 500) throw new Error('nested-boom expected 500')
