@@ -37,10 +37,11 @@ Güncelleme: 2026-07-21
 
 ## Durum
 
-- **Rename (2026-07-21):** proje ve GitHub org `avedon` / `avedonjs`; eski `vexjs` adı kod tabanında kullanılmıyor
+- **Rename (2026-07-21):** proje ve GitHub org `avedon` / `avedjs`; eski `vexjs` adı kod tabanında kullanılmıyor
 - DoD: `pnpm build`, `pnpm test`, `pnpm test:smoke` geçti (2026-07-21 rename sonrası)
 - **Denetim turu (2026-07-21):** create monorepo `file:` link + `e2e/create-smoke.mjs`; CSRF Origin/Referer dokümantasyonu; streaming TTFB unit test; `e2e/isr-smoke.mjs`; basic-app login + `requireSession`; action redirect + Set-Cookie düzeltmesi; `getSession` export
 - **Streaming SSR varsayılan (2026-07-21):** `earlyShell` kaldırıldı; SSR default stream + ~40ms shell gecikmesi; post-shell redirect → `window.location` script; `bufferHtml` opt-out; `/login` bufferHtml; `e2e/stream-redirect-smoke.mjs`
+- **GitHub Actions (2026-07-21):** `ci.yml`, `e2e.yml`, `release.yml`, `codeql.yml` kuruldu; Changesets (`@changesets/cli`); CI/E2E/CodeQL yeşil; Release `NPM_TOKEN` bekliyor (ENEEDAUTH beklenen); smoke orphan process tree kill düzeltmesi; branch protection önerisi CONTRIBUTING.md'de
 
 ## Komutlar
 
