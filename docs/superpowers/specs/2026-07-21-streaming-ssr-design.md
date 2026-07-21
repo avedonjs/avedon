@@ -1,6 +1,6 @@
 # Streaming SSR (out-of-order)
 
-Güncelleme: 2026-07-21
+Updated: 2026-07-21
 
 ## Goal
 

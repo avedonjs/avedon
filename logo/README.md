@@ -1,57 +1,57 @@
 # Avedon logo
 
-Marka varlıkları — vektör birincil; raster export'lar `rsvg-convert` ile üretildi.
+Brand assets — vectors are canonical; raster exports were produced with `rsvg-convert`.
 
-## Seçilen kavram
+## Selected concept
 
-**A. Çerçeve / vinyet (crop işaretleri)** — dört köşede L-şekilli crop mark'lar; ortada geometrik **A** monogramı. Fotoğrafçı Richard Avedon'dan gelen "net çerçeve" metaforu; kamera/objektif klişesi yok.
+**A. Frame / vignette (crop marks)** — L-shaped crop marks in the four corners; geometric **A** monogram in the center. Metaphor of a “clean frame” inspired by photographer Richard Avedon; no camera/lens clichés.
 
-Alternatif taslaklar: [`explorations/`](./explorations/) (füzyon noktası, stream çizgili monogram).
+Alternate drafts: [`explorations/`](./explorations/) (fusion point, stream-lined monogram).
 
-## Renkler
+## Colors
 
-| Rol | Hex | Kullanım |
-|-----|-----|----------|
-| Accent | `#06B6D4` | Vurgu, link, OG şerit, dark-mode hero |
-| Accent (koyu) | `#0891B2` | Hover, erişilebilir metin üzerinde accent |
-| Metin / ikon (light) | `#0F172A` | Açık arka planda logo |
-| Metin / ikon (dark) | `#FAFAFA` | Koyu arka planda logo |
-| OG arka plan | `#09090B` | Sosyal kart |
+| Role | Hex | Usage |
+|------|-----|-------|
+| Accent | `#06B6D4` | Emphasis, links, OG stripe, dark-mode hero |
+| Accent (dark) | `#0891B2` | Hover, accent on accessible text |
+| Text / icon (light) | `#0F172A` | Logo on light backgrounds |
+| Text / icon (dark) | `#FAFAFA` | Logo on dark backgrounds |
+| OG background | `#09090B` | Social card |
 
-Logolar **`currentColor`** kullanır; HTML/CSS'te `color` ile tek renk (siyah/beyaz) zorunluluğu karşılanır.
+Logos use **`currentColor`**; set `color` in HTML/CSS for single-color (black/white) usage.
 
-## Dosyalar
+## Files
 
-| Dosya | Açıklama |
-|-------|----------|
-| `icon.svg` | Sadece ikon (kare, 32×32 viewBox) |
-| `logo-horizontal.svg` | İkon + `avedon` wordmark |
-| `wordmark.svg` | Sadece yazı |
+| File | Description |
+|------|-------------|
+| `icon.svg` | Icon only (square, 32×32 viewBox) |
+| `logo-horizontal.svg` | Icon + `avedon` wordmark |
+| `wordmark.svg` | Wordmark only |
 | `favicon/favicon-16x16.png` | Favicon |
-| `favicon/favicon-32x32.png` | Favicon / sekme |
+| `favicon/favicon-32x32.png` | Favicon / tab |
 | `favicon/apple-touch-icon.png` | 180×180 touch icon |
 | `og-image.png` | 1200×630 Open Graph |
-| `og-image.svg` | OG kaynak (yeniden export için) |
+| `og-image.svg` | OG source (for re-export) |
 
 ## Clear space
 
-İkon etrafında minimum boşluk: **monogram yüksekliğinin %25'i** (32px viewBox'ta ~8px). Wordmark kullanımında ikon ile metin arası sabit **12px** (viewBox ölçeğinde).
+Minimum padding around the icon: **25% of monogram height** (~8px in a 32px viewBox). In the horizontal lockup, fixed **12px** between icon and wordmark (viewBox scale).
 
-## Minimum boyut
+## Minimum size
 
-- İkon tek başına: **16×16 px** (favicon); daha küçük kullanmayın.
-- Yatay lockup: genişlik **≥ 120 px**; aksi halde sadece ikon tercih edin.
+- Icon alone: **16×16 px** (favicon); do not go smaller.
+- Horizontal lockup: width **≥ 120 px**; otherwise prefer the icon only.
 
-## Yasak / kaçınılacak kullanımlar
+## Don'ts
 
-- Gradyan, gölge, 3D efekt, kontur dışı deformasyon
-- Crop mark'ları veya A'yı ayrı anlamlı markalar gibi bölerek kullanmak
-- Accent dışında çok renkli palet
-- Oran bozma (ikona yalnızca uniform scale)
+- Gradients, shadows, 3D effects, or deforming the outline
+- Splitting crop marks or the A into separate marks as if they were standalone brands
+- Multi-color palettes outside the accent
+- Distortion (uniform scale only on the icon)
 
-## Terminal / CLI (opsiyonel)
+## Terminal / CLI (optional)
 
-Monokrom, düşük çözünürlük banner örneği:
+Monochrome, low-resolution banner example:
 
 ```
  ┌──      ──┐
@@ -60,9 +60,9 @@ Monokrom, düşük çözünürlük banner örneği:
   avedon
 ```
 
-Daha net ASCII için yalnızca wordmark: `avedon` (küçük harf, npm/GitHub ile uyumlu).
+For clearer ASCII, use the wordmark only: `avedon` (lowercase, matches npm/GitHub).
 
-## PNG yeniden üretim
+## Regenerating PNGs
 
 README header (GitHub light/dark):
 
@@ -82,8 +82,8 @@ rsvg-convert -w 180 -h 180 logo/icon.svg -o logo/favicon/apple-touch-icon.png
 rsvg-convert -w 1200 -h 630 logo/og-image.svg -o logo/og-image.png
 ```
 
-## Tipografi (wordmark)
+## Typography (wordmark)
 
-Geometrik grotesk sans: **Inter** / system UI yığını (SVG `<text>`). Kurulumda font yoksa sistem sans-serif devreye girer; pixel-perfect marka için wordmark'ı path'e dönüştürmek isteğe bağlıdır.
+Geometric grotesque sans: **Inter** / system UI stack (SVG `<text>`). If the font is missing at render time, the system sans-serif is used; converting the wordmark to paths is optional for pixel-perfect branding.
 
-**Yazım:** küçük harf `avedon` (npm, GitHub org `avedonjs` ile uyumlu). Büyük `Avedon` metin bağlamında serbest.
+**Casing:** lowercase `avedon` (matches npm and GitHub org `avedonjs`). Title case `Avedon` is fine in prose.

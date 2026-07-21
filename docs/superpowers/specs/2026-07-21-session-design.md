@@ -1,6 +1,6 @@
 # Cookie / sealed session helpers
 
-Güncelleme: 2026-07-21  
+Updated: 2026-07-21  
 **Status:** Implemented (2026-07-21)
 
 ## Goal

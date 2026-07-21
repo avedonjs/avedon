@@ -1,6 +1,6 @@
 # Middleware chain design
 
-Güncelleme: 2026-07-21
+Updated: 2026-07-21
 
 ## Goal
 
