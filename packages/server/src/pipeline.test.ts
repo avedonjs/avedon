@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { error, notFound } from './errors.js'
+import { error, isHttpError, notFound } from './errors.js'
 import { createHandler } from './pipeline.js'
 
 const appHtml = '<!doctype html><html><head></head><body><div id="app"></div></body></html>'
 
 describe('createHandler', () => {
+  it('isHttpError matches HttpError across duplicate module instances', () => {
+    const foreign = Object.assign(new Error('nf'), {
+      name: 'HttpError',
+      status: 404,
+      body: 'x',
+    })
+    expect(isHttpError(foreign)).toBe(true)
+  })
+
   it('runs load and renders ssr', async () => {
     const handler = createHandler({
       appHtml,
@@ -98,10 +107,10 @@ describe('createHandler', () => {
     })
     const html = await (await handler(new Request('http://localhost/'))).text()
     // Page outlet keeps layout intact when the client hydrates the leaf only
-    expect(html).toContain('<div class="layout"><div data-vex-page><main>Home</main></div></div>')
+    expect(html).toContain('<div class="layout"><div data-avedon-page><main>Home</main></div></div>')
   })
 
-  it('ssr page content is wrapped in data-vex-page for layout-safe hydrate', async () => {
+  it('ssr page content is wrapped in data-avedon-page for layout-safe hydrate', async () => {
     const handler = createHandler({
       appHtml,
       routes: [
@@ -112,7 +121,7 @@ describe('createHandler', () => {
       ],
     })
     const html = await (await handler(new Request('http://localhost/'))).text()
-    expect(html).toContain('<div data-vex-page><h1>Hi</h1></div>')
+    expect(html).toContain('<div data-avedon-page><h1>Hi</h1></div>')
   })
 
   it('streams shell before slow renderInto boundary settles', async () => {
@@ -142,13 +151,13 @@ describe('createHandler', () => {
     const reader = res.body!.getReader()
     const decoder = new TextDecoder()
     let early = ''
-    while (!early.includes('<p>early</p>') || !early.includes('vex-b-')) {
+    while (!early.includes('<p>early</p>') || !early.includes('avedon-b-')) {
       const { done, value } = await reader.read()
       if (done) break
       early += decoder.decode(value, { stream: true })
     }
     expect(early).toContain('<p>early</p>')
-    expect(early).toContain('vex-b-')
+    expect(early).toContain('avedon-b-')
     expect(early).not.toContain('class="late"')
 
     resolve('done')
@@ -160,7 +169,7 @@ describe('createHandler', () => {
     }
     expect(rest).toContain('class=\\"late\\"')
     expect(rest).toContain('done')
-    expect(rest).toContain('__VEX_DATA__')
+    expect(rest).toContain('__AVEDON_DATA__')
   })
 
   it('uses route-level error on failed canActivate', async () => {
@@ -186,7 +195,7 @@ describe('createHandler', () => {
     expect(res.status).toBe(403)
     const html = await res.text()
     expect(html).toContain('route-403')
-    expect(html).toContain('data-vex-page')
+    expect(html).toContain('data-avedon-page')
   })
 
   it('supports guard alias and _action query', async () => {
@@ -287,6 +296,36 @@ describe('createHandler', () => {
     const res = await handler(new Request('http://localhost/boom'))
     expect(res.status).toBe(500)
     expect(await res.text()).toContain('route-500:explode')
+  })
+
+  it('bubbles load errors to parent route error boundary in nested routes', async () => {
+    const handler = createHandler({
+      appHtml,
+      errorComponent: { render: () => `<p>global-error</p>` },
+      routes: [
+        {
+          path: '/parent',
+          component: { render: () => 'parent' },
+          error: { render: (p = {}) => `<p>parent-error-${p.status}</p>` },
+          children: [
+            {
+              path: 'child',
+              component: {
+                async load() {
+                  throw error(500, 'child-fail')
+                },
+                render: () => 'child',
+              },
+            },
+          ],
+        },
+      ],
+    })
+    const res = await handler(new Request('http://localhost/parent/child'))
+    expect(res.status).toBe(500)
+    const html = await res.text()
+    expect(html).toContain('parent-error-500')
+    expect(html).not.toContain('global-error')
   })
 
   it('rejects cross-site form actions with 403', async () => {
@@ -445,20 +484,20 @@ describe('createHandler', () => {
 })
 
 describe('renderShell', () => {
-  it('keeps __VEX_DATA__ and client entry outside #app for %vex.body%', async () => {
+  it('keeps __AVEDON_DATA__ and client entry outside #app for %avedon.body%', async () => {
     const { renderShell } = await import('./ssr.js')
     const html = renderShell(
-      '<!doctype html><html><head></head><body><div id="app">%vex.body%</div></body></html>',
+      '<!doctype html><html><head></head><body><div id="app">%avedon.body%</div></body></html>',
       {
-        body: '<div data-vex-page><h1>Hi</h1></div>',
+        body: '<div data-avedon-page><h1>Hi</h1></div>',
         props: { title: 'Hi' },
         clientEntry: '/src/client.ts',
       },
     )
-    expect(html).toMatch(/<div id="app"><div data-vex-page><h1>Hi<\/h1><\/div><\/div>/)
-    expect(html).toContain('id="__VEX_DATA__"')
-    expect(html.indexOf('id="app"')).toBeLessThan(html.indexOf('__VEX_DATA__'))
-    expect(html.indexOf('</div>')).toBeLessThan(html.indexOf('__VEX_DATA__'))
+    expect(html).toMatch(/<div id="app"><div data-avedon-page><h1>Hi<\/h1><\/div><\/div>/)
+    expect(html).toContain('id="__AVEDON_DATA__"')
+    expect(html.indexOf('id="app"')).toBeLessThan(html.indexOf('__AVEDON_DATA__'))
+    expect(html.indexOf('</div>')).toBeLessThan(html.indexOf('__AVEDON_DATA__'))
     // client script is a sibling of #app, not nested inside it
     const appClose = html.indexOf('</div>', html.indexOf('id="app"'))
     expect(html.indexOf('src="/src/client.ts"')).toBeGreaterThan(appClose)

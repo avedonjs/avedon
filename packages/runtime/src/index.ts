@@ -1,7 +1,7 @@
 export {
   createRenderStream,
   oooInjectScript,
-  settleVexStream,
+  settleAvedonStream,
   streamToString,
 } from './stream.js'
 export type {
@@ -10,7 +10,7 @@ export type {
   RenderStreamController,
 } from './stream.js'
 
-import { settleVexStream } from './stream.js'
+import { settleAvedonStream } from './stream.js'
 
 export type Subscriber<T> = (value: T) => void
 
@@ -292,26 +292,26 @@ export async function navigate(href: string, opts: NavigateOptions = {}): Promis
 function applyDocument(html: string) {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   const nextApp = doc.getElementById('app')
-  const nextData = doc.getElementById('__VEX_DATA__')
+  const nextData = doc.getElementById('__AVEDON_DATA__')
   const app = document.getElementById('app')
-  const dataEl = document.getElementById('__VEX_DATA__')
+  const dataEl = document.getElementById('__AVEDON_DATA__')
   if (app && nextApp) {
     app.innerHTML = nextApp.innerHTML
-    settleVexStream(app)
+    settleAvedonStream(app)
   }
   if (dataEl && nextData) dataEl.textContent = nextData.textContent
   const nextTitle = doc.querySelector('title')
   if (nextTitle) document.title = nextTitle.textContent ?? document.title
-  syncVexCss(doc)
+  syncAvedonCss(doc)
 }
 
-export function syncVexCss(from: ParentNode, toDoc: Document = document) {
-  const nextCss = from.querySelector('style[data-vex-css]')
-  let cssEl = toDoc.querySelector('style[data-vex-css]') as HTMLStyleElement | null
+export function syncAvedonCss(from: ParentNode, toDoc: Document = document) {
+  const nextCss = from.querySelector('style[data-avedon-css]')
+  let cssEl = toDoc.querySelector('style[data-avedon-css]') as HTMLStyleElement | null
   if (nextCss) {
     if (!cssEl) {
       cssEl = toDoc.createElement('style')
-      cssEl.setAttribute('data-vex-css', '')
+      cssEl.setAttribute('data-avedon-css', '')
       toDoc.head.appendChild(cssEl)
     }
     cssEl.textContent = nextCss.textContent

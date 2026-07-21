@@ -1,10 +1,10 @@
 {
-  "name": "create-vex-app",
+  "name": "create-avedon-app",
   "version": "0.1.0",
   "type": "module",
-  "description": "Scaffold a new vexjs app",
+  "description": "Scaffold a new avedon app",
   "bin": {
-    "create-vex-app": "./dist/cli.js"
+    "create-avedon-app": "./dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

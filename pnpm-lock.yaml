@@ -29,19 +29,19 @@ importers:
 
   examples/basic-app:
     dependencies:
-      '@vexjs/adapter-node':
+      '@avedon/adapter-node':
         specifier: workspace:*
         version: link:../../packages/adapter-node
-      '@vexjs/runtime':
+      '@avedon/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@vexjs/server':
+      '@avedon/server':
         specifier: workspace:*
         version: link:../../packages/server
-      '@vexjs/vite-plugin':
+      '@avedon/vite-plugin':
         specifier: workspace:*
         version: link:../../packages/vite-plugin
-      vex:
+      avedon:
         specifier: workspace:*
         version: link:../../packages/cli
     devDependencies:
@@ -54,7 +54,7 @@ importers:
 
   packages/adapter-bun:
     dependencies:
-      '@vexjs/shared':
+      '@avedon/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -67,7 +67,7 @@ importers:
 
   packages/adapter-cloudflare:
     dependencies:
-      '@vexjs/shared':
+      '@avedon/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -80,10 +80,10 @@ importers:
 
   packages/adapter-node:
     dependencies:
-      '@vexjs/server':
+      '@avedon/server':
         specifier: workspace:*
         version: link:../server
-      '@vexjs/shared':
+      '@avedon/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -96,21 +96,21 @@ importers:
 
   packages/cli:
     dependencies:
-      '@vexjs/adapter-node':
+      '@avedon/adapter-node':
         specifier: workspace:*
         version: link:../adapter-node
-      '@vexjs/runtime':
+      '@avedon/runtime':
         specifier: workspace:*
         version: link:../runtime
-      '@vexjs/server':
+      '@avedon/server':
         specifier: workspace:*
         version: link:../server
-      '@vexjs/vite-plugin':
+      '@avedon/vite-plugin':
         specifier: workspace:*
         version: link:../vite-plugin
-      create-vex-app:
+      create-avedon-app:
         specifier: workspace:*
-        version: link:../create-vex-app
+        version: link:../create-avedon-app
       vite:
         specifier: ^6.2.2
         version: 6.4.3(@types/node@22.20.1)
@@ -124,10 +124,10 @@ importers:
 
   packages/compiler:
     dependencies:
-      '@vexjs/runtime':
+      '@avedon/runtime':
         specifier: workspace:*
         version: link:../runtime
-      '@vexjs/shared':
+      '@avedon/shared':
         specifier: workspace:*
         version: link:../shared
       typescript:
@@ -138,7 +138,7 @@ importers:
         specifier: ^8.4.0
         version: 8.5.1(postcss@8.5.20)(typescript@5.9.3)
 
-  packages/create-vex-app:
+  packages/create-avedon-app:
     devDependencies:
       tsup:
         specifier: ^8.4.0
@@ -158,10 +158,10 @@ importers:
 
   packages/server:
     dependencies:
-      '@vexjs/runtime':
+      '@avedon/runtime':
         specifier: workspace:*
         version: link:../runtime
-      '@vexjs/shared':
+      '@avedon/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
@@ -183,10 +183,10 @@ importers:
 
   packages/vite-plugin:
     dependencies:
-      '@vexjs/compiler':
+      '@avedon/compiler':
         specifier: workspace:*
         version: link:../compiler
-      '@vexjs/server':
+      '@avedon/server':
         specifier: workspace:*
         version: link:../server
     devDependencies:

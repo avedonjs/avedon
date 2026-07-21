@@ -5,5 +5,5 @@
     "rootDir": ".",
     "types": ["vite/client"]
   },
-  "include": ["src", "vex.config.ts"]
+  "include": ["src", "avedon.config.ts"]
 }

@@ -19,7 +19,7 @@ export interface CompileResult {
 }
 
 export function compile(source: string, options: CompileOptions = {}): CompileResult {
-  const filename = options.filename ?? 'Component.vex'
+  const filename = options.filename ?? 'Component.avedon'
   const generate = options.generate ?? 'client'
   if (generate === 'ssr') return compileSsr(source, { filename })
 
@@ -35,7 +35,7 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
     : ''
 
   // Client codegen never interpolates serverScript — physical exclusion (not tree-shake).
-  const code = `import { escapeHtml as __escape${hmrImport} } from '@vexjs/runtime';
+  const code = `import { escapeHtml as __escape${hmrImport} } from '@avedon/runtime';
 ${clientImports}
 
 export const css = ${JSON.stringify(css)};
@@ -70,7 +70,7 @@ ${assignProps(clientBody)}
 
 /** Soft hydrate: rebuild into a fragment then replaceChildren (no empty flash). */
 export function hydrate(target, __props = {}) {
-  if (!target.hasChildNodes() || target.querySelector('[data-vex-csr]')) {
+  if (!target.hasChildNodes() || target.querySelector('[data-avedon-csr]')) {
     target.textContent = '';
     return mount(target, __props);
   }
@@ -91,7 +91,7 @@ export default { render, mount, hydrate, css, cssHash };
 }
 
 export function compileSsr(source: string, options: { filename?: string } = {}): CompileResult {
-  const filename = options.filename ?? 'Component.vex'
+  const filename = options.filename ?? 'Component.avedon'
   const parsed = parse(source)
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const cssHash = hashStyle(parsed.style, filename)
@@ -130,7 +130,7 @@ export function compileSsr(source: string, options: { filename?: string } = {}):
             .join('\n')}\n})();\n`
         : ''
 
-  const code = `import { escapeHtml as __escape, createRenderStream } from '@vexjs/runtime';
+  const code = `import { escapeHtml as __escape, createRenderStream } from '@avedon/runtime';
 ${clientImports}
 
 ${stripTypeScript(parsed.serverScript)}
@@ -183,7 +183,7 @@ function generateDts(filename: string, clientScript: string, serverScript = ''):
   const auxTypes = dataType ? collectAuxTypeAliases(serverScript, dataType) : ''
   return `declare module '*${mod}' {
   export function render(props?: Record<string, unknown>): string
-  export function renderInto(ctrl: import('@vexjs/runtime').RenderStreamController, props?: Record<string, unknown>): Promise<void>
+  export function renderInto(ctrl: import('@avedon/runtime').RenderStreamController, props?: Record<string, unknown>): Promise<void>
   export function renderToStream(props?: Record<string, unknown>): ReadableStream<Uint8Array>
   export function mount(target: Element, props?: Record<string, unknown>): { destroy(): void; update(props: Record<string, unknown>): void }
   export function hydrate(target: Element, props?: Record<string, unknown>): { destroy(): void; update(props: Record<string, unknown>): void }

@@ -1,8 +1,8 @@
-/** Re-export SSG helpers from `@vexjs/server` for CLI consumers. */
+/** Re-export SSG helpers from `@avedon/server` for CLI consumers. */
 export {
   buildSsgPages,
   flattenRoutes,
   renderSsgPage,
   type RenderSsgOptions,
   type SsgPage,
-} from '@vexjs/server'
+} from '@avedon/server'

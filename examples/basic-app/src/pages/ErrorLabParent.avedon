@@ -1,0 +1,3 @@
+<template>
+  <p data-error-lab="parent-shell">error-lab parent</p>
+</template>

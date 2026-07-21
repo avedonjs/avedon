@@ -1,11 +1,18 @@
-import { defineRoutes } from '@vexjs/server'
-import Layout from './pages/Layout.vex'
-import Home from './pages/Home.vex'
-import Post from './pages/Post.vex'
-import Admin from './pages/Admin.vex'
-import AdminError from './pages/AdminError.vex'
-import Doc from './pages/Doc.vex'
-import Stream from './pages/Stream.vex'
+import { defineRoutes } from '@avedon/server'
+import Layout from './pages/Layout.avedon'
+import Home from './pages/Home.avedon'
+import Post from './pages/Post.avedon'
+import Admin from './pages/Admin.avedon'
+import AdminError from './pages/AdminError.avedon'
+import Doc from './pages/Doc.avedon'
+import Stream from './pages/Stream.avedon'
+import ErrorLabNf from './pages/ErrorLabNf.avedon'
+import ErrorLabBoom from './pages/ErrorLabBoom.avedon'
+import ErrorLabPlainNf from './pages/ErrorLabPlainNf.avedon'
+import ErrorLabNestedBoom from './pages/ErrorLabNestedBoom.avedon'
+import ErrorLabParent from './pages/ErrorLabParent.avedon'
+import RouteNotFound from './pages/errors/RouteNotFound.avedon'
+import RouteError from './pages/errors/RouteError.avedon'
 import { requireAuth } from './guards/auth'
 
 const routes = defineRoutes([
@@ -42,6 +49,39 @@ const routes = defineRoutes([
     render: 'csr',
     guard: requireAuth,
     error: AdminError,
+  },
+  {
+    path: '/error-lab/nf',
+    layout: Layout,
+    component: ErrorLabNf,
+    notFound: RouteNotFound,
+    render: 'ssr',
+  },
+  {
+    path: '/error-lab/boom',
+    layout: Layout,
+    component: ErrorLabBoom,
+    error: RouteError,
+    render: 'ssr',
+  },
+  {
+    path: '/error-lab/global-nf',
+    layout: Layout,
+    component: ErrorLabPlainNf,
+    render: 'ssr',
+  },
+  {
+    path: '/error-lab',
+    component: ErrorLabParent,
+    error: RouteError,
+    children: [
+      {
+        path: 'nested-boom',
+        layout: Layout,
+        component: ErrorLabNestedBoom,
+        render: 'ssr',
+      },
+    ],
   },
 ])
 

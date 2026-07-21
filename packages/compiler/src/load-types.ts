@@ -72,17 +72,17 @@ function extractDataTypeWithChecker(serverScript: string): string | undefined {
   const stubbed = stubImports(serverScript)
   const source = `${stubbed}
 
-type __VexLoadReturn = Awaited<ReturnType<typeof load>>
-type __VexData = __VexLoadReturn extends Response
+type __AvedonLoadReturn = Awaited<ReturnType<typeof load>>
+type __AvedonData = __AvedonLoadReturn extends Response
   ? never
-  : __VexLoadReturn extends { data: infer D }
+  : __AvedonLoadReturn extends { data: infer D }
     ? D
-    : __VexLoadReturn extends void | undefined | null
+    : __AvedonLoadReturn extends void | undefined | null
       ? undefined
-      : __VexLoadReturn
+      : __AvedonLoadReturn
 `
 
-  const fileName = '/virtual/vex-load.ts'
+  const fileName = '/virtual/avedon-load.ts'
   const options: ts.CompilerOptions = {
     target: ts.ScriptTarget.ESNext,
     module: ts.ModuleKind.ESNext,
@@ -98,7 +98,7 @@ type __VexData = __VexLoadReturn extends Response
   const origFileExists = host.fileExists!.bind(host)
   const origReadFile = host.readFile!.bind(host)
   host.getSourceFile = (name, languageVersion, onError, shouldCreateNewSourceFile) => {
-    if (name === fileName || name.endsWith('vex-load.ts')) {
+    if (name === fileName || name.endsWith('avedon-load.ts')) {
       return ts.createSourceFile(fileName, source, languageVersion, true, ts.ScriptKind.TS)
     }
     return origGetSourceFile(name, languageVersion, onError, shouldCreateNewSourceFile)
@@ -112,7 +112,7 @@ type __VexData = __VexLoadReturn extends Response
   if (!sf) return undefined
 
   for (const stmt of sf.statements) {
-    if (ts.isTypeAliasDeclaration(stmt) && stmt.name.text === '__VexData') {
+    if (ts.isTypeAliasDeclaration(stmt) && stmt.name.text === '__AvedonData') {
       const type = checker.getTypeFromTypeNode(stmt.type)
       const printed = checker.typeToString(
         type,

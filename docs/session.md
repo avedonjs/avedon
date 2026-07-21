@@ -1,6 +1,6 @@
 # Cookies and sessions
 
-vexjs provides **cookie helpers** on every server `LoadEvent` and optional **sealed session cookies** (Web Crypto AES-GCM, no extra npm crypto deps).
+avedon provides **cookie helpers** on every server `LoadEvent` and optional **sealed session cookies** (Web Crypto AES-GCM, no extra npm crypto deps).
 
 ## Enable session
 
@@ -48,7 +48,7 @@ export const actions = {
 ## Guards
 
 ```ts
-import { requireSession } from '@vexjs/server'
+import { requireSession } from '@avedon/server'
 
 route('/admin', {
   component: Admin,

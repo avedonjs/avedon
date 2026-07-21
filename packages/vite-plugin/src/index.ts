@@ -1,29 +1,29 @@
-import { changedBlocks, compile, compileSsr } from '@vexjs/compiler'
-import { createHandler } from '@vexjs/server'
-import { pipeWebResponse } from '@vexjs/server/node'
+import { changedBlocks, compile, compileSsr } from '@avedon/compiler'
+import { createHandler } from '@avedon/server'
+import { pipeWebResponse } from '@avedon/server/node'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { IncomingMessage } from 'node:http'
 import type { ModuleNode, Plugin, ViteDevServer } from 'vite'
 import { shouldSkip } from './shouldSkip.js'
 
-export interface VexPluginOptions {
+export interface AvedonPluginOptions {
   root?: string
   routesId?: string
   appHtml?: string
-  /** Write sibling .vex.d.ts next to sources (default true) */
+  /** Write sibling .avedon.d.ts next to sources (default true) */
   writeDts?: boolean
 }
 
-export function vex(options: VexPluginOptions = {}): Plugin {
+export function avedon(options: AvedonPluginOptions = {}): Plugin {
   const root = options.root ?? process.cwd()
   const writeDts = options.writeDts !== false
-  /** Previous `.vex` source for block-diff HMR. */
-  const prevVexSource = new Map<string, string>()
+  /** Previous `.avedon` source for block-diff HMR. */
+  const prevAvedonSource = new Map<string, string>()
   let isDev = false
 
   return {
-    name: 'vex',
+    name: 'avedon',
     configResolved(config) {
       isDev = config.command === 'serve'
     },
@@ -43,10 +43,10 @@ export function vex(options: VexPluginOptions = {}): Plugin {
 
           const hooks = await loadOptional(devServer, path.join(root, 'src/hooks.server.ts'))
           const serverEntry = await loadOptional(devServer, path.join(root, 'src/server-entry.ts'))
-          const errorComponent = await loadOptional(devServer, path.join(root, 'src/error.vex'))
+          const errorComponent = await loadOptional(devServer, path.join(root, 'src/error.avedon'))
           const notFoundComponent = await loadOptional(
             devServer,
-            path.join(root, 'src/not-found.vex'),
+            path.join(root, 'src/not-found.avedon'),
           )
 
           const handler = createHandler({
@@ -76,18 +76,18 @@ export function vex(options: VexPluginOptions = {}): Plugin {
       })
     },
     resolveId(id) {
-      if (id === 'virtual:vex-client-entry' || id === '\0vex-client-entry') {
-        return '\0vex-client-entry'
+      if (id === 'virtual:avedon-client-entry' || id === '\0avedon-client-entry') {
+        return '\0avedon-client-entry'
       }
     },
     load(id) {
-      if (id !== '\0vex-client-entry') return null
+      if (id !== '\0avedon-client-entry') return null
       return clientEntrySource(isDev)
     },
     transform(code, id, opts) {
       const cleanId = id.split('?')[0]
-      if (!cleanId.endsWith('.vex')) return null
-      if (!prevVexSource.has(cleanId)) prevVexSource.set(cleanId, code)
+      if (!cleanId.endsWith('.avedon')) return null
+      if (!prevAvedonSource.has(cleanId)) prevAvedonSource.set(cleanId, code)
       const filename = path.basename(cleanId)
       const result = opts?.ssr
         ? compileSsr(code, { filename })
@@ -103,10 +103,10 @@ export function vex(options: VexPluginOptions = {}): Plugin {
       return { code: result.code, map: null }
     },
     async handleHotUpdate(ctx) {
-      if (!ctx.file.endsWith('.vex')) return
+      if (!ctx.file.endsWith('.avedon')) return
       const next = await ctx.read()
-      const prev = prevVexSource.get(ctx.file) ?? next
-      prevVexSource.set(ctx.file, next)
+      const prev = prevAvedonSource.get(ctx.file) ?? next
+      prevAvedonSource.set(ctx.file, next)
 
       const changed = changedBlocks(prev, next)
       const mods = new Set<ModuleNode>()
@@ -127,7 +127,7 @@ export function vex(options: VexPluginOptions = {}): Plugin {
       if (changed.size > 0) {
         ctx.server.ws.send({
           type: 'custom',
-          event: 'vex:update',
+          event: 'avedon:update',
           data: { file: ctx.file, timestamp: Date.now() },
         })
       }
@@ -150,7 +150,7 @@ function clientEntrySource(isDev: boolean): string {
   const hmrBlock = isDev
     ? `
 if (import.meta.hot) {
-  import.meta.hot.on('vex:update', async (payload) => {
+  import.meta.hot.on('avedon:update', async (payload) => {
     const state = current?.getHmrState?.() ?? null;
     const ts = (payload && payload.timestamp) || Date.now();
     try {
@@ -171,7 +171,7 @@ import {
   setClientBoot,
   evaluateCanActivate,
   ${isDev ? '__hmrPrepareSignals,' : ''}
-} from '@vexjs/runtime';
+} from '@avedon/runtime';
 import { routes as initialRoutes } from '/src/routes.ts';
 
 let routes = initialRoutes;
@@ -244,7 +244,7 @@ async function boot(hmrState) {
     current = null;
   }
 
-  let data = JSON.parse(document.getElementById('__VEX_DATA__')?.textContent || '{}');
+  let data = JSON.parse(document.getElementById('__AVEDON_DATA__')?.textContent || '{}');
   if (hmrState && hmrState.data !== undefined) {
     data = { ...data, data: hmrState.data };
   }
@@ -257,10 +257,10 @@ async function boot(hmrState) {
     request: new Request(url),
   });
 
-  let outlet = app.querySelector('[data-vex-csr], [data-vex-page]');
+  let outlet = app.querySelector('[data-avedon-csr], [data-avedon-page]');
   if (!outlet) {
     outlet = document.createElement('div');
-    outlet.setAttribute('data-vex-page', '');
+    outlet.setAttribute('data-avedon-page', '');
     app.replaceChildren(outlet);
   }
   const target = outlet;
@@ -274,7 +274,7 @@ async function boot(hmrState) {
   }
 
   const comp = await resolveMod(route.component);
-  const force = Boolean(hmrState) || route.render === 'csr' || target.hasAttribute('data-vex-csr');
+  const force = Boolean(hmrState) || route.render === 'csr' || target.hasAttribute('data-avedon-csr');
   await mountInto(comp, target, data, force);
 }
 
@@ -306,4 +306,4 @@ async function nodeToWebRequest(req: IncomingMessage, host: string): Promise<Req
   return new Request(url, init)
 }
 
-export default vex
+export default avedon

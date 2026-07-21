@@ -4,7 +4,7 @@
 </script>
 
 <script server>
-  import { notFound } from '@vexjs/server'
+  import { notFound } from '@avedon/server'
 
   const pages = {
     intro: { title: 'Intro', body: 'Welcome to the docs.' },

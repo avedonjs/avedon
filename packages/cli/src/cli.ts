@@ -1,7 +1,7 @@
-import { nodeAdapter, type Builder } from '@vexjs/adapter-node'
-import type { Routes } from '@vexjs/server'
-import { vex } from '@vexjs/vite-plugin'
-import { formatNextSteps, scaffoldApp } from 'create-vex-app'
+import { nodeAdapter, type Builder } from '@avedon/adapter-node'
+import type { Routes } from '@avedon/server'
+import { avedon } from '@avedon/vite-plugin'
+import { formatNextSteps, scaffoldApp } from 'create-avedon-app'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -26,7 +26,7 @@ async function main() {
       await cmdPreview()
       break
     case 'create':
-      await cmdCreate(args[0] ?? 'my-vex-app')
+      await cmdCreate(args[0] ?? 'my-avedon-app')
       break
     default:
       console.error(`Unknown command: ${cmd}\n`)
@@ -36,20 +36,20 @@ async function main() {
 }
 
 function printHelp() {
-  console.log(`vexjs CLI
+  console.log(`avedon CLI
 
 Usage:
-  vex create [name]
-  vex dev
-  vex build
-  vex start
-  vex --help
+  avedon create [name]
+  avedon dev
+  avedon build
+  avedon start
+  avedon --help
 `)
 }
 
 async function loadConfig(root = process.cwd()) {
-  const jsPath = path.join(root, 'vex.config.js')
-  const tsPath = path.join(root, 'vex.config.ts')
+  const jsPath = path.join(root, 'avedon.config.js')
+  const tsPath = path.join(root, 'avedon.config.ts')
   let adapter = nodeAdapter()
   if (fs.existsSync(jsPath)) {
     const mod = await import(pathToFileURL(jsPath).href)
@@ -59,10 +59,10 @@ async function loadConfig(root = process.cwd()) {
     const vite = await createServer({
       root,
       server: { middlewareMode: true },
-      plugins: [vex({ root })],
+      plugins: [avedon({ root })],
     })
     try {
-      const mod = await vite.ssrLoadModule('/vex.config.ts')
+      const mod = await vite.ssrLoadModule('/avedon.config.ts')
       if (mod.default?.adapter) adapter = mod.default.adapter
       if (mod.adapter) adapter = mod.adapter
     } finally {
@@ -76,7 +76,7 @@ async function cmdDev() {
   const root = process.cwd()
   const server = await createServer({
     root,
-    plugins: [vex({ root })],
+    plugins: [avedon({ root })],
     server: { port: 5173 },
   })
   await server.listen()
@@ -85,14 +85,14 @@ async function cmdDev() {
 
 async function cmdBuild() {
   const { adapter, root } = await loadConfig()
-  const outDir = path.join(root, '.vex')
+  const outDir = path.join(root, '.avedon')
   fs.rmSync(outDir, { recursive: true, force: true })
   fs.mkdirSync(path.join(outDir, 'server'), { recursive: true })
   fs.mkdirSync(path.join(outDir, 'client'), { recursive: true })
 
   await viteBuild({
     root,
-    plugins: [vex({ root })],
+    plugins: [avedon({ root })],
     build: {
       outDir: path.join(outDir, 'client'),
       emptyOutDir: true,
@@ -109,7 +109,7 @@ async function cmdBuild() {
 
   await viteBuild({
     root,
-    plugins: [vex({ root })],
+    plugins: [avedon({ root })],
     build: {
       ssr: path.join(root, 'src/server-entry.ts'),
       outDir: path.join(outDir, 'server'),
@@ -122,7 +122,7 @@ async function cmdBuild() {
       },
     },
     ssr: {
-      noExternal: [/^@vexjs\//],
+      noExternal: [/^@avedon\//],
     },
   })
 
@@ -169,7 +169,7 @@ function copyDir(src: string, dest: string) {
 async function cmdPreview() {
   const serverPath = path.join(process.cwd(), 'build', 'server.js')
   if (!fs.existsSync(serverPath)) {
-    console.error('No build/server.js — run vex build first')
+    console.error('No build/server.js — run avedon build first')
     process.exit(1)
   }
   await import(pathToFileURL(serverPath).href)

@@ -6,10 +6,10 @@ import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { isRegenerating, ssgHtmlPath, tryServeSsgIsr, writeHtmlAtomic } from './ssg-isr.js'
-import type { Routes } from '@vexjs/server'
+import type { Routes } from '@avedon/server'
 
 const appHtml =
-  '<!doctype html><html><head></head><body><div id="app">%vex.body%</div></body></html>'
+  '<!doctype html><html><head></head><body><div id="app">%avedon.body%</div></body></html>'
 
 function makeRes() {
   const sink = new PassThrough()
@@ -26,7 +26,7 @@ function makeRes() {
 
 describe('writeHtmlAtomic', () => {
   it('replaces the target file', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vex-isr-'))
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-isr-'))
     const file = path.join(dir, 'index.html')
     writeHtmlAtomic(file, 'one')
     writeHtmlAtomic(file, 'two')
@@ -43,7 +43,7 @@ describe('tryServeSsgIsr', () => {
   })
 
   it('serves immutable SSG without regenerating', async () => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vex-isr-'))
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-isr-'))
     const file = ssgHtmlPath(dir, '/')
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, '<html>static</html>')
@@ -73,7 +73,7 @@ describe('tryServeSsgIsr', () => {
   })
 
   it('regenerates in background when revalidate window has elapsed', async () => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vex-isr-'))
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-isr-'))
     const file = ssgHtmlPath(dir, '/docs/intro')
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, '<html>stale</html>')

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildSsgPages } from './ssg.js'
 
 const appHtml =
-  '<!doctype html><html><head></head><body><div id="app">%vex.body%</div></body></html>'
+  '<!doctype html><html><head></head><body><div id="app">%avedon.body%</div></body></html>'
 
 describe('cli ssg re-export', () => {
   it('buildSsgPages still works via CLI module', async () => {

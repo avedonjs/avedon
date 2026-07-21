@@ -10,31 +10,31 @@ describe('prod HMR leak', () => {
     const { code } = compile(
       `
 <script>
-  import { signal } from '@vexjs/runtime'
+  import { signal } from '@avedon/runtime'
   const n = signal(0)
 </script>
 <template><p>{n}</p></template>
 `,
-      { filename: 'X.vex', hmr: false },
+      { filename: 'X.avedon', hmr: false },
     )
     expect(code).not.toContain('getHmrState')
     expect(code).not.toContain('__hmr')
-    expect(code).not.toContain('vex:update')
+    expect(code).not.toContain('avedon:update')
   })
 
   it(
-    'example client build does not contain vex:update or getHmrState',
+    'example client build does not contain avedon:update or getHmrState',
     { timeout: 120_000 },
     () => {
       const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
-      execSync('pnpm -F @vexjs/compiler build && pnpm -F @vexjs/vite-plugin build && pnpm -F example build:app', {
+      execSync('pnpm -F @avedon/compiler build && pnpm -F @avedon/vite-plugin build && pnpm -F example build:app', {
         cwd: repoRoot,
         stdio: 'pipe',
       })
       const clientJs = path.join(repoRoot, 'examples/basic-app/build/client/assets/client.js')
       expect(fs.existsSync(clientJs)).toBe(true)
       const joined = fs.readFileSync(clientJs, 'utf8')
-      expect(joined).not.toContain('vex:update')
+      expect(joined).not.toContain('avedon:update')
       expect(joined).not.toContain('getHmrState')
       expect(joined).not.toContain('__hmrPrepareSignals')
     },

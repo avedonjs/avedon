@@ -1,0 +1,11 @@
+<script server>
+  import { notFound } from '@avedon/server'
+
+  export async function load() {
+    throw notFound('lab-not-found')
+  }
+</script>
+
+<template>
+  <p>should not render</p>
+</template>

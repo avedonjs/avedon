@@ -3,16 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vex dev",
-    "build:app": "vex build",
-    "start": "vex start"
+    "dev": "avedon dev",
+    "build:app": "avedon build",
+    "start": "avedon start"
   },
   "dependencies": {
-    "@vexjs/adapter-node": "workspace:*",
-    "@vexjs/runtime": "workspace:*",
-    "@vexjs/server": "workspace:*",
-    "@vexjs/vite-plugin": "workspace:*",
-    "vex": "workspace:*"
+    "@avedon/adapter-node": "workspace:*",
+    "@avedon/runtime": "workspace:*",
+    "@avedon/server": "workspace:*",
+    "@avedon/vite-plugin": "workspace:*",
+    "avedon": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.8.2",

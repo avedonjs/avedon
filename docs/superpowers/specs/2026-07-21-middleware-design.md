@@ -42,7 +42,7 @@ Pipeline order:
 
 ```ts
 // hooks.server.ts
-import { sequence, cors, logger, rateLimit } from '@vexjs/server'
+import { sequence, cors, logger, rateLimit } from '@avedon/server'
 
 export const middleware = [
   logger(),

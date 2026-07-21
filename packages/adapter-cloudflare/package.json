@@ -1,5 +1,5 @@
 {
-  "name": "@vexjs/adapter-cloudflare",
+  "name": "@avedon/adapter-cloudflare",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -16,7 +16,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@vexjs/shared": "workspace:*"
+    "@avedon/shared": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

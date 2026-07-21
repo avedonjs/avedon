@@ -1,5 +1,5 @@
 {
-  "name": "@vexjs/adapter-node",
+  "name": "@avedon/adapter-node",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -17,8 +17,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@vexjs/server": "workspace:*",
-    "@vexjs/shared": "workspace:*"
+    "@avedon/server": "workspace:*",
+    "@avedon/shared": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

@@ -1,11 +1,11 @@
-import type { CookieSerializeOptions, GuardFn, Session } from '@vexjs/shared'
+import type { CookieSerializeOptions, GuardFn, Session } from '@avedon/shared'
 import type { LoadEvent } from './types.js'
 import { assertCookieValueSize, attachCookies, createCookies, type CookiesBag } from './cookies.js'
 import { redirect } from './errors.js'
 import { sealPayload, unsealPayload } from './seal.js'
 import type { SessionOptions } from './types.js'
 
-export const DEFAULT_SESSION_NAME = 'vex_session'
+export const DEFAULT_SESSION_NAME = 'avedon_session'
 export const DEFAULT_SESSION_MAX_AGE = 60 * 60 * 24 * 7
 
 export function validateSessionOptions(session: SessionOptions | undefined): void {

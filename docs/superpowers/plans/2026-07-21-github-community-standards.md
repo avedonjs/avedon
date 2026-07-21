@@ -27,7 +27,7 @@
 - Create: `SUPPORT.md`
 
 - [ ] **Step 1: Write LICENSE (MIT)**
-- [ ] **Step 2: Write CODE_OF_CONDUCT.md (Contributor Covenant 2.1; enforcement via @hocestnonsatis)**
+- [ ] **Step 2: Write CODE_OF_CONDUCT.md (Contributor Covenant 2.1; enforcement via @avedonjs)**
 - [ ] **Step 3: Write SECURITY.md and SUPPORT.md per spec**
 - [ ] **Step 4: Verify all four files exist at repo root**
 

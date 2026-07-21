@@ -1,4 +1,4 @@
-/** Compile vex markup into SSR expression (returns HTML string) and client DOM builder. */
+/** Compile avedon markup into SSR expression (returns HTML string) and client DOM builder. */
 
 function escapeForTemplateLiteral(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')

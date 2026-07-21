@@ -1,4 +1,4 @@
-import { createRenderStream, streamToString, type RenderStreamController } from '@vexjs/runtime'
+import { createRenderStream, streamToString, type RenderStreamController } from '@avedon/runtime'
 import { matchRoute } from './match.js'
 import { createCookies } from './cookies.js'
 import {
@@ -6,7 +6,7 @@ import {
   renderShellSuffixFromTemplate,
   resolveComponent,
 } from './ssr.js'
-import type { Routes, VexComponentModule } from './types.js'
+import type { Routes, AvedonComponentModule } from './types.js'
 
 export type SsgPage = { path: string; html: string }
 
@@ -46,7 +46,7 @@ export async function renderSsgPage(
   const cssParts: string[] = []
   if (mod.css) cssParts.push(mod.css)
 
-  const layouts: VexComponentModule[] = []
+  const layouts: AvedonComponentModule[] = []
   for (let i = chain.length - 1; i >= 0; i--) {
     const r = chain[i]
     if (!r.layout) continue
@@ -56,7 +56,7 @@ export async function renderSsgPage(
   }
 
   let writeBody: (ctrl: RenderStreamController) => Promise<void> = async (ctrl) => {
-    ctrl.enqueueHtml('<div data-vex-page>')
+    ctrl.enqueueHtml('<div data-avedon-page>')
     await writeComponent(mod, data, ctrl)
     ctrl.enqueueHtml('</div>')
   }
@@ -100,7 +100,7 @@ export async function buildSsgPages(routes: Routes, appHtml: string): Promise<Ss
 }
 
 async function writeComponent(
-  component: VexComponentModule,
+  component: AvedonComponentModule,
   props: Record<string, unknown>,
   ctrl: RenderStreamController,
 ): Promise<void> {

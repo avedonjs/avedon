@@ -36,14 +36,14 @@ describe('createRenderStream', () => {
     }
 
     let early = ''
-    while (!early.includes('</main>') || !early.includes('vex-b-')) {
+    while (!early.includes('</main>') || !early.includes('avedon-b-')) {
       const c = await readOne()
       if (c == null) break
       early += c
     }
-    expect(early).toContain('id="vex-b-b1"')
+    expect(early).toContain('id="avedon-b-b1"')
     expect(early).toContain('</main>')
-    expect(early).not.toContain('vex-r-b1')
+    expect(early).not.toContain('avedon-r-b1')
 
     resolve('done')
     await ctrl.waitPending()
@@ -55,7 +55,7 @@ describe('createRenderStream', () => {
       if (c == null) break
       rest += c
     }
-    expect(rest).toContain('vex-r-b1')
+    expect(rest).toContain('avedon-r-b1')
     expect(rest).toContain('\\u003cp>done\\u003c/p>')
   })
 
@@ -72,8 +72,8 @@ describe('createRenderStream', () => {
 describe('oooInjectScript', () => {
   it('embeds html as JSON payload with stream script', () => {
     const chunk = oooInjectScript('b1', '<span>ok</span>')
-    expect(chunk).toContain('id="vex-r-b1"')
-    expect(chunk).toContain('data-vex-stream')
+    expect(chunk).toContain('id="avedon-r-b1"')
+    expect(chunk).toContain('data-avedon-stream')
     expect(chunk).toContain('\\u003cspan>ok\\u003c/span>')
   })
 })

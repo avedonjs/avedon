@@ -6,7 +6,7 @@
 
 **Architecture:** Onion/`resolve` wrapping. `Middleware` shares the shape of today's `HandleHook`. `sequence(...handlers)` composes outer→inner. `hooks.middleware` is primary; optional `handle` runs after the array (`sequence(...middleware, handle)`). Guards stay match-after; middleware never sees `params`.
 
-**Tech Stack:** TypeScript, `@vexjs/server`, Vitest, existing Vite hooks loader.
+**Tech Stack:** TypeScript, `@avedon/server`, Vitest, existing Vite hooks loader.
 
 ## Global Constraints
 
@@ -52,9 +52,9 @@
 
 ### Task 4: Example, scaffold, docs
 
-- [ ] `examples/basic-app` + create-vex-app template hooks
+- [ ] `examples/basic-app` + create-avedon-app template hooks
 - [ ] `docs/middleware.md`, index links, package README, `memories.md`
 
 ### Task 5: Verify
 
-- [ ] `pnpm -F @vexjs/server test` and broader suite as needed
+- [ ] `pnpm -F @avedon/server test` and broader suite as needed

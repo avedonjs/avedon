@@ -1,11 +1,11 @@
-import type { AdapterBuilder, AdapterInterface } from '@vexjs/shared'
+import type { AdapterBuilder, AdapterInterface } from '@avedon/shared'
 
 /** Interface-only stub — Cloudflare Workers adapter not implemented yet. */
 export function cloudflareAdapter(_options: { out?: string } = {}): AdapterInterface {
   return {
-    name: '@vexjs/adapter-cloudflare',
+    name: '@avedon/adapter-cloudflare',
     async adapt(_builder: AdapterBuilder) {
-      throw new Error('@vexjs/adapter-cloudflare is not implemented yet')
+      throw new Error('@avedon/adapter-cloudflare is not implemented yet')
     },
   }
 }

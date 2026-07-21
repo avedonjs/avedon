@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-vexjs is pre-1.0. Security fixes are applied on the current `main` branch only. There is no LTS matrix yet.
+avedon is pre-1.0. Security fixes are applied on the current `main` branch only. There is no LTS matrix yet.
 
 ## Reporting a vulnerability
 

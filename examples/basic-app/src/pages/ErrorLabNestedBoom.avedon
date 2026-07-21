@@ -1,0 +1,11 @@
+<script server>
+  import { error } from '@avedon/server'
+
+  export async function load() {
+    throw error(500, 'nested-lab-boom')
+  }
+</script>
+
+<template>
+  <p>should not render</p>
+</template>

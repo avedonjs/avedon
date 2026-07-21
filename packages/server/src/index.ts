@@ -41,7 +41,7 @@ export type {
   ActionHandler,
   ApiHandler,
   GuardFn,
-  VexComponentModule,
+  AvedonComponentModule,
   RouteConfig,
   Routes,
   HandleArgs,

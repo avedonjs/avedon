@@ -1,4 +1,4 @@
-import { cors, logger, rateLimit } from '@vexjs/server'
+import { cors, logger, rateLimit } from '@avedon/server'
 
 export const middleware = [
   logger(),

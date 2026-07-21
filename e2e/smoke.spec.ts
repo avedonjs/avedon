@@ -2,12 +2,12 @@ import { test, expect } from '@playwright/test'
 
 test('home ssg/ssr renders brand', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('h1')).toContainText('vexjs')
+  await expect(page.locator('h1')).toContainText('avedon')
 })
 
 test('post ssr + client like button', async ({ page }) => {
   await page.goto('/posts/1')
-  await expect(page.locator('h1')).toHaveText('Hello vexjs')
+  await expect(page.locator('h1')).toHaveText('Hello avedon')
   const likes = page.locator('text=Likes:')
   const before = await likes.textContent()
   await page.getByRole('button', { name: /Optimistic/ }).click()
@@ -20,7 +20,7 @@ test('client nav does not full-reload', async ({ page }) => {
     ;(window as unknown as { __navMarker: number }).__navMarker = 1
   })
   await page.click('a[href="/posts/1"]')
-  await expect(page.locator('h1')).toHaveText('Hello vexjs')
+  await expect(page.locator('h1')).toHaveText('Hello avedon')
   const marker = await page.evaluate(
     () => (window as unknown as { __navMarker?: number }).__navMarker,
   )
@@ -30,7 +30,7 @@ test('client nav does not full-reload', async ({ page }) => {
 test('form action like updates page', async ({ page }) => {
   await page.goto('/posts/1')
   await page.getByRole('button', { name: 'Like (server action)' }).click()
-  await expect(page.locator('h1')).toHaveText('Hello vexjs')
+  await expect(page.locator('h1')).toHaveText('Hello avedon')
 })
 
 test('admin guard blocks unauthorized', async ({ request }) => {
@@ -43,4 +43,32 @@ test('api_GET via .json', async ({ request }) => {
   expect(res.ok()).toBeTruthy()
   const body = await res.json()
   expect(body.post.id).toBe('1')
+})
+
+test('route notFound overrides global when load throws notFound()', async ({ page }) => {
+  const res = await page.goto('/error-lab/nf')
+  expect(res?.status()).toBe(404)
+  await expect(page.locator('[data-error-lab="route-not-found"]')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Route-specific 404' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Not found' })).toHaveCount(0)
+})
+
+test('global notFound when route has no notFound override', async ({ page }) => {
+  const res = await page.goto('/error-lab/global-nf')
+  expect(res?.status()).toBe(404)
+  await expect(page.getByRole('heading', { name: 'Not found' })).toBeVisible()
+  await expect(page.locator('[data-error-lab="route-not-found"]')).toHaveCount(0)
+})
+
+test('route error overrides global when load throws error()', async ({ page }) => {
+  const res = await page.goto('/error-lab/boom')
+  expect(res?.status()).toBe(500)
+  await expect(page.locator('[data-error-lab="route-error"]')).toHaveText('500: lab-boom')
+  await expect(page.getByRole('heading', { name: 'Error 500' })).toHaveCount(0)
+})
+
+test('nested route load error uses parent route error boundary', async ({ page }) => {
+  const res = await page.goto('/error-lab/nested-boom')
+  expect(res?.status()).toBe(500)
+  await expect(page.locator('[data-error-lab="route-error"]')).toHaveText('500: nested-lab-boom')
 })

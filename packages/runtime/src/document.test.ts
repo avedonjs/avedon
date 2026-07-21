@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { syncVexCss } from './index.js'
+import { syncAvedonCss } from './index.js'
 
 type StyleNode = {
   name: 'style'
@@ -10,7 +10,7 @@ type StyleNode = {
 function makeTarget(initial: string | null) {
   const nodes: StyleNode[] = []
   if (initial != null) {
-    nodes.push({ name: 'style', attrs: { 'data-vex-css': '' }, text: initial })
+    nodes.push({ name: 'style', attrs: { 'data-avedon-css': '' }, text: initial })
   }
 
   const api = {
@@ -20,8 +20,8 @@ function makeTarget(initial: string | null) {
       },
     },
     querySelector(sel: string) {
-      if (sel !== 'style[data-vex-css]') return null
-      const found = nodes.find((n) => n.name === 'style' && 'data-vex-css' in n.attrs)
+      if (sel !== 'style[data-avedon-css]') return null
+      const found = nodes.find((n) => n.name === 'style' && 'data-avedon-css' in n.attrs)
       if (!found) return null
       return {
         get textContent() {
@@ -49,7 +49,7 @@ function makeTarget(initial: string | null) {
         set textContent(v: string) {
           node.text = v
         },
-        // syncVexCss appends this object; unwrap via Symbol
+        // syncAvedonCss appends this object; unwrap via Symbol
         [Symbol.for('node')]: node,
       }
     },
@@ -66,27 +66,27 @@ function makeTarget(initial: string | null) {
   return api
 }
 
-describe('syncVexCss', () => {
-  it('updates existing data-vex-css during client nav', () => {
+describe('syncAvedonCss', () => {
+  it('updates existing data-avedon-css during client nav', () => {
     const to = makeTarget('old { color: red }')
     const from = { querySelector: () => ({ textContent: 'body { margin: 0 }' }) }
-    syncVexCss(from as never, to as never)
-    expect(to.querySelector('style[data-vex-css]')?.textContent).toBe('body { margin: 0 }')
+    syncAvedonCss(from as never, to as never)
+    expect(to.querySelector('style[data-avedon-css]')?.textContent).toBe('body { margin: 0 }')
   })
 
-  it('inserts data-vex-css when missing', () => {
+  it('inserts data-avedon-css when missing', () => {
     const to = makeTarget(null)
     const from = { querySelector: () => ({ textContent: 'body { margin: 0 }' }) }
-    syncVexCss(from as never, to as never)
+    syncAvedonCss(from as never, to as never)
     expect(to._nodes).toHaveLength(1)
     expect(to._nodes[0].text).toBe('body { margin: 0 }')
-    expect(to._nodes[0].attrs['data-vex-css']).toBe('')
+    expect(to._nodes[0].attrs['data-avedon-css']).toBe('')
   })
 
-  it('removes data-vex-css when next page has none', () => {
+  it('removes data-avedon-css when next page has none', () => {
     const to = makeTarget('body { margin: 0 }')
     const from = { querySelector: () => null }
-    syncVexCss(from as never, to as never)
-    expect(to.querySelector('style[data-vex-css]')).toBeNull()
+    syncAvedonCss(from as never, to as never)
+    expect(to.querySelector('style[data-avedon-css]')).toBeNull()
   })
 })

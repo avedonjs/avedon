@@ -35,9 +35,9 @@ describe('compile', () => {
 <h1>{title}</h1>
 <button on:click={() => count++}>{count}</button>
 `,
-      { filename: 'Home.vex' },
+      { filename: 'Home.avedon' },
     )
-    expect(cssHash.startsWith('vex-')).toBe(true)
+    expect(cssHash.startsWith('avedon-')).toBe(true)
     expect(code).toContain('export function render')
     expect(code).toContain('export function mount')
     expect(code).toContain('__escape(title)')
@@ -59,7 +59,7 @@ describe('compile', () => {
 </script>
 <p>{title}</p>
 `,
-      { filename: 'Page.vex' },
+      { filename: 'Page.avedon' },
     )
     expect(code).toContain('export async function load')
     expect(code).toContain('GET /api/x')
@@ -77,7 +77,7 @@ describe('compile', () => {
 </script>
 {#await p}{:then v}<span>{v}</span>{/await}
 `,
-      { filename: 'Await.vex' },
+      { filename: 'Await.avedon' },
     )
     expect(code).toContain('__awaitBoundary')
     expect(code).toContain('Promise.resolve(p)')
@@ -94,7 +94,7 @@ describe('compile', () => {
 {#if show}<span>yes</span>{:else}<span>no</span>{/if}
 {#each items as item}<i>{item}</i>{/each}
 `,
-      { filename: 'List.vex' },
+      { filename: 'List.avedon' },
     )
     expect(code).toContain('show')
     expect(code).toContain('.map(')
@@ -103,7 +103,7 @@ describe('compile', () => {
   it('compiles slot to children prop', () => {
     const { code } = compileSsr(
       `<div class="wrap"><slot /></div>`,
-      { filename: 'Layout.vex' },
+      { filename: 'Layout.avedon' },
     )
     expect(code).toContain('__props.children')
     expect(code).toContain('__pipeChildren')
@@ -130,19 +130,19 @@ describe('compile', () => {
 </script>
 <script>
   export let title
-  import { signal } from '@vexjs/runtime'
+  import { signal } from '@avedon/runtime'
   const n = signal(0)
 </script>
 <template><h1>{title}</h1></template>
 `
-    const client = compile(source, { filename: 'Secret.vex' })
+    const client = compile(source, { filename: 'Secret.avedon' })
     expect(client.code).not.toContain(secret)
     expect(client.code).not.toContain('$lib/db')
     expect(client.code).not.toContain('api_GET')
     expect(client.code).not.toContain('export async function load')
     expect(client.code).not.toContain('SUPER_SECRET')
 
-    const ssr = compileSsr(source, { filename: 'Secret.vex' })
+    const ssr = compileSsr(source, { filename: 'Secret.avedon' })
     expect(ssr.code).toContain(secret)
     expect(ssr.code).toContain('api_GET')
     expect(ssr.code).toContain('const api =')

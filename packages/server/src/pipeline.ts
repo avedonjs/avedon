@@ -14,9 +14,9 @@ import type {
   LoadEvent,
   Middleware,
   RouteConfig,
-  VexComponentModule,
+  AvedonComponentModule,
 } from './types.js'
-import { createRenderStream, streamToString, type RenderStreamController } from '@vexjs/runtime'
+import { createRenderStream, streamToString, type RenderStreamController } from '@avedon/runtime'
 import { buildRequestContext, validateSessionOptions } from './session.js'
 
 export function createHandler(options: HandlerOptions) {
@@ -157,8 +157,8 @@ async function dispatchMatched(
   return finalize(await renderPage(options, matched, component, event))
 }
 
-function pickApiHandler(component: VexComponentModule, method: string): ApiHandler | undefined {
-  const key = `api_${method}` as keyof VexComponentModule
+function pickApiHandler(component: AvedonComponentModule, method: string): ApiHandler | undefined {
+  const key = `api_${method}` as keyof AvedonComponentModule
   const named = component[key]
   if (typeof named === 'function') return named as ApiHandler
   if (component.api) {
@@ -224,7 +224,7 @@ function getActionName(url: URL): string | null {
 async function renderPage(
   options: HandlerOptions,
   matched: MatchResult,
-  component: VexComponentModule,
+  component: AvedonComponentModule,
   event: LoadEvent,
   extra: Record<string, unknown> = {},
 ): Promise<Response> {
@@ -243,7 +243,7 @@ async function renderPage(
   if (component.css) cssParts.push(component.css)
 
   if (mode === 'csr') {
-    const body = `<div data-vex-csr></div>`
+    const body = `<div data-avedon-csr></div>`
     for (let i = matched.chain.length - 1; i >= 0; i--) {
       const r = matched.chain[i]
       if (!r.layout) continue
@@ -264,7 +264,7 @@ async function renderPage(
   }
 
   // Resolve layouts up-front for CSS + writers
-  const layouts: VexComponentModule[] = []
+  const layouts: AvedonComponentModule[] = []
   for (let i = matched.chain.length - 1; i >= 0; i--) {
     const r = matched.chain[i]
     if (!r.layout) continue
@@ -283,7 +283,7 @@ async function renderPage(
   })
 
   let writeBody: (ctrl: RenderStreamController) => Promise<void> = async (ctrl) => {
-    ctrl.enqueueHtml('<div data-vex-page>')
+    ctrl.enqueueHtml('<div data-avedon-page>')
     await writeComponent(component, data, ctrl)
     ctrl.enqueueHtml('</div>')
   }
@@ -316,7 +316,7 @@ async function renderPage(
 }
 
 async function writeComponent(
-  component: VexComponentModule,
+  component: AvedonComponentModule,
   props: Record<string, unknown>,
   ctrl: RenderStreamController,
 ): Promise<void> {
@@ -345,8 +345,8 @@ async function writeComponent(
 function pickRouteComponent(
   matched: MatchResult | null,
   kind: 'error' | 'notFound',
-  globalMod?: VexComponentModule,
-): VexComponentModule | undefined {
+  globalMod?: AvedonComponentModule,
+): AvedonComponentModule | undefined {
   if (matched) {
     for (let i = matched.chain.length - 1; i >= 0; i--) {
       const c = matched.chain[i][kind]
@@ -364,7 +364,7 @@ async function renderNotFound(
   const mod = pickRouteComponent(matched, 'notFound', options.notFoundComponent)
   if (mod) {
     const c = await resolveComponent(mod)
-    const body = `<div data-vex-page>${c.render({ url: request.url })}</div>`
+    const body = `<div data-avedon-page>${c.render({ url: request.url })}</div>`
     const html = renderShell(options.appHtml, {
       body,
       css: c.css,
@@ -385,7 +385,7 @@ async function renderError(
   const mod = pickRouteComponent(matched, 'error', options.errorComponent)
   if (mod) {
     const c = await resolveComponent(mod)
-    const body = `<div data-vex-page>${c.render({ status, message })}</div>`
+    const body = `<div data-avedon-page>${c.render({ status, message })}</div>`
     const html = renderShell(options.appHtml, {
       body,
       css: c.css,

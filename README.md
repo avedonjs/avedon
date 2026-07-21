@@ -1,16 +1,16 @@
-# vexjs
+# avedon
 
 TypeScript-first full-stack web framework for building applications with colocated UI, styles, and server logic.
 
-vexjs gives you a single component format (`.vex`), explicit routing, hybrid rendering, and a Vite-based toolchain aimed at clear boundaries between client and server code.
+avedon gives you a single component format (`.avedon`), explicit routing, hybrid rendering, and a Vite-based toolchain aimed at clear boundaries between client and server code.
 
 ## Features
 
-- **`.vex` components** — template, scoped styles, client script, and server script in one file
+- **`.avedon` components** — template, scoped styles, client script, and server script in one file
 - **Explicit routing** — `defineRoutes` in `routes.ts` with layouts, guards, and per-route render mode
 - **Hybrid rendering** — `ssr`, `ssg`, and `csr` on a per-route basis (default `ssr`)
 - **Colocated server APIs** — `load`, form `actions`, and `api_*` handlers next to the page UI
-- **Reactive client runtime** — `signal`, `computed`, and `effect` from `@vexjs/runtime`
+- **Reactive client runtime** — `signal`, `computed`, and `effect` from `@avedon/runtime`
 - **Adapter model** — platform-agnostic `Request` / `Response` core; Node adapter for production today
 
 ## Requirements
@@ -49,33 +49,33 @@ pnpm -F example start
 |-------|-------------|
 | [Documentation index](./docs/README.md) | Map of all docs |
 | [Getting started](./docs/guide.md) | Setup, CLI, and first app flow |
-| [`.vex` components](./docs/vex-components.md) | File format, scripts, styles, template |
+| [`.avedon` components](./docs/avedon-components.md) | File format, scripts, styles, template |
 | [Routing](./docs/routing.md) | `defineRoutes`, `route()`, layouts, guards |
 | [Middleware](./docs/middleware.md) | `sequence`, CORS, logging, rate-limit |
 | [Rendering](./docs/rendering.md) | `ssr` / `ssg` / `csr` and when to use each |
 | [Packages](./docs/packages.md) | Monorepo package roles |
-| [Design spec](./docs/superpowers/specs/2026-07-20-vexjs-design.md) | Architecture decisions |
+| [Design spec](./docs/superpowers/specs/2026-07-20-avedon-design.md) | Architecture decisions |
 
 ## Packages
 
 | Package | Role |
 |---------|------|
-| `@vexjs/shared` | Shared types and adapter interface |
-| `@vexjs/compiler` | `.vex` parse and codegen |
-| `@vexjs/runtime` | Signals, hydration, client navigation, forms |
-| `@vexjs/server` | Matching, guards, middleware, load/actions/api, SSR orchestration |
-| `@vexjs/vite-plugin` | Vite transform, HMR, and middleware |
-| `@vexjs/adapter-node` | Node production server |
-| `@vexjs/adapter-bun` | Bun adapter interface (stub) |
-| `@vexjs/adapter-cloudflare` | Cloudflare adapter interface (stub) |
-| `vex` | CLI (`create`, `dev`, `build`, `start`) |
-| `create-vex-app` | App scaffold (`pnpm create vex-app`) |
+| `@avedon/shared` | Shared types and adapter interface |
+| `@avedon/compiler` | `.avedon` parse and codegen |
+| `@avedon/runtime` | Signals, hydration, client navigation, forms |
+| `@avedon/server` | Matching, guards, middleware, load/actions/api, SSR orchestration |
+| `@avedon/vite-plugin` | Vite transform, HMR, and middleware |
+| `@avedon/adapter-node` | Node production server |
+| `@avedon/adapter-bun` | Bun adapter interface (stub) |
+| `@avedon/adapter-cloudflare` | Cloudflare adapter interface (stub) |
+| `avedon` | CLI (`create`, `dev`, `build`, `start`) |
+| `create-avedon-app` | App scaffold (`pnpm create avedon-app`) |
 
 ## Example
 
-Minimal `.vex` page with server `load` and client reactivity:
+Minimal `.avedon` page with server `load` and client reactivity:
 
-```vex
+```avedon
 <script server>
   export async function load() {
     return { title: 'Hello' }
@@ -83,7 +83,7 @@ Minimal `.vex` page with server `load` and client reactivity:
 </script>
 
 <script>
-  import { signal } from '@vexjs/runtime'
+  import { signal } from '@avedon/runtime'
   export let title
   const count = signal(0)
 </script>
@@ -103,9 +103,9 @@ Minimal `.vex` page with server `load` and client reactivity:
 Routes are declared explicitly. Prefer `route()` when you want typed `params` in guards; plain objects still work:
 
 ```ts
-import { defineRoutes, route } from '@vexjs/server'
-import Home from './pages/Home.vex'
-import Post from './pages/Post.vex'
+import { defineRoutes, route } from '@avedon/server'
+import Home from './pages/Home.avedon'
+import Post from './pages/Post.avedon'
 
 export default defineRoutes([
   { path: '/', component: Home, render: 'ssg' },
@@ -121,7 +121,7 @@ See [`docs/routing.md`](./docs/routing.md) and [`examples/basic-app`](./examples
 
 ## Roadmap
 
-- Language service for `.vex` (today: sibling `.vex.d.ts` stubs)
+- Language service for `.avedon` (today: sibling `.avedon.d.ts` stubs)
 - Production adapters beyond Node (Bun, Cloudflare, and others)
 - First-class CSS tooling integrations
 

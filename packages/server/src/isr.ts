@@ -15,7 +15,7 @@ export function createPathLock() {
       const p = Promise.resolve()
         .then(fn)
         .catch((err) => {
-          console.error('[vexjs isr]', key, err)
+          console.error('[avedon isr]', key, err)
         })
         .finally(() => {
           if (inflight.get(key) === p) inflight.delete(key)

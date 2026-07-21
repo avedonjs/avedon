@@ -1,5 +1,5 @@
 <script>
-  import { signal } from '@vexjs/runtime'
+  import { signal } from '@avedon/runtime'
   export let data
   const likes = signal(data.post.likes)
 
@@ -10,7 +10,7 @@
 
 <script server>
   import { db } from '../lib/db'
-  import { json, notFound, type LoadEvent } from '@vexjs/server'
+  import { json, notFound, type LoadEvent } from '@avedon/server'
 
   export type PostPageData = {
     post: { id: string; title: string; body: string; likes: number }

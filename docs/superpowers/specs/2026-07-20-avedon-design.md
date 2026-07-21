@@ -1,15 +1,15 @@
-# vexjs Design Spec
+# avedon Design Spec
 
 **Date:** 2026-07-20  
 **Status:** Approved (design sections + plan confirmed)
 
 ## Summary
 
-vexjs is a TypeScript-first full-stack web framework with:
+avedon is a TypeScript-first full-stack web framework with:
 
-- A custom Svelte-like component language (`.vex`)
+- A custom Svelte-like component language (`.avedon`)
 - Angular-style explicit routing via `routes.ts` (not file-based)
-- Colocated server logic (`load`, `actions`, `api`) in the same `.vex` file
+- Colocated server logic (`load`, `actions`, `api`) in the same `.avedon` file
 - Hybrid rendering (`ssr` | `ssg` | `csr`)
 - Vite-based toolchain and an adapter model (Node first)
 
@@ -17,7 +17,7 @@ Public announcement happens only when the full skeleton below is complete.
 
 ## Goals
 
-- One mental model: page UI + styles + client + server in `.vex`
+- One mental model: page UI + styles + client + server in `.avedon`
 - Explicit routes in `routes.ts` with per-route render mode
 - Platform-agnostic server core (`Request`/`Response`); adapters for deploy targets
 - Strong TypeScript DX from day one
@@ -34,23 +34,23 @@ Public announcement happens only when the full skeleton below is complete.
 
 | Package | Responsibility |
 |---------|----------------|
-| `@vexjs/compiler` | Parse `.vex`, client/server codegen, scoped CSS |
-| `@vexjs/runtime` | Hydration, client navigation, form enhancement |
-| `@vexjs/server` | Route match, guards, load/actions/api, SSR, hooks |
-| `@vexjs/vite-plugin` | Vite transform + HMR for `.vex` |
-| `@vexjs/adapter-node` | Production Node HTTP + static assets |
-| `vex` (CLI) | `create`, `dev`, `build`, `preview` |
+| `@avedon/compiler` | Parse `.avedon`, client/server codegen, scoped CSS |
+| `@avedon/runtime` | Hydration, client navigation, form enhancement |
+| `@avedon/server` | Route match, guards, load/actions/api, SSR, hooks |
+| `@avedon/vite-plugin` | Vite transform + HMR for `.avedon` |
+| `@avedon/adapter-node` | Production Node HTTP + static assets |
+| `avedon` (CLI) | `create`, `dev`, `build`, `preview` |
 
 ### Data flow
 
 ```
-.vex ──► compiler ──► vite-plugin ──► client bundle + server bundle
-routes.ts ─────────────────────────► @vexjs/server
+.avedon ──► compiler ──► vite-plugin ──► client bundle + server bundle
+routes.ts ─────────────────────────► @avedon/server
 server bundle ──► adapter-node ──► Node HTTP
 client bundle ──────────────────► browser (hydrate)
 ```
 
-## `.vex` file format
+## `.avedon` file format
 
 ### Sections
 
@@ -82,8 +82,8 @@ Compile-time updates (no virtual DOM). Minimal runtime stores: `writable` / `rea
 ## Routing (`routes.ts`)
 
 ```ts
-import type { Routes } from '@vexjs/server'
-import Home from './pages/Home.vex'
+import type { Routes } from '@avedon/server'
+import Home from './pages/Home.avedon'
 
 export const routes: Routes = [
   { path: '/', component: Home, render: 'ssr' },
@@ -93,7 +93,7 @@ export const routes: Routes = [
 ### Route fields
 
 - `path: string` — path-to-regexp style (`:id`, `*`)
-- `component` — `.vex` module
+- `component` — `.avedon` module
 - `render?: 'ssr' | 'ssg' | 'csr'` — default `ssr`
 - `layout?: Component` — optional layout wrapper
 - `children?: Routes` — nested routes
@@ -101,7 +101,7 @@ export const routes: Routes = [
 - `entries?: () => Promise<string[]> | string[]` — SSG param expansion
 - `error?` / `notFound?` — route-level overrides
 
-Global fallbacks: `src/error.vex`, `src/not-found.vex`.
+Global fallbacks: `src/error.avedon`, `src/not-found.avedon`.
 
 ### Render modes
 
@@ -133,7 +133,7 @@ interface Adapter {
 ```
 
 `Builder` provides client assets, server entry, SSG pages, and a route/asset manifest.  
-`@vexjs/adapter-node` writes a Node server entry and serves static files.
+`@avedon/adapter-node` writes a Node server entry and serves static files.
 
 ## App template
 
@@ -143,29 +143,29 @@ my-app/
     app.html
     routes.ts
     hooks.server.ts
-    pages/*.vex
-    error.vex
-    not-found.vex
-  vex.config.ts
+    pages/*.avedon
+    error.avedon
+    not-found.avedon
+  avedon.config.ts
   package.json
 ```
 
 ## CLI
 
-- `vex create` — scaffold TS app with Node adapter
-- `vex dev` — Vite + SSR middleware + HMR
-- `vex build` — client + server + SSG + `adapter.adapt()`
-- `vex preview` — run Node production output
+- `avedon create` — scaffold TS app with Node adapter
+- `avedon dev` — Vite + SSR middleware + HMR
+- `avedon build` — client + server + SSG + `adapter.adapt()`
+- `avedon preview` — run Node production output
 
 ## TypeScript
 
 - Packages and app code are TypeScript
-- `.vex` scripts use `lang="ts"`
-- Generated `*.vex.d.ts` (or equivalent) for component props / imports
+- `.avedon` scripts use `lang="ts"`
+- Generated `*.avedon.d.ts` (or equivalent) for component props / imports
 
 ## Testing
 
-- Compiler: fixture unit tests (`.vex` → expected JS/CSS shape)
+- Compiler: fixture unit tests (`.avedon` → expected JS/CSS shape)
 - Server: routing, load, actions, api with `Request`/`Response`
 - E2E: Playwright against `examples/basic` (dev and preview)
 

@@ -1,4 +1,4 @@
-# Contributing to vexjs
+# Contributing to avedon
 
 Thanks for contributing. By participating, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
 

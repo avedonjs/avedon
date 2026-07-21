@@ -5,7 +5,7 @@
 
 ## Summary
 
-Bring the `hocestnonsatis/vexjs` repository to GitHub Community Standards checklist readiness with a standard open-source community package (not minimal-only, not heavy OSS automation).
+Bring the `avedonjs/avedon` repository to GitHub Community Standards checklist readiness with a standard open-source community package (not minimal-only, not heavy OSS automation).
 
 Current health: ~28% (README only). Target: all checklist files present and linked from README.
 
@@ -52,7 +52,7 @@ Standard MIT text. Copyright holder: Anıl ÖZ. Year: 2026.
 
 ### CODE_OF_CONDUCT.md
 
-Contributor Covenant 2.1. Enforcement contact: GitHub maintainers / `@hocestnonsatis` (no public email in this file).
+Contributor Covenant 2.1. Enforcement contact: GitHub maintainers / `@avedonjs` (no public email in this file).
 
 ### CONTRIBUTING.md
 

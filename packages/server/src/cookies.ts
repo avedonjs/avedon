@@ -1,4 +1,4 @@
-import type { CookieSerializeOptions, Cookies } from '@vexjs/shared'
+import type { CookieSerializeOptions, Cookies } from '@avedon/shared'
 
 const MAX_COOKIE_VALUE_BYTES = 4096
 

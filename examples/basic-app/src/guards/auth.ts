@@ -1,4 +1,8 @@
-import { requireSession } from '@vexjs/server'
+import type { GuardFn } from '@avedon/server'
 
-/** Session guard: set cookie via login action (see docs/session.md). */
-export const requireAuth = requireSession({ redirectTo: '/?login=1' })
+/** Demo guard for `/admin`: session or `?auth=1` (see AdminError.avedon). */
+export const requireAuth: GuardFn = (event) => {
+  if (event.url.searchParams.get('auth') === '1') return true
+  if (event.session?.data != null) return true
+  return false
+}

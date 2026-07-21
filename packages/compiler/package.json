@@ -1,5 +1,5 @@
 {
-  "name": "@vexjs/compiler",
+  "name": "@avedon/compiler",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -17,8 +17,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@vexjs/runtime": "workspace:*",
-    "@vexjs/shared": "workspace:*",
+    "@avedon/runtime": "workspace:*",
+    "@avedon/shared": "workspace:*",
     "typescript": "^5.8.2"
   },
   "devDependencies": {

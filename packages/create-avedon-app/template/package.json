@@ -1,0 +1,22 @@
+{
+  "name": "__APP_NAME__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "avedon dev",
+    "build": "avedon build",
+    "start": "avedon start",
+    "preview": "avedon preview"
+  },
+  "dependencies": {
+    "@avedon/adapter-node": "^0.1.0",
+    "@avedon/runtime": "^0.1.0",
+    "@avedon/server": "^0.1.0",
+    "@avedon/vite-plugin": "^0.1.0",
+    "avedon": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
+  }
+}

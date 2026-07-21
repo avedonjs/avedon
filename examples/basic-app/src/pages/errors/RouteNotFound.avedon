@@ -1,0 +1,8 @@
+<script>
+  export let url
+</script>
+
+<template>
+  <h1>Route-specific 404</h1>
+  <p data-error-lab="route-not-found">No resource at {url}</p>
+</template>

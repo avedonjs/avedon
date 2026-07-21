@@ -5,7 +5,7 @@ Each route selects how HTML is produced via the `render` field on `defineRoutes`
 | Mode | When HTML is produced | Typical use |
 |------|----------------------|-------------|
 | `ssr` | On each request | Dynamic, personalized, or frequently changing data |
-| `ssg` | At `vex build` | Mostly static marketing or content pages |
+| `ssg` | At `avedon build` | Mostly static marketing or content pages |
 | `csr` | In the browser | Highly interactive shells after a minimal boot |
 
 Default when unspecified: **`ssr`**.
@@ -21,11 +21,11 @@ SSR responses use a `ReadableStream` body:
 1. Document shell (head + opening `#app`) flushes as soon as `load` finishes — improves TTFB on large pages
 2. Sync template HTML streams next
 3. `{#await}` blocks emit a placeholder immediately, then a late injection payload when the promise settles
-4. `__VEX_DATA__` and the client entry are sent only after all await boundaries settle (hydrate sees a complete DOM)
+4. `__AVEDON_DATA__` and the client entry are sent only after all await boundaries settle (hydrate sees a complete DOM)
 
 Compiled SSR modules export `renderToStream` / `renderInto` (streaming) and sync `render` (back-compat; awaits stay empty in the sync path).
 
-Node (`vex start`) and `vex dev` pipe the stream without buffering the full body first.
+Node (`avedon start`) and `avedon dev` pipe the stream without buffering the full body first.
 
 Use for:
 
@@ -59,11 +59,11 @@ For parameterized SSG routes (`/docs/:slug`), export a path list on the route co
 }
 ```
 
-Return **full pathnames** (not bare param values). At `vex build`, each path runs `load` once and writes static HTML. Routes with `:params` and no `getStaticPaths` / `entries` are skipped.
+Return **full pathnames** (not bare param values). At `avedon build`, each path runs `load` once and writes static HTML. Routes with `:params` and no `getStaticPaths` / `entries` are skipped.
 
 ### ISR: `revalidate`
 
-By default SSG HTML is **immutable** until the next `vex build`. Set `revalidate` (seconds) on an `ssg` route for **stale-while-revalidate** regeneration in production (`vex start` / Node adapter):
+By default SSG HTML is **immutable** until the next `avedon build`. Set `revalidate` (seconds) on an `ssg` route for **stale-while-revalidate** regeneration in production (`avedon start` / Node adapter):
 
 ```ts
 {
@@ -85,7 +85,7 @@ Regeneration uses the same `renderSsgPage` path as build (load + layouts + shell
 
 **Not in v1:** on-demand `revalidatePath` / tags, CDN `Cache-Control` ISR, or regenerating paths that were never built.
 
-`vex dev` does not run this disk ISR loop (pages are served via the normal request pipeline).
+`avedon dev` does not run this disk ISR loop (pages are served via the normal request pipeline).
 
 ## CSR
 
@@ -104,4 +104,4 @@ Hybrid apps are intentional: one `routes.ts` can mix `ssg`, `ssr`, and `csr`. Ch
 
 ## Build output
 
-`vex build` produces client assets, server bundles, and SSG HTML for routes marked `ssg`. The Node adapter (`@vexjs/adapter-node`) serves the production app via `vex start`.
+`avedon build` produces client assets, server bundles, and SSG HTML for routes marked `ssg`. The Node adapter (`@avedon/adapter-node`) serves the production app via `avedon start`.

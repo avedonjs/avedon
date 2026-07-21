@@ -11,7 +11,10 @@ export class HttpError extends Error {
 }
 
 export function isHttpError(err: unknown): err is HttpError {
-  return err instanceof HttpError
+  if (err instanceof HttpError) return true
+  if (!err || typeof err !== 'object') return false
+  const e = err as HttpError
+  return e.name === 'HttpError' && typeof e.status === 'number'
 }
 
 export function notFound(message = 'Not Found'): never {
@@ -23,7 +26,10 @@ export function error(status: number, message = ''): never {
 }
 
 export function redirect(url: string, status = 302): never {
-  throw Response.redirect(url, status)
+  throw new Response(null, {
+    status,
+    headers: { Location: url },
+  })
 }
 
 export function json(data: unknown, init: ResponseInit = {}): Response {

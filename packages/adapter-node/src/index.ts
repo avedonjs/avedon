@@ -1,4 +1,4 @@
-import type { AdapterBuilder, AdapterInterface } from '@vexjs/shared'
+import type { AdapterBuilder, AdapterInterface } from '@avedon/shared'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -12,7 +12,7 @@ export type { ServeSsgIsrOptions } from './ssg-isr.js'
 export function nodeAdapter(options: { out?: string } = {}): AdapterInterface {
   const out = options.out ?? 'build'
   return {
-    name: '@vexjs/adapter-node',
+    name: '@avedon/adapter-node',
     async adapt(builder) {
       const outDir = path.resolve(out)
       builder.mkdirp(outDir)
@@ -47,8 +47,8 @@ function nodeServerSource(serverEntry: string, outDir: string, manifest: string)
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createHandler } from '@vexjs/server';
-import { tryServeSsgIsr } from '@vexjs/adapter-node';
+import { createHandler } from '@avedon/server';
+import { tryServeSsgIsr } from '@avedon/adapter-node';
 import { Readable } from 'node:stream';
 import * as serverApp from ${JSON.stringify(pathToImport(serverEntry, outDir))};
 
@@ -131,7 +131,7 @@ const server = createServer(async (req, res) => {
 });
 
 export function listen(port = Number(process.env.PORT || 3000)) {
-  return server.listen(port, () => console.log('vexjs listening on http://localhost:' + port));
+  return server.listen(port, () => console.log('avedon listening on http://localhost:' + port));
 }
 
 listen();

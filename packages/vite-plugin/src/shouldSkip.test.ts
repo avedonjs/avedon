@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { shouldSkip } from './shouldSkip.js'
 
 describe('shouldSkip', () => {
-  it('lets Vite handle .vex module requests (not page middleware)', () => {
-    expect(shouldSkip('/src/pages/App.vex')).toBe(true)
-    expect(shouldSkip('/src/pages/Home.vex')).toBe(true)
-    expect(shouldSkip('/src/pages/Layout.vex')).toBe(true)
+  it('lets Vite handle .avedon module requests (not page middleware)', () => {
+    expect(shouldSkip('/src/pages/App.avedon')).toBe(true)
+    expect(shouldSkip('/src/pages/Home.avedon')).toBe(true)
+    expect(shouldSkip('/src/pages/Layout.avedon')).toBe(true)
   })
 
   it('still serves app routes through middleware', () => {

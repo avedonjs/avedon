@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildSsgPages, renderSsgPage } from './ssg.js'
 
 const appHtml =
-  '<!doctype html><html><head></head><body><div id="app">%vex.body%</div></body></html>'
+  '<!doctype html><html><head></head><body><div id="app">%avedon.body%</div></body></html>'
 
 describe('buildSsgPages', () => {
   it('expands getStaticPaths into pages', async () => {
@@ -54,7 +54,7 @@ describe('buildSsgPages', () => {
     )
     expect(pages).toHaveLength(1)
     expect(pages[0].html).toContain(
-      '<div class="shell"><div data-vex-page><article>hi</article></div></div>',
+      '<div class="shell"><div data-avedon-page><article>hi</article></div></div>',
     )
   })
 

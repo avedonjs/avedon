@@ -1,4 +1,4 @@
-import { nodeAdapter } from '@vexjs/adapter-node'
+import { nodeAdapter } from '@avedon/adapter-node'
 
 export default {
   adapter: nodeAdapter({ out: 'build' }),

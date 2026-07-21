@@ -1,5 +1,5 @@
-# vex
+# avedon
 
-CLI for vexjs: `vex create`, `vex dev`, `vex build`, `vex start`.
+CLI for avedon: `avedon create`, `avedon dev`, `avedon build`, `avedon start`.
 
-`vex create` delegates to [`create-vex-app`](../create-vex-app) (same as `pnpm create vex-app`).
+`avedon create` delegates to [`create-avedon-app`](../create-avedon-app) (same as `pnpm create avedon-app`).

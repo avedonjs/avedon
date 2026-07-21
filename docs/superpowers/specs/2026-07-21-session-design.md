@@ -13,7 +13,7 @@ Official **cookie** and **sealed session** helpers so apps do not reinvent cooki
 - Server-side session store (Redis, DB, opaque session ids)
 - General `locals` / request context bag
 - Flash messages, rolling refresh, multi-cookie chunking
-- New package (`@vexjs/session`); lives in `@vexjs/server`
+- New package (`@avedon/session`); lives in `@avedon/server`
 
 ## Architecture
 
@@ -47,7 +47,7 @@ No `locals`. Session is explicit and typed on the event.
 
 ## Types
 
-Extend `LoadContext` in `@vexjs/shared` so server guards/load/actions share one shape. Client `GuardEvent` in `@vexjs/runtime` stays separate (params / url / optional request only) — it does **not** gain `cookies` or `session` (httpOnly sealed cookies are not readable in JS).
+Extend `LoadContext` in `@avedon/shared` so server guards/load/actions share one shape. Client `GuardEvent` in `@avedon/runtime` stays separate (params / url / optional request only) — it does **not** gain `cookies` or `session` (httpOnly sealed cookies are not readable in JS).
 
 ```ts
 cookies: Cookies
@@ -120,7 +120,7 @@ createHandler({
 ```
 
 ```ts
-import { requireSession } from '@vexjs/server'
+import { requireSession } from '@avedon/server'
 
 route('/admin', {
   component: Admin,
@@ -160,7 +160,7 @@ All pipeline return paths that produce a `Response` must run through a single at
 
 - New `docs/session.md`; link from `docs/README.md`, routing, and guide.
 - Example app: replace or supplement fake `?auth=1` guard with a session-based demo when practical.
-- `create-vex-app`: no required scaffold in v1; document `SESSION_SECRET` in README / session docs.
+- `create-avedon-app`: no required scaffold in v1; document `SESSION_SECRET` in README / session docs.
 
 ## Testing
 

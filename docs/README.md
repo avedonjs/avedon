@@ -1,13 +1,13 @@
 # Documentation
 
-Official documentation for **vexjs**, a TypeScript-first full-stack web framework.
+Official documentation for **avedon**, a TypeScript-first full-stack web framework.
 
 ## Guides
 
 | Document | Audience |
 |----------|----------|
 | [Getting started](./guide.md) | New contributors and app authors |
-| [`.vex` components](./vex-components.md) | Writing pages and UI |
+| [`.avedon` components](./avedon-components.md) | Writing pages and UI |
 | [Routing](./routing.md) | Declaring routes, layouts, and guards |
 | [Middleware](./middleware.md) | Logging, CORS, rate-limit (route-agnostic) |
 | [Session & cookies](./session.md) | Sealed session cookie + `requireSession` |
@@ -18,14 +18,14 @@ Official documentation for **vexjs**, a TypeScript-first full-stack web framewor
 
 | Document | Notes |
 |----------|-------|
-| [Design spec](./superpowers/specs/2026-07-20-vexjs-design.md) | Approved architecture and goals |
-| [Implementation plan](./superpowers/plans/2026-07-20-vexjs-implementation.md) | Historical build plan for the skeleton |
+| [Design spec](./superpowers/specs/2026-07-20-avedon-design.md) | Approved architecture and goals |
+| [Implementation plan](./superpowers/plans/2026-07-20-avedon-implementation.md) | Historical build plan for the skeleton |
 | Package READMEs under [`packages/`](../packages/) | Per-package short descriptions |
 
 ## Repository map
 
 ```
-vexjs/
+avedon/
 ├── packages/          # Framework packages
 ├── examples/basic-app # Reference application
 ├── docs/              # This documentation

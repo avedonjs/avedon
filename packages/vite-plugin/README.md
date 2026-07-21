@@ -1,3 +1,3 @@
-# @vexjs/vite-plugin
+# @avedon/vite-plugin
 
-Vite plugin that transforms `.vex` via `@vexjs/compiler`, serves the SSR middleware in `vex dev`, and wires HMR.
+Vite plugin that transforms `.avedon` via `@avedon/compiler`, serves the SSR middleware in `avedon dev`, and wires HMR.

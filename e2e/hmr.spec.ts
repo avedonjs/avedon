@@ -4,15 +4,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../examples/basic-app')
-const postVex = path.join(root, 'src/pages/Post.vex')
+const postAvedon = path.join(root, 'src/pages/Post.avedon')
 
 test('HMR preserves signal state on template edit (no full reload)', async ({ page }) => {
-  const original = fs.readFileSync(postVex, 'utf8')
+  const original = fs.readFileSync(postAvedon, 'utf8')
   test.setTimeout(90_000)
 
   try {
     await page.goto('/posts/1')
-    await expect(page.locator('h1')).toHaveText('Hello vexjs')
+    await expect(page.locator('h1')).toHaveText('Hello avedon')
 
     await page.evaluate(() => {
       ;(window as unknown as { __hmrMarker: number }).__hmrMarker = 42
@@ -34,7 +34,7 @@ test('HMR preserves signal state on template edit (no full reload)', async ({ pa
       '<h1 class="title" data-hmr="1">{data.post.title}</h1>',
     )
     expect(edited).not.toBe(original)
-    fs.writeFileSync(postVex, edited)
+    fs.writeFileSync(postAvedon, edited)
 
     await page.waitForFunction(
       () => document.querySelector('h1[data-hmr="1"]') != null,
@@ -50,12 +50,12 @@ test('HMR preserves signal state on template edit (no full reload)', async ({ pa
     // Signal state preserved across HMR remount
     await expect(likesEl).toContainText(String(afterClicks))
   } finally {
-    fs.writeFileSync(postVex, original)
+    fs.writeFileSync(postAvedon, original)
   }
 })
 
 test('server script edit still triggers full reload', async ({ page }) => {
-  const original = fs.readFileSync(postVex, 'utf8')
+  const original = fs.readFileSync(postAvedon, 'utf8')
   test.setTimeout(90_000)
 
   try {
@@ -69,7 +69,7 @@ test('server script edit still triggers full reload', async ({ page }) => {
       '// params.id is typed as string via LoadEvent<\'/posts/:id\'> /* hmr-server */',
     )
     expect(serverEdited).not.toBe(original)
-    fs.writeFileSync(postVex, serverEdited)
+    fs.writeFileSync(postAvedon, serverEdited)
 
     // Full reload clears window marker
     await page.waitForFunction(
@@ -78,6 +78,6 @@ test('server script edit still triggers full reload', async ({ page }) => {
       { timeout: 15_000 },
     )
   } finally {
-    fs.writeFileSync(postVex, original)
+    fs.writeFileSync(postAvedon, original)
   }
 })

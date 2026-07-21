@@ -23,18 +23,18 @@ SSR modules export:
 
 ## Out-of-order format
 
-1. Placeholder: `<div hidden id="vex-b-{id}"></div>`
-2. Later chunk: JSON payload script `#vex-r-{id}` + `script[data-vex-stream]` that replaces the placeholder
+1. Placeholder: `<div hidden id="avedon-b-{id}"></div>`
+2. Later chunk: JSON payload script `#avedon-r-{id}` + `script[data-avedon-stream]` that replaces the placeholder
 3. IDs monotonic per request controller (`b1`, `b2`, …)
 
-Client navigations use `DOMParser` (scripts do not run) → `settleVexStream(root)` applies pending payloads.
+Client navigations use `DOMParser` (scripts do not run) → `settleAvedonStream(root)` applies pending payloads.
 
 ## Pipeline
 
 1. `load` / guards as today
 2. Shell prefix flushed first
 3. Leaf + layouts via `renderInto` / function `children`
-4. `waitPending()` then shell suffix (`__VEX_DATA__`, client entry)
+4. `waitPending()` then shell suffix (`__AVEDON_DATA__`, client entry)
 
 ## Adapters
 

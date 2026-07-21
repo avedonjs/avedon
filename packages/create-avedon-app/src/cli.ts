@@ -2,7 +2,7 @@ import path from 'node:path'
 import { formatNextSteps, scaffoldApp } from './index.js'
 
 function main() {
-  const name = process.argv[2] ?? 'my-vex-app'
+  const name = process.argv[2] ?? 'my-avedon-app'
   const dest = path.resolve(name)
   try {
     const result = scaffoldApp(dest, path.basename(dest))

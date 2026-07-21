@@ -15,7 +15,7 @@ import type {
   ParamsRecord,
   RenderMode,
   Session,
-} from '@vexjs/shared'
+} from '@avedon/shared'
 
 export type {
   RenderMode,
@@ -36,10 +36,10 @@ export type {
   CookieSerializeOptions,
 }
 
-export interface VexComponentModule<Params extends ParamsRecord = Record<string, string>> {
+export interface AvedonComponentModule<Params extends ParamsRecord = Record<string, string>> {
   render: (props?: Record<string, unknown>) => string
   renderInto?: (
-    ctrl: import('@vexjs/runtime').RenderStreamController,
+    ctrl: import('@avedon/runtime').RenderStreamController,
     props?: Record<string, unknown>,
   ) => Promise<void>
   renderToStream?: (props?: Record<string, unknown>) => ReadableStream<Uint8Array>
@@ -57,12 +57,12 @@ export interface VexComponentModule<Params extends ParamsRecord = Record<string,
   api_PUT?: ApiHandler<Params>
   api_PATCH?: ApiHandler<Params>
   api_DELETE?: ApiHandler<Params>
-  default?: VexComponentModule<Params>
+  default?: AvedonComponentModule<Params>
 }
 
 type ComponentRef<Params extends ParamsRecord> =
-  | VexComponentModule<Params>
-  | (() => Promise<VexComponentModule<Params>>)
+  | AvedonComponentModule<Params>
+  | (() => Promise<AvedonComponentModule<Params>>)
 
 /** Runtime route shape (matcher / pipeline). */
 export interface RouteConfig {
@@ -82,8 +82,8 @@ export interface RouteConfig {
    * Only meaningful with `render: 'ssg'`.
    */
   revalidate?: number
-  error?: VexComponentModule
-  notFound?: VexComponentModule
+  error?: AvedonComponentModule
+  notFound?: AvedonComponentModule
 }
 
 export type Routes = RouteConfig[]
@@ -105,8 +105,8 @@ export interface HandlerOptions {
   routes: Routes
   appHtml: string
   hooks?: { handle?: HandleHook; middleware?: Middleware[] }
-  errorComponent?: VexComponentModule
-  notFoundComponent?: VexComponentModule
+  errorComponent?: AvedonComponentModule
+  notFoundComponent?: AvedonComponentModule
   clientEntry?: string
   getCss?: () => string
   /** CSRF for form `actions` (default: Origin/Referer check). Set `false` to disable. */
@@ -133,8 +133,8 @@ type RouteRest<Params extends ParamsRecord> = {
   getStaticPaths?: () => Promise<string[]> | string[]
   /** ISR interval in seconds for `render: 'ssg'` (see RouteConfig.revalidate). */
   revalidate?: number
-  error?: VexComponentModule
-  notFound?: VexComponentModule
+  error?: AvedonComponentModule
+  notFound?: AvedonComponentModule
   /**
    * Nested routes. Prefer `children: (r) => [r('child', { ... })]` so child
    * guards inherit parent params via ExtractParams merge.

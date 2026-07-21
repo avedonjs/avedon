@@ -1,3 +1,3 @@
-# @vexjs/adapter-cloudflare
+# @avedon/adapter-cloudflare
 
-Stub only. Implements `AdapterInterface` from `@vexjs/shared`; real Workers deploy support is future work.
+Stub only. Implements `AdapterInterface` from `@avedon/shared`; real Workers deploy support is future work.

@@ -1,6 +1,6 @@
 # Getting started
 
-This guide walks through running vexjs from this repository and the core development loop.
+This guide walks through running avedon from this repository and the core development loop.
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ pnpm install
 pnpm build
 ```
 
-This builds all workspace packages (`@vexjs/*` and `vex`).
+This builds all workspace packages (`@avedon/*` and `avedon`).
 
 ## Run the example app
 
@@ -24,7 +24,7 @@ This builds all workspace packages (`@vexjs/*` and `vex`).
 pnpm -F example dev
 ```
 
-The CLI starts Vite on [http://localhost:5173](http://localhost:5173) with the vexjs plugin and SSR middleware.
+The CLI starts Vite on [http://localhost:5173](http://localhost:5173) with the avedon plugin and SSR middleware.
 
 Useful routes in `examples/basic-app`:
 
@@ -37,20 +37,20 @@ Useful routes in `examples/basic-app`:
 
 ## CLI
 
-The `vex` package provides:
+The `avedon` package provides:
 
 | Command | Description |
 |---------|-------------|
-| `vex create [name]` | Scaffold a new app directory (same as `pnpm create vex-app`) |
-| `vex dev` | Development server (Vite + middleware) |
-| `vex build` | Client + server bundles, SSG pages, Node adapter output |
-| `vex start` | Run the production server (`preview` is an alias) |
+| `avedon create [name]` | Scaffold a new app directory (same as `pnpm create avedon-app`) |
+| `avedon dev` | Development server (Vite + middleware) |
+| `avedon build` | Client + server bundles, SSG pages, Node adapter output |
+| `avedon start` | Run the production server (`preview` is an alias) |
 
 You can also scaffold with:
 
 ```bash
-pnpm create vex-app my-app
-# or: npm create vex-app my-app
+pnpm create avedon-app my-app
+# or: npm create avedon-app my-app
 ```
 
 Inside the example package these map to `pnpm -F example dev`, `build:app`, and `start`.
@@ -74,7 +74,7 @@ pnpm test:e2e
 examples/basic-app/
 ├── src/
 │   ├── routes.ts          # defineRoutes([...])
-│   ├── pages/*.vex        # Route components + layouts
+│   ├── pages/*.avedon        # Route components + layouts
 │   ├── guards/            # Route guards
 │   ├── hooks.server.ts    # Middleware + optional handle
 │   ├── client.ts          # Client boot
@@ -85,7 +85,7 @@ examples/basic-app/
 
 ## Next steps
 
-1. Read [`.vex` components](./vex-components.md)
+1. Read [`.avedon` components](./avedon-components.md)
 2. Configure routes in [Routing](./routing.md)
 3. Add cross-cutting middleware in [Middleware](./middleware.md)
 4. Pick render modes in [Rendering](./rendering.md)

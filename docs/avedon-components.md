@@ -1,6 +1,6 @@
-# `.vex` components
+# `.avedon` components
 
-A `.vex` file is the unit of a page or layout: markup, styles, client logic, and optional server logic live together. The compiler splits client and server so server code never ships to the browser.
+A `.avedon` file is the unit of a page or layout: markup, styles, client logic, and optional server logic live together. The compiler splits client and server so server code never ships to the browser.
 
 ## Sections
 
@@ -19,7 +19,7 @@ Order of sections is flexible; keep server script clearly separated from client 
 
 Runs on the server (and during SSG) to provide data for the page:
 
-```vex
+```avedon
 <script server>
   export async function load({ params }) {
     return { title: `Post ${params.id}` }
@@ -33,7 +33,7 @@ Returned fields are available as exports / props on the client script (for examp
 
 Named (or `default`) handlers for form posts. The example app uses `?_action=name`:
 
-```vex
+```avedon
 <script server>
   export const actions = {
     async like({ params }) {
@@ -55,9 +55,9 @@ Form actions are protected by a same-origin **CSRF** check (Origin, or Referer i
 
 HTTP handlers colocated with the route. Common pattern: `api_GET`, `api_POST`, …, often reached via a `.json` suffix or `Accept: application/json`.
 
-```vex
+```avedon
 <script server>
-  import { json, notFound } from '@vexjs/server'
+  import { json, notFound } from '@avedon/server'
 
   export async function api_GET({ params }) {
     const post = lookup(params.id)
@@ -71,13 +71,13 @@ Absolute `api` map keys remain supported for site-root paths when you need them;
 
 ### Helpers
 
-From `@vexjs/server`: `json`, `notFound`, `redirect`, `error`, and related pipeline helpers.
+From `@avedon/server`: `json`, `notFound`, `redirect`, `error`, and related pipeline helpers.
 
 ## Client script
 
-```vex
+```avedon
 <script>
-  import { signal } from '@vexjs/runtime'
+  import { signal } from '@avedon/runtime'
   export let title
   const count = signal(0)
 </script>
@@ -89,7 +89,7 @@ From `@vexjs/server`: `json`, `notFound`, `redirect`, `error`, and related pipel
 
 ## Template
 
-```vex
+```avedon
 <template>
   <h1>{title}</h1>
   <button type="button" on:click={() => count.set(count.get() + 1)}>
@@ -112,4 +112,4 @@ Server script must not appear in the client bundle. The compiler and tests enfor
 
 ## Full example
 
-See [`examples/basic-app/src/pages/Post.vex`](../examples/basic-app/src/pages/Post.vex) for `load`, actions, `api_GET`, and client signals together.
+See [`examples/basic-app/src/pages/Post.avedon`](../examples/basic-app/src/pages/Post.avedon) for `load`, actions, `api_GET`, and client signals together.

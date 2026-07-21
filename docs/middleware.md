@@ -14,7 +14,7 @@ Guards (`guard` / `canActivate` / `canMatch`) stay on the route table and see `p
 ## `hooks.server.ts`
 
 ```ts
-import { cors, logger, rateLimit } from '@vexjs/server'
+import { cors, logger, rateLimit } from '@avedon/server'
 
 export const middleware = [
   logger(),
@@ -34,7 +34,7 @@ You can still export a single `handle` (backward compatible). When both are pres
 Compose custom onion handlers (same shape as `handle`):
 
 ```ts
-import { sequence, type Middleware } from '@vexjs/server'
+import { sequence, type Middleware } from '@avedon/server'
 
 const timing: Middleware = async ({ request, resolve }) => {
   const start = Date.now()

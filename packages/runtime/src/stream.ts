@@ -48,7 +48,7 @@ export function createRenderStream(): RenderStreamController {
     enqueue: EnqueueHtml = enqueueHtml,
   ) {
     const id = `b${++idSeq}`
-    enqueue(`<div hidden id="vex-b-${id}"></div>`)
+    enqueue(`<div hidden id="avedon-b-${id}"></div>`)
 
     const task = Promise.resolve(promise).then(
       async (value) => {
@@ -65,12 +65,12 @@ export function createRenderStream(): RenderStreamController {
             if (h) parts.push(h)
           })
         } else {
-          parts.push('<!-- vex await error -->')
+          parts.push('<!-- avedon await error -->')
         }
         enqueueHtml(oooInjectScript(id, parts.join('')))
       },
     ).catch(() => {
-      enqueueHtml(oooInjectScript(id, '<!-- vex await error -->'))
+      enqueueHtml(oooInjectScript(id, '<!-- avedon await error -->'))
     })
 
     pending.push(task.then(() => undefined))
@@ -148,8 +148,8 @@ export function oooInjectScript(id: string, html: string): string {
   const safe = String(id).replace(/[^a-zA-Z0-9_-]/g, '')
   const json = JSON.stringify(html)
   return (
-    `<script type="application/json" id="vex-r-${safe}">${json.replace(/</g, '\\u003c')}</script>` +
-    `<script data-vex-stream>(function(){var id=${JSON.stringify(safe)};var b=document.getElementById("vex-b-"+id);var j=document.getElementById("vex-r-"+id);if(!b||!j)return;var t=document.createElement("template");t.innerHTML=JSON.parse(j.textContent||'""');b.replaceWith.apply(b,Array.from(t.content.childNodes));j.remove();var s=document.currentScript;if(s)s.remove();})();</script>`
+    `<script type="application/json" id="avedon-r-${safe}">${json.replace(/</g, '\\u003c')}</script>` +
+    `<script data-avedon-stream>(function(){var id=${JSON.stringify(safe)};var b=document.getElementById("avedon-b-"+id);var j=document.getElementById("avedon-r-"+id);if(!b||!j)return;var t=document.createElement("template");t.innerHTML=JSON.parse(j.textContent||'""');b.replaceWith.apply(b,Array.from(t.content.childNodes));j.remove();var s=document.currentScript;if(s)s.remove();})();</script>`
   )
 }
 
@@ -157,11 +157,11 @@ export function oooInjectScript(id: string, html: string): string {
  * Apply OOO payloads without executing scripts (DOMParser / client nav).
  * Idempotent if live scripts already settled the DOM.
  */
-export function settleVexStream(root: ParentNode = document) {
-  const payloads = root.querySelectorAll('script[type="application/json"][id^="vex-r-"]')
+export function settleAvedonStream(root: ParentNode = document) {
+  const payloads = root.querySelectorAll('script[type="application/json"][id^="avedon-r-"]')
   for (const j of payloads) {
-    const id = j.id.slice('vex-r-'.length)
-    const b = root.querySelector(`#vex-b-${cssEscape(id)}`)
+    const id = j.id.slice('avedon-r-'.length)
+    const b = root.querySelector(`#avedon-b-${cssEscape(id)}`)
     if (!b) {
       j.remove()
       continue
@@ -176,7 +176,7 @@ export function settleVexStream(root: ParentNode = document) {
     b.replaceWith(...Array.from(t.content.childNodes))
     j.remove()
   }
-  root.querySelectorAll('script[data-vex-stream]').forEach((s) => s.remove())
+  root.querySelectorAll('script[data-avedon-stream]').forEach((s) => s.remove())
 }
 
 function cssEscape(id: string): string {

@@ -1,5 +1,5 @@
-import { escapeHtml } from '@vexjs/runtime'
-import type { VexComponentModule } from './types.js'
+import { escapeHtml } from '@avedon/runtime'
+import type { AvedonComponentModule } from './types.js'
 
 export function renderShell(
   appHtml: string,
@@ -28,20 +28,20 @@ export function renderShellPrefix(
 ): string {
   const head = [
     options.head ?? '',
-    options.css ? `<style data-vex-css>${options.css}</style>` : '',
+    options.css ? `<style data-avedon-css>${options.css}</style>` : '',
   ]
     .filter(Boolean)
     .join('\n')
 
   let html = appHtml
-  if (!html.includes('%vex.head%')) {
+  if (!html.includes('%avedon.head%')) {
     html = html.replace('</head>', `${head}\n</head>`)
   } else {
-    html = html.replace('%vex.head%', head)
+    html = html.replace('%avedon.head%', head)
   }
 
-  if (html.includes('%vex.body%')) {
-    const idx = html.indexOf('%vex.body%')
+  if (html.includes('%avedon.body%')) {
+    const idx = html.indexOf('%avedon.body%')
     return html.slice(0, idx)
   }
 
@@ -71,22 +71,22 @@ export function renderShellSuffix(options: {
 }
 
 /**
- * Suffix when app.html uses %vex.body% or default #app:
+ * Suffix when app.html uses %avedon.body% or default #app:
  * everything after the body insertion point, with afterApp before </body>.
  */
 export function renderShellSuffixFromTemplate(
   appHtml: string,
   options: { props?: Record<string, unknown>; clientEntry?: string } = {},
 ): string {
-  const payload = `<script type="application/json" id="__VEX_DATA__">${JSON.stringify(options.props ?? {}).replace(/</g, '\\u003c')}</script>`
+  const payload = `<script type="application/json" id="__AVEDON_DATA__">${JSON.stringify(options.props ?? {}).replace(/</g, '\\u003c')}</script>`
   const client =
     options.clientEntry
       ? `<script type="module" src="${escapeHtml(options.clientEntry)}"></script>`
       : ''
   const afterApp = [payload, client].filter(Boolean).join('\n')
 
-  if (appHtml.includes('%vex.body%')) {
-    let tail = appHtml.slice(appHtml.indexOf('%vex.body%') + '%vex.body%'.length)
+  if (appHtml.includes('%avedon.body%')) {
+    let tail = appHtml.slice(appHtml.indexOf('%avedon.body%') + '%avedon.body%'.length)
     if (afterApp) {
       if (tail.includes('</body>')) {
         tail = tail.replace('</body>', `${afterApp}\n</body>`)
@@ -111,8 +111,8 @@ export function renderShellSuffixFromTemplate(
 }
 
 export async function resolveComponent(
-  mod: VexComponentModule | (() => Promise<VexComponentModule>) | null | undefined,
-): Promise<VexComponentModule> {
+  mod: AvedonComponentModule | (() => Promise<AvedonComponentModule>) | null | undefined,
+): Promise<AvedonComponentModule> {
   if (mod == null) {
     throw new Error('Route component is undefined')
   }
@@ -120,5 +120,5 @@ export async function resolveComponent(
   if (resolved == null) {
     throw new Error('Route component resolved to undefined')
   }
-  return (resolved as VexComponentModule).default ?? resolved
+  return (resolved as AvedonComponentModule).default ?? resolved
 }

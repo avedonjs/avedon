@@ -6,7 +6,7 @@ export type Post = {
 }
 
 const posts: Record<string, Post> = {
-  '1': { id: '1', title: 'Hello vexjs', body: 'First post from the fake db.', likes: 3 },
+  '1': { id: '1', title: 'Hello avedon', body: 'First post from the fake db.', likes: 3 },
   '2': { id: '2', title: 'Signals', body: 'Fine-grained reactivity demo.', likes: 7 },
 }
 

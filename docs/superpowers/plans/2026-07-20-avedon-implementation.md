@@ -1,10 +1,10 @@
-# vexjs Implementation Plan
+# avedon Implementation Plan
 
 > **For agentic workers:** Execute task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship a working vexjs monorepo: `.vex` compiler, Angular-style `routes.ts`, load/actions/api, hybrid SSR/SSG/CSR, Vite plugin, Node adapter, CLI, example app, and tests.
+**Goal:** Ship a working avedon monorepo: `.avedon` compiler, Angular-style `routes.ts`, load/actions/api, hybrid SSR/SSG/CSR, Vite plugin, Node adapter, CLI, example app, and tests.
 
-**Architecture:** Vite-centric monorepo. `@vexjs/compiler` splits `.vex` into client/server modules and compiles templates to SSR HTML + client mount functions. `@vexjs/server` matches `routes.ts` and runs the Web Standards request pipeline. `@vexjs/adapter-node` packages production output.
+**Architecture:** Vite-centric monorepo. `@avedon/compiler` splits `.avedon` into client/server modules and compiles templates to SSR HTML + client mount functions. `@avedon/server` matches `routes.ts` and runs the Web Standards request pipeline. `@avedon/adapter-node` packages production output.
 
 **Tech Stack:** TypeScript, Vite 6, Node 20+, Vitest, Playwright, npm workspaces
 
@@ -26,9 +26,9 @@ tsconfig.base.json
 packages/compiler/           # parse + codegen
 packages/runtime/            # stores, mount helpers
 packages/server/             # routes, pipeline, errors
-packages/vite-plugin/        # .vex transform
+packages/vite-plugin/        # .avedon transform
 packages/adapter-node/       # adapt() + node server template
-packages/vex/                # CLI
+packages/cli/                # CLI (avedon)
 examples/basic/              # demo app
 docs/guide.md                # user-facing docs
 ```
@@ -41,12 +41,12 @@ docs/guide.md                # user-facing docs
 - Create: `package.json`, `tsconfig.base.json`, `packages/*/package.json`, `packages/*/tsconfig.json`, `packages/*/src/index.ts`
 
 - [ ] **Step 1:** Create root workspace `package.json` with workspaces `packages/*`, `examples/*`, scripts `build`, `test`
-- [ ] **Step 2:** Scaffold empty packages: `compiler`, `runtime`, `server`, `vite-plugin`, `adapter-node`, `vex`
+- [ ] **Step 2:** Scaffold empty packages: `compiler`, `runtime`, `server`, `vite-plugin`, `adapter-node`, `avedon` (CLI)
 - [ ] **Step 3:** `npm install` at root; verify workspace links
 
 ---
 
-### Task 2: `@vexjs/runtime`
+### Task 2: `@avedon/runtime`
 
 **Files:**
 - Create: `packages/runtime/src/index.ts`, `packages/runtime/src/store.ts`, `packages/runtime/src/component.ts`
@@ -60,7 +60,7 @@ docs/guide.md                # user-facing docs
 
 ---
 
-### Task 3: `@vexjs/compiler`
+### Task 3: `@avedon/compiler`
 
 **Files:**
 - Create: `packages/compiler/src/parse.ts`, `compile.ts`, `codegen.ts`, `index.ts`
@@ -76,7 +76,7 @@ docs/guide.md                # user-facing docs
 
 ---
 
-### Task 4: `@vexjs/server`
+### Task 4: `@avedon/server`
 
 **Files:**
 - Create: `packages/server/src/types.ts`, `match.ts`, `pipeline.ts`, `errors.ts`, `ssr.ts`, `index.ts`
@@ -91,14 +91,14 @@ docs/guide.md                # user-facing docs
 
 ---
 
-### Task 5: `@vexjs/vite-plugin` + `@vexjs/adapter-node` + CLI
+### Task 5: `@avedon/vite-plugin` + `@avedon/adapter-node` + CLI
 
 **Files:**
 - Create: `packages/vite-plugin/src/index.ts`
 - Create: `packages/adapter-node/src/index.ts`, `files/server.js` template
-- Create: `packages/vex/src/cli.ts`, `commands/*`
+- Create: `packages/cli/src/cli.ts`, `commands/*`
 
-- [ ] **Step 1:** Vite plugin: transform `.vex` → client; virtual `?server` for server module
+- [ ] **Step 1:** Vite plugin: transform `.avedon` → client; virtual `?server` for server module
 - [ ] **Step 2:** Dev middleware: SSR via `createHandler`
 - [ ] **Step 3:** `adapt(builder)` writes `build/server.js` + copies client assets
 - [ ] **Step 4:** CLI: `dev`, `build`, `preview`, `create`
@@ -121,7 +121,7 @@ docs/guide.md                # user-facing docs
 
 | Spec item | Task |
 |-----------|------|
-| `.vex` format | 3 |
+| `.avedon` format | 3 |
 | routes.ts hybrid | 4, 6 |
 | load/actions/api | 3, 4 |
 | Vite | 5 |

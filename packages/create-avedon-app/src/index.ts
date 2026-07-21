@@ -39,7 +39,7 @@ function copyDir(src: string, dest: string, name: string) {
   }
 }
 
-/** Scaffold a new vexjs app into `dest` (absolute or relative). */
+/** Scaffold a new avedon app into `dest` (absolute or relative). */
 export function scaffoldApp(destInput: string, name = path.basename(destInput)): ScaffoldResult {
   const dest = path.resolve(destInput)
   if (fs.existsSync(dest)) {
@@ -65,12 +65,12 @@ export function formatNextSteps(result: ScaffoldResult): string {
           : 'npm install'
   const run =
     packageManager === 'pnpm'
-      ? 'pnpm vex dev'
+      ? 'pnpm avedon dev'
       : packageManager === 'yarn'
-        ? 'yarn vex dev'
+        ? 'yarn avedon dev'
         : packageManager === 'bun'
-          ? 'bunx vex dev'
-          : 'npx vex dev'
+          ? 'bunx avedon dev'
+          : 'npx avedon dev'
   return `Created ${name}
 
   cd ${name}

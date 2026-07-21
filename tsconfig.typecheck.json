@@ -5,10 +5,10 @@
     "rootDir": ".",
     "skipLibCheck": true,
     "paths": {
-      "@vexjs/shared": ["./packages/shared/src/index.ts"],
-      "@vexjs/server": ["./packages/server/src/index.ts"],
-      "@vexjs/runtime": ["./packages/runtime/src/index.ts"],
-      "@vexjs/compiler": ["./packages/compiler/src/index.ts"]
+      "@avedon/shared": ["./packages/shared/src/index.ts"],
+      "@avedon/server": ["./packages/server/src/index.ts"],
+      "@avedon/runtime": ["./packages/runtime/src/index.ts"],
+      "@avedon/compiler": ["./packages/compiler/src/index.ts"]
     }
   },
   "include": [

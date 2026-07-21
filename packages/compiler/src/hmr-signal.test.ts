@@ -6,13 +6,13 @@ describe('HMR signal key injection', () => {
     const { code } = compile(
       `
 <script>
-  import { signal } from '@vexjs/runtime'
+  import { signal } from '@avedon/runtime'
   export let data
   const likes = signal(data.post.likes)
 </script>
 <template><p>{likes}</p></template>
 `,
-      { filename: 'Sig.vex', hmr: true },
+      { filename: 'Sig.avedon', hmr: true },
     )
     expect(code).toContain('signal(data.post.likes, "likes")')
     expect(code).toContain('getHmrState')
@@ -23,12 +23,12 @@ describe('HMR signal key injection', () => {
     const { code } = compile(
       `
 <script>
-  import { signal } from '@vexjs/runtime'
+  import { signal } from '@avedon/runtime'
   const likes = signal(0)
 </script>
 <template><p>{likes}</p></template>
 `,
-      { filename: 'Sig.vex', hmr: false },
+      { filename: 'Sig.avedon', hmr: false },
     )
     expect(code).not.toContain('getHmrState')
     expect(code).not.toContain('__hmrBeginSignalBag')

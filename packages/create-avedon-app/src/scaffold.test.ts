@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe('scaffoldApp', () => {
   it('writes aligned template files', () => {
-    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'vex-scaffold-'))
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
     dirs.push(dest)
     // scaffold into a child so parent temp dir can exist
     const app = path.join(dest, 'demo-app')
@@ -22,8 +22,8 @@ describe('scaffoldApp', () => {
 
     expect(fs.existsSync(path.join(app, 'package.json'))).toBe(true)
     expect(fs.existsSync(path.join(app, 'src/server-entry.ts'))).toBe(true)
-    expect(fs.existsSync(path.join(app, 'src/error.vex'))).toBe(true)
-    expect(fs.existsSync(path.join(app, 'src/not-found.vex'))).toBe(true)
+    expect(fs.existsSync(path.join(app, 'src/error.avedon'))).toBe(true)
+    expect(fs.existsSync(path.join(app, 'src/not-found.avedon'))).toBe(true)
     expect(fs.existsSync(path.join(app, 'tsconfig.json'))).toBe(true)
 
     const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
@@ -35,7 +35,7 @@ describe('scaffoldApp', () => {
   })
 
   it('refuses existing directories', () => {
-    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'vex-scaffold-'))
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
     dirs.push(dest)
     expect(() => scaffoldApp(dest, 'x')).toThrow(/Directory exists/)
   })

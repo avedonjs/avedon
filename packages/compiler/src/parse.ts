@@ -1,4 +1,4 @@
-export interface ParsedVex {
+export interface ParsedAvedon {
   clientScript: string
   serverScript: string
   style: string
@@ -13,7 +13,7 @@ const SCRIPT_RE =
 const STYLE_RE = /<style(\s[^>]*)?>([\s\S]*?)<\/style>/gi
 const TEMPLATE_RE = /<template(\s[^>]*)?>([\s\S]*?)<\/template>/i
 
-export function parse(source: string): ParsedVex {
+export function parse(source: string): ParsedAvedon {
   let clientScript = ''
   let serverScript = ''
   let scriptLang = 'ts'
@@ -64,13 +64,13 @@ export function parse(source: string): ParsedVex {
   }
 }
 
-export type VexBlockKind = 'server' | 'client' | 'style' | 'template'
+export type AvedonBlockKind = 'server' | 'client' | 'style' | 'template'
 
-/** Which `.vex` blocks differ between two source versions. */
-export function changedBlocks(prev: string, next: string): Set<VexBlockKind> {
+/** Which `.avedon` blocks differ between two source versions. */
+export function changedBlocks(prev: string, next: string): Set<AvedonBlockKind> {
   const a = parse(prev)
   const b = parse(next)
-  const out = new Set<VexBlockKind>()
+  const out = new Set<AvedonBlockKind>()
   if (a.serverScript !== b.serverScript) out.add('server')
   if (a.clientScript !== b.clientScript) out.add('client')
   if (a.style !== b.style) out.add('style')
@@ -85,7 +85,7 @@ export function hashStyle(css: string, filename: string): string {
     h ^= input.charCodeAt(i)
     h = Math.imul(h, 16777619)
   }
-  return 'vex-' + (h >>> 0).toString(36)
+  return 'avedon-' + (h >>> 0).toString(36)
 }
 
 export function scopeCss(css: string, hash: string): string {

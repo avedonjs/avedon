@@ -1,5 +1,5 @@
 {
-  "name": "@vexjs/server",
+  "name": "@avedon/server",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -21,8 +21,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@vexjs/runtime": "workspace:*",
-    "@vexjs/shared": "workspace:*"
+    "@avedon/runtime": "workspace:*",
+    "@avedon/shared": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

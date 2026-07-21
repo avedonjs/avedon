@@ -1,9 +1,9 @@
 {
-  "name": "vex",
+  "name": "avedon",
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "vex": "./dist/cli.js"
+    "avedon": "./dist/cli.js"
   },
   "main": "./dist/cli.js",
   "files": ["dist"],
@@ -12,11 +12,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@vexjs/adapter-node": "workspace:*",
-    "@vexjs/runtime": "workspace:*",
-    "@vexjs/server": "workspace:*",
-    "@vexjs/vite-plugin": "workspace:*",
-    "create-vex-app": "workspace:*",
+    "@avedon/adapter-node": "workspace:*",
+    "@avedon/runtime": "workspace:*",
+    "@avedon/server": "workspace:*",
+    "@avedon/vite-plugin": "workspace:*",
+    "create-avedon-app": "workspace:*",
     "vite": "^6.2.2"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-/** Shared types for vexjs packages. */
+/** Shared types for avedon packages. */
 
 export type RenderMode = 'ssr' | 'ssg' | 'csr'
 
@@ -120,7 +120,7 @@ export interface AdapterBuilder {
   mkdirp(dir: string): void
 }
 
-export interface ParsedVexBlocks {
+export interface ParsedAvedonBlocks {
   clientScript: string
   serverScript: string
   style: string

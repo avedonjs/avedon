@@ -1,5 +1,5 @@
 {
-  "name": "@vexjs/shared",
+  "name": "@avedon/shared",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.js",

@@ -3,10 +3,10 @@
 </script>
 
 <script server>
-  import { redirect } from '@vexjs/server'
+  import { redirect } from '@avedon/server'
 
   export async function load() {
-    return { title: 'vexjs' }
+    return { title: 'avedon' }
   }
 
   export const actions = {

@@ -1,4 +1,4 @@
-import type { ExtractParams, LoadEvent, MergeParams } from '@vexjs/shared'
+import type { ExtractParams, LoadEvent, MergeParams } from '@avedon/shared'
 import { defineRoutes, route } from './types.js'
 
 type Expect<T extends true> = T

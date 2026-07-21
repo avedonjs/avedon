@@ -4,7 +4,7 @@ import {
   matchRoute,
   renderSsgPage,
   type Routes,
-} from '@vexjs/server'
+} from '@avedon/server'
 import { createReadStream, existsSync, mkdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'

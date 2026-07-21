@@ -1,11 +1,11 @@
 node_modules/
 dist/
 build/
-.vex/
+.avedon/
 .turbo/
 *.log
 .DS_Store
 test-results/
 playwright-report/
 playwright/.cache/
-*.vex.d.ts
+*.avedon.d.ts
