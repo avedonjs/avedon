@@ -45,6 +45,9 @@ try {
   const post = await (await fetch('http://localhost:5173/posts/1')).text()
   if (!post.includes('Hello vexjs')) throw new Error('Post SSR missing title')
 
+  const doc = await (await fetch('http://localhost:5173/docs/intro')).text()
+  if (!doc.includes('Welcome to the docs')) throw new Error('Docs SSG path missing content')
+
   const api = await (await fetch('http://localhost:5173/posts/1.json')).json()
   if (!api.post || api.post.id !== '1') throw new Error('api_GET .json mismatch: ' + JSON.stringify(api))
 
@@ -60,7 +63,10 @@ try {
   const allowedHtml = await allowed.text()
   if (!allowedHtml.includes('data-vex-csr')) throw new Error('CSR shell missing on admin')
 
-  const like = await fetch('http://localhost:5173/posts/1?_action=like', { method: 'POST' })
+  const like = await fetch('http://localhost:5173/posts/1?_action=like', {
+    method: 'POST',
+    headers: { origin: 'http://localhost:5173' },
+  })
   const likeHtml = await like.text()
   if (!likeHtml.includes('Hello vexjs')) throw new Error('like action failed')
 

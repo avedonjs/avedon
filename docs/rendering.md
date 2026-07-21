@@ -12,14 +12,28 @@ Default when unspecified: **`ssr`**.
 
 ## SSR
 
-Server-side rendering runs `load` (and related pipeline steps) per request, then sends HTML that the client hydrates.
+Server-side rendering runs `load` (and related pipeline steps) per request, then **streams** HTML that the client hydrates.
+
+### Streaming (out-of-order)
+
+SSR responses use a `ReadableStream` body:
+
+1. Document shell (head + opening `#app`) flushes as soon as `load` finishes — improves TTFB on large pages
+2. Sync template HTML streams next
+3. `{#await}` blocks emit a placeholder immediately, then a late injection payload when the promise settles
+4. `__VEX_DATA__` and the client entry are sent only after all await boundaries settle (hydrate sees a complete DOM)
+
+Compiled SSR modules export `renderToStream` / `renderInto` (streaming) and sync `render` (back-compat; awaits stay empty in the sync path).
+
+Node (`vex start`) and `vex dev` pipe the stream without buffering the full body first.
 
 Use for:
 
 - Data that depends on the request (params, cookies, auth)
 - Pages that must be fresh on every visit
+- Large pages or slow `{#await}` regions where early bytes matter
 
-Example: `/posts/:id` in the basic app.
+Example: `/posts/:id` in the basic app; `/stream` demonstrates a delayed `{#await}`.
 
 ## SSG
 
@@ -31,6 +45,47 @@ Use for:
 - Fast first paint for stable content
 
 Example: `/` home page in the basic app.
+
+### Dynamic paths: `getStaticPaths`
+
+For parameterized SSG routes (`/docs/:slug`), export a path list on the route config. Prefer **`getStaticPaths`**; `entries` is an alias.
+
+```ts
+{
+  path: '/docs/:slug',
+  component: Doc,
+  render: 'ssg',
+  getStaticPaths: () => ['/docs/intro', '/docs/api'],
+}
+```
+
+Return **full pathnames** (not bare param values). At `vex build`, each path runs `load` once and writes static HTML. Routes with `:params` and no `getStaticPaths` / `entries` are skipped.
+
+### ISR: `revalidate`
+
+By default SSG HTML is **immutable** until the next `vex build`. Set `revalidate` (seconds) on an `ssg` route for **stale-while-revalidate** regeneration in production (`vex start` / Node adapter):
+
+```ts
+{
+  path: '/docs/:slug',
+  component: Doc,
+  render: 'ssg',
+  revalidate: 60,
+  getStaticPaths: () => ['/docs/intro', '/docs/api'],
+}
+```
+
+| `revalidate` | Behavior |
+|--------------|----------|
+| omitted | Forever static (current default) |
+| `N > 0` | After N seconds, the next GET still returns the cached HTML immediately and regenerates in the background |
+| `0` | Every request is treated as stale (regen deduped per path) |
+
+Regeneration uses the same `renderSsgPage` path as build (load + layouts + shell). On failure, the previous file is kept and the error is logged.
+
+**Not in v1:** on-demand `revalidatePath` / tags, CDN `Cache-Control` ISR, or regenerating paths that were never built.
+
+`vex dev` does not run this disk ISR loop (pages are served via the normal request pipeline).
 
 ## CSR
 

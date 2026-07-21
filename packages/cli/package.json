@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@vexjs/adapter-node": "workspace:*",
+    "@vexjs/runtime": "workspace:*",
     "@vexjs/server": "workspace:*",
     "@vexjs/vite-plugin": "workspace:*",
+    "create-vex-app": "workspace:*",
     "vite": "^6.2.2"
   },
   "devDependencies": {

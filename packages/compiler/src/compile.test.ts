@@ -64,7 +64,24 @@ describe('compile', () => {
     expect(code).toContain('export async function load')
     expect(code).toContain('GET /api/x')
     expect(code).toContain('export function render')
+    expect(code).toContain('export function renderToStream')
+    expect(code).toContain('export async function renderInto')
     expect(code).not.toContain('export function mount')
+  }, 15_000)
+
+  it('ssr stream emits OOO await boundaries', () => {
+    const { code } = compileSsr(
+      `
+<script lang="ts">
+  const p = Promise.resolve('x')
+</script>
+{#await p}{:then v}<span>{v}</span>{/await}
+`,
+      { filename: 'Await.vex' },
+    )
+    expect(code).toContain('__awaitBoundary')
+    expect(code).toContain('Promise.resolve(p)')
+    expect(code).toContain('createRenderStream')
   })
 
   it('compiles if and each', () => {
@@ -89,6 +106,7 @@ describe('compile', () => {
       { filename: 'Layout.vex' },
     )
     expect(code).toContain('__props.children')
+    expect(code).toContain('__pipeChildren')
   })
 
   it('parses <template> and scoped style', () => {

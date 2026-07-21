@@ -1,9 +1,13 @@
 import { compileMarkup } from './codegen.js'
+import { inferLoadDataType } from './load-types.js'
 import { hashStyle, parse, scopeCss } from './parse.js'
+import ts from 'typescript'
 
 export interface CompileOptions {
   filename?: string
   generate?: 'client' | 'ssr'
+  /** Emit HMR signal bags / getHmrState (dev only; default false). */
+  hmr?: boolean
 }
 
 export interface CompileResult {
@@ -19,14 +23,19 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
   const generate = options.generate ?? 'client'
   if (generate === 'ssr') return compileSsr(source, { filename })
 
+  const hmr = options.hmr === true
   const parsed = parse(source)
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const cssHash = hashStyle(parsed.style, filename)
   const css = parsed.scoped ? scopeCss(parsed.style, cssHash) : parsed.style
   const { ssrExpr, clientBuild } = compileMarkup(parsed.markup || '<!-- empty -->', cssHash)
 
+  const hmrImport = hmr
+    ? `, __hmrBeginSignalBag, __hmrEndSignalBag, __hmrSnapshotSignals`
+    : ''
+
   // Client codegen never interpolates serverScript — physical exclusion (not tree-shake).
-  const code = `import { escapeHtml as __escape } from '@vexjs/runtime';
+  const code = `import { escapeHtml as __escape${hmrImport} } from '@vexjs/runtime';
 ${clientImports}
 
 export const css = ${JSON.stringify(css)};
@@ -47,7 +56,7 @@ export function mount(target, __props = {}) {
       for (const fn of __effects) fn();
     });
   }
-${clientMountBody(clientBody, clientBuild)}
+${hmr ? '  const __signalBag = __hmrBeginSignalBag();\n' : ''}${clientMountBody(clientBody, clientBuild, hmr)}${hmr ? '\n  __hmrEndSignalBag();' : ''}
   for (const fn of __effects) fn();
   return {
     destroy() { target.textContent = ''; },
@@ -55,7 +64,7 @@ ${clientMountBody(clientBody, clientBuild)}
       Object.assign(__props, next);
 ${assignProps(clientBody)}
       __invalidate();
-    }
+    },${hmr ? `\n    getHmrState() {\n      return { data: __props.data, signals: __hmrSnapshotSignals(__signalBag) };\n    },` : ''}
   };
 }
 
@@ -72,13 +81,13 @@ export function hydrate(target, __props = {}) {
   target.replaceChildren(frag);
   return {
     destroy() { target.textContent = ''; },
-    update(next = {}) { inst.update(next); },
+    update(next = {}) { inst.update(next); },${hmr ? `\n    getHmrState: inst.getHmrState,` : ''}
   };
 }
 
 export default { render, mount, hydrate, css, cssHash };
 `
-  return { code, css, cssHash, dts: generateDts(filename, clientBody), map: null }
+  return { code, css, cssHash, dts: generateDts(filename, clientBody, parsed.serverScript), map: null }
 }
 
 export function compileSsr(source: string, options: { filename?: string } = {}): CompileResult {
@@ -87,7 +96,7 @@ export function compileSsr(source: string, options: { filename?: string } = {}):
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const cssHash = hashStyle(parsed.style, filename)
   const css = parsed.scoped ? scopeCss(parsed.style, cssHash) : parsed.style
-  const { ssrExpr } = compileMarkup(parsed.markup || '<!-- empty -->', cssHash)
+  const { ssrExpr, ssrStream } = compileMarkup(parsed.markup || '<!-- empty -->', cssHash)
 
   const hasLoad = /\bexport\s+(?:async\s+)?function\s+load\b|\bexport\s+(?:const|let|var)\s+load\b/.test(
     parsed.serverScript,
@@ -98,7 +107,7 @@ export function compileSsr(source: string, options: { filename?: string } = {}):
     (m) => m[1],
   )
   const hasApiFns = apiMethods.length > 0
-  const defaultParts = ['render', 'css', 'cssHash']
+  const defaultParts = ['render', 'renderInto', 'renderToStream', 'css', 'cssHash']
   if (hasLoad) defaultParts.push('load')
   if (hasActions) defaultParts.push('actions')
   if (hasApiMap || hasApiFns) defaultParts.push('api')
@@ -121,13 +130,27 @@ export function compileSsr(source: string, options: { filename?: string } = {}):
             .join('\n')}\n})();\n`
         : ''
 
-  const code = `import { escapeHtml as __escape } from '@vexjs/runtime';
+  const code = `import { escapeHtml as __escape, createRenderStream } from '@vexjs/runtime';
 ${clientImports}
 
-${parsed.serverScript}
+${stripTypeScript(parsed.serverScript)}
 ${apiBridge}
 export function render(__props = {}) {
 ${ssrRenderBody(clientBody, ssrExpr)}
+}
+
+export async function renderInto(__ctrl, __props = {}) {
+${ssrStreamBody(clientBody, ssrStream)}
+}
+
+export function renderToStream(__props = {}) {
+  const __ctrl = createRenderStream();
+  Promise.resolve()
+    .then(() => renderInto(__ctrl, __props))
+    .then(() => __ctrl.waitPending())
+    .then(() => __ctrl.close())
+    .catch((e) => __ctrl.error(e));
+  return __ctrl.stream;
 }
 
 export const css = ${JSON.stringify(css)};
@@ -135,36 +158,111 @@ export const cssHash = ${JSON.stringify(cssHash)};
 
 export default { ${[...new Set(defaultParts)].join(', ')} };
 `
-  return { code, css, cssHash, dts: generateDts(filename, clientBody), map: null }
+  return { code, css, cssHash, dts: generateDts(filename, clientBody, parsed.serverScript), map: null }
 }
 
-function generateDts(filename: string, clientScript: string): string {
+function generateDts(filename: string, clientScript: string, serverScript = ''): string {
   const props = extractExportLets(clientScript)
-  const propFields = props.map((p) => `  ${p}?: unknown`).join('\n')
+  const dataType = inferLoadDataType(serverScript)
+  const propLines: string[] = []
+  for (const p of props) {
+    if (p === 'data') {
+      if (dataType !== undefined) propLines.push(`  data?: ${dataType}`)
+      continue
+    }
+    propLines.push(`  ${p}?: unknown`)
+  }
+  if (dataType !== undefined && !props.includes('data')) {
+    propLines.unshift(`  data?: ${dataType}`)
+  }
   const mod = filename.replace(/\\/g, '/')
+  const loadSig =
+    dataType !== undefined
+      ? `load?: (event: unknown) => Promise<{ data: ${dataType} } | void> | { data: ${dataType} } | void`
+      : undefined
+  const auxTypes = dataType ? collectAuxTypeAliases(serverScript, dataType) : ''
   return `declare module '*${mod}' {
   export function render(props?: Record<string, unknown>): string
+  export function renderInto(ctrl: import('@vexjs/runtime').RenderStreamController, props?: Record<string, unknown>): Promise<void>
+  export function renderToStream(props?: Record<string, unknown>): ReadableStream<Uint8Array>
   export function mount(target: Element, props?: Record<string, unknown>): { destroy(): void; update(props: Record<string, unknown>): void }
   export function hydrate(target: Element, props?: Record<string, unknown>): { destroy(): void; update(props: Record<string, unknown>): void }
   export const css: string
   export const cssHash: string
   const __default: {
     render: typeof render
+    renderInto?: typeof renderInto
+    renderToStream?: typeof renderToStream
     mount?: typeof mount
     hydrate?: typeof hydrate
     css: string
     cssHash: string
-    load?: (event: unknown) => unknown
+    ${loadSig ? loadSig : 'load?: (event: unknown) => unknown'}
     actions?: Record<string, unknown>
     api?: Record<string, unknown>
   }
   export default __default
 }
 
-export interface Props {
-${propFields || '  [key: string]: unknown'}
+${auxTypes}export interface Props {
+${propLines.length ? propLines.join('\n') : '  [key: string]: unknown'}
 }
 `
+}
+
+/** Copy `type` / `export type` aliases referenced by the data type into the .d.ts. */
+function collectAuxTypeAliases(serverScript: string, dataType: string): string {
+  const names = new Set(
+    [...dataType.matchAll(/\b([A-Z][A-Za-z0-9_]*)\b/g)].map((m) => m[1]).filter((n) => n !== 'Promise'),
+  )
+  const out: string[] = []
+  const seen = new Set<string>()
+
+  function captureAlias(name: string): string | undefined {
+    const re = new RegExp(`(?:export\\s+)?type\\s+${name}\\s*=\\s*`)
+    const m = re.exec(serverScript)
+    if (!m) return undefined
+    const start = m.index + m[0].length
+    const slice = serverScript.slice(start)
+    // Object type `{ ... }` or simple expr until `;` / newline before next export
+    if (slice.trimStart().startsWith('{')) {
+      const abs = start + slice.indexOf('{')
+      let depth = 0
+      let i = abs
+      for (; i < serverScript.length; i++) {
+        if (serverScript[i] === '{') depth++
+        else if (serverScript[i] === '}') {
+          depth--
+          if (depth === 0) {
+            i++
+            break
+          }
+        }
+      }
+      return serverScript.slice(abs, i).trim()
+    }
+    const end = slice.search(/[;\n]/)
+    return (end < 0 ? slice : slice.slice(0, end)).trim().replace(/;+\s*$/, '')
+  }
+
+  for (const name of [...names]) {
+    if (seen.has(name)) continue
+    const body = captureAlias(name)
+    if (!body) continue
+    seen.add(name)
+    out.push(`export type ${name} = ${body}`)
+    for (const nested of body.matchAll(/\b([A-Z][A-Za-z0-9_]*)\b/g)) {
+      names.add(nested[1])
+    }
+  }
+  for (const name of names) {
+    if (seen.has(name)) continue
+    const body = captureAlias(name)
+    if (!body) continue
+    seen.add(name)
+    out.push(`export type ${name} = ${body}`)
+  }
+  return out.length ? out.join('\n') + '\n\n' : ''
 }
 
 function ssrRenderBody(clientScript: string, ssrExpr: string): string {
@@ -179,7 +277,7 @@ function ssrRenderBody(clientScript: string, ssrExpr: string): string {
   return lines.join('\n')
 }
 
-function clientMountBody(clientScript: string, clientBuild: string): string {
+function ssrStreamBody(clientScript: string, ssrStream: string): string {
   const lines: string[] = []
   const exported = extractExportLets(clientScript)
   for (const p of exported) {
@@ -187,8 +285,65 @@ function clientMountBody(clientScript: string, clientBuild: string): string {
   }
   const body = stripExportLets(clientScript, exported)
   if (body.trim()) lines.push(indent(body, 2))
+  lines.push(`  const __enqueue = (html) => __ctrl.enqueueHtml(html);`)
+  lines.push(
+    `  const __awaitBoundary = (p, t, c) => __ctrl.enqueueBoundary(p, t, c, __enqueue);`,
+  )
+  lines.push(`  const __pipeChildren = (ch) => __ctrl.pipeChildren(ch);`)
+  if (ssrStream.trim()) lines.push(indent(ssrStream, 2))
+  return lines.join('\n')
+}
+
+function clientMountBody(clientScript: string, clientBuild: string, hmr = false): string {
+  const lines: string[] = []
+  const exported = extractExportLets(clientScript)
+  for (const p of exported) {
+    lines.push(`  let ${p} = __props.${p};`)
+  }
+  const body = stripExportLets(clientScript, exported)
+  const prepared = hmr ? injectSignalHmrKeys(body) : body
+  if (prepared.trim()) lines.push(indent(prepared, 2))
   lines.push(indent(clientBuild, 2))
   return lines.join('\n')
+}
+
+/**
+ * `const likes = signal(init)` → `const likes = signal(init, "likes")` so HMR can restore by name.
+ * Only rewrites when the second argument is not already present.
+ */
+function injectSignalHmrKeys(script: string): string {
+  return script.replace(
+    /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*signal\s*\(([\s\S]*?)\)\s*;?/g,
+    (full, kind, name, args) => {
+      if (hasTopLevelComma(args)) return full
+      return `${kind} ${name} = signal(${args.trim()}, ${JSON.stringify(name)});`
+    },
+  )
+}
+
+function hasTopLevelComma(args: string): boolean {
+  let depth = 0
+  for (let i = 0; i < args.length; i++) {
+    const c = args[i]
+    if (c === '(' || c === '{' || c === '[') depth++
+    else if (c === ')' || c === '}' || c === ']') depth--
+    else if (c === ',' && depth === 0) return true
+  }
+  return false
+}
+
+/** Strip TypeScript syntax from server scripts embedded in SSR JS output. */
+function stripTypeScript(source: string): string {
+  if (!source.trim()) return source
+  return ts.transpileModule(source, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ESNext,
+      module: ts.ModuleKind.ESNext,
+      strict: false,
+      removeComments: false,
+    },
+    reportDiagnostics: false,
+  }).outputText
 }
 
 function assignProps(clientScript: string): string {

@@ -50,7 +50,8 @@ pnpm -F example start
 | [Documentation index](./docs/README.md) | Map of all docs |
 | [Getting started](./docs/guide.md) | Setup, CLI, and first app flow |
 | [`.vex` components](./docs/vex-components.md) | File format, scripts, styles, template |
-| [Routing](./docs/routing.md) | `defineRoutes`, layouts, guards, errors |
+| [Routing](./docs/routing.md) | `defineRoutes`, `route()`, layouts, guards |
+| [Middleware](./docs/middleware.md) | `sequence`, CORS, logging, rate-limit |
 | [Rendering](./docs/rendering.md) | `ssr` / `ssg` / `csr` and when to use each |
 | [Packages](./docs/packages.md) | Monorepo package roles |
 | [Design spec](./docs/superpowers/specs/2026-07-20-vexjs-design.md) | Architecture decisions |
@@ -62,12 +63,13 @@ pnpm -F example start
 | `@vexjs/shared` | Shared types and adapter interface |
 | `@vexjs/compiler` | `.vex` parse and codegen |
 | `@vexjs/runtime` | Signals, hydration, client navigation, forms |
-| `@vexjs/server` | Matching, guards, load/actions/api, SSR orchestration |
+| `@vexjs/server` | Matching, guards, middleware, load/actions/api, SSR orchestration |
 | `@vexjs/vite-plugin` | Vite transform, HMR, and middleware |
 | `@vexjs/adapter-node` | Node production server |
 | `@vexjs/adapter-bun` | Bun adapter interface (stub) |
 | `@vexjs/adapter-cloudflare` | Cloudflare adapter interface (stub) |
 | `vex` | CLI (`create`, `dev`, `build`, `start`) |
+| `create-vex-app` | App scaffold (`pnpm create vex-app`) |
 
 ## Example
 
@@ -98,18 +100,24 @@ Minimal `.vex` page with server `load` and client reactivity:
 </template>
 ```
 
-Routes are declared explicitly:
+Routes are declared explicitly. Prefer `route()` when you want typed `params` in guards; plain objects still work:
 
 ```ts
-import { defineRoutes } from '@vexjs/server'
+import { defineRoutes, route } from '@vexjs/server'
 import Home from './pages/Home.vex'
+import Post from './pages/Post.vex'
 
 export default defineRoutes([
   { path: '/', component: Home, render: 'ssg' },
+  route('/posts/:id', {
+    component: Post,
+    render: 'ssr',
+    guard: (e) => e.params.id.length > 0, // params.id: string
+  }),
 ])
 ```
 
-See [`examples/basic-app`](./examples/basic-app) for a fuller walkthrough.
+See [`docs/routing.md`](./docs/routing.md) and [`examples/basic-app`](./examples/basic-app).
 
 ## Roadmap
 

@@ -1,0 +1,38 @@
+<script>
+  export let data
+  const late = new Promise((resolve) => {
+    setTimeout(() => resolve({ msg: 'Late chunk arrived' }), 80)
+  })
+</script>
+
+<script lang="ts" server>
+  export async function load() {
+    return {
+      data: {
+        headline: 'Streaming SSR',
+      },
+    }
+  }
+</script>
+
+<style>
+  .stream-demo {
+    max-width: 40rem;
+  }
+  .stream-demo h1 {
+    margin-bottom: 0.5rem;
+  }
+</style>
+
+<template>
+  <article class="stream-demo">
+    <h1>{data.headline}</h1>
+    <p>Shell and this paragraph flush before the slow block resolves.</p>
+    {#await late}
+      {:then value}
+        <p data-stream-late>{value.msg}</p>
+      {:catch err}
+        <p>Error: {err}</p>
+    {/await}
+  </article>
+</template>

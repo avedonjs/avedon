@@ -6,6 +6,9 @@ export type { AdapterBuilder, AdapterInterface }
 export type Builder = AdapterBuilder
 export type Adapter = AdapterInterface
 
+export { tryServeSsgIsr, ssgHtmlPath, writeHtmlAtomic, isRegenerating } from './ssg-isr.js'
+export type { ServeSsgIsrOptions } from './ssg-isr.js'
+
 export function nodeAdapter(options: { out?: string } = {}): AdapterInterface {
   const out = options.out ?? 'build'
   return {
@@ -45,6 +48,8 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHandler } from '@vexjs/server';
+import { tryServeSsgIsr } from '@vexjs/adapter-node';
+import { Readable } from 'node:stream';
 import * as serverApp from ${JSON.stringify(pathToImport(serverEntry, outDir))};
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -52,17 +57,38 @@ const clientDir = path.join(__dirname, 'client');
 const manifest = ${manifest};
 void manifest;
 
+const routes = serverApp.routes ?? serverApp.default;
+const appHtml = serverApp.appHtml;
+const clientEntry = '/assets/client.js';
+
 const handler = createHandler({
-  routes: serverApp.routes ?? serverApp.default,
-  appHtml: serverApp.appHtml,
+  routes,
+  appHtml,
   hooks: serverApp.hooks,
   errorComponent: serverApp.errorComponent,
   notFoundComponent: serverApp.notFoundComponent,
-  clientEntry: '/assets/client.js',
+  clientEntry,
+  session: serverApp.session,
 });
 
 function isDir(p) {
   try { return statSync(p).isDirectory(); } catch { return true; }
+}
+
+async function pipeResponse(res, response) {
+  res.statusCode = response.status;
+  response.headers.forEach((v, k) => res.setHeader(k, v));
+  if (!response.body) {
+    res.end();
+    return;
+  }
+  const nodeStream = Readable.fromWeb(response.body);
+  await new Promise((resolve, reject) => {
+    nodeStream.on('error', reject);
+    res.on('error', reject);
+    res.on('finish', resolve);
+    nodeStream.pipe(res);
+  });
 }
 
 const server = createServer(async (req, res) => {
@@ -73,13 +99,17 @@ const server = createServer(async (req, res) => {
       createReadStream(filePath).pipe(res);
       return;
     }
-    const ssg = path.join(
-      clientDir,
-      url.pathname === '/' ? 'index.html' : path.join(url.pathname.replace(/^\\//, ''), 'index.html'),
-    );
-    if (existsSync(ssg) && req.method === 'GET') {
-      res.setHeader('content-type', 'text/html; charset=utf-8');
-      createReadStream(ssg).pipe(res);
+    if (
+      tryServeSsgIsr({
+        req,
+        res,
+        clientDir,
+        pathname: url.pathname,
+        routes,
+        appHtml,
+        clientEntry,
+      })
+    ) {
       return;
     }
 
@@ -92,9 +122,7 @@ const server = createServer(async (req, res) => {
     const body = ['GET', 'HEAD'].includes(req.method || 'GET') ? undefined : Buffer.concat(chunks);
     const request = new Request(url, { method: req.method, headers, body });
     const response = await handler(request);
-    res.statusCode = response.status;
-    response.headers.forEach((v, k) => res.setHeader(k, v));
-    res.end(Buffer.from(await response.arrayBuffer()));
+    await pipeResponse(res, response);
   } catch (err) {
     console.error(err);
     res.statusCode = 500;

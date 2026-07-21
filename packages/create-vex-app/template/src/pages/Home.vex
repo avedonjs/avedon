@@ -1,0 +1,18 @@
+<script lang="ts">
+  export let title
+</script>
+
+<script lang="ts" server>
+  export async function load() {
+    return { title: 'Welcome to vexjs' }
+  }
+</script>
+
+<style>
+  h1 { font-family: Georgia, serif; }
+</style>
+
+<template>
+  <h1>{title}</h1>
+  <p>Edit src/pages/Home.vex to get started.</p>
+</template>

@@ -1,0 +1,26 @@
+{
+  "name": "create-vex-app",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Scaffold a new vexjs app",
+  "bin": {
+    "create-vex-app": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "template"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2"
+  }
+}

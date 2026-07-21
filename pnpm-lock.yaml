@@ -99,12 +99,18 @@ importers:
       '@vexjs/adapter-node':
         specifier: workspace:*
         version: link:../adapter-node
+      '@vexjs/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@vexjs/server':
         specifier: workspace:*
         version: link:../server
       '@vexjs/vite-plugin':
         specifier: workspace:*
         version: link:../vite-plugin
+      create-vex-app:
+        specifier: workspace:*
+        version: link:../create-vex-app
       vite:
         specifier: ^6.2.2
         version: 6.4.3(@types/node@22.20.1)
@@ -124,6 +130,15 @@ importers:
       '@vexjs/shared':
         specifier: workspace:*
         version: link:../shared
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+    devDependencies:
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.20)(typescript@5.9.3)
+
+  packages/create-vex-app:
     devDependencies:
       tsup:
         specifier: ^8.4.0

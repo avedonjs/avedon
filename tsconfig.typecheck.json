@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "paths": {
+      "@vexjs/shared": ["./packages/shared/src/index.ts"],
+      "@vexjs/server": ["./packages/server/src/index.ts"],
+      "@vexjs/runtime": ["./packages/runtime/src/index.ts"],
+      "@vexjs/compiler": ["./packages/compiler/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/shared/src/**/*.test-d.ts",
+    "packages/server/src/**/*.test-d.ts",
+    "packages/compiler/src/**/*.test-d.ts",
+    "packages/shared/src/index.ts",
+    "packages/server/src/**/*.ts",
+    "packages/runtime/src/index.ts",
+    "packages/compiler/src/**/*.ts"
+  ],
+  "exclude": ["**/dist/**", "**/*.test.ts"]
+}

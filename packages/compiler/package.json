@@ -18,10 +18,10 @@
   },
   "dependencies": {
     "@vexjs/runtime": "workspace:*",
-    "@vexjs/shared": "workspace:*"
+    "@vexjs/shared": "workspace:*",
+    "typescript": "^5.8.2"
   },
   "devDependencies": {
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.2"
+    "tsup": "^8.4.0"
   }
 }

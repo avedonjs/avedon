@@ -1,6 +1,4 @@
-import type { LoadEvent } from '@vexjs/server'
+import { requireSession } from '@vexjs/server'
 
-/** Fake auth: deny everyone (demo for 403). Pass ?auth=1 to allow. */
-export function requireAuth(event: LoadEvent): boolean {
-  return event.url.searchParams.get('auth') === '1'
-}
+/** Session guard: set cookie via login action (see docs/session.md). */
+export const requireAuth = requireSession({ redirectTo: '/?login=1' })

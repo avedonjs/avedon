@@ -1,0 +1,30 @@
+<script>
+  export let title
+  export let body
+</script>
+
+<script server>
+  import { notFound } from '@vexjs/server'
+
+  const pages = {
+    intro: { title: 'Intro', body: 'Welcome to the docs.' },
+    api: { title: 'API', body: 'Route handlers and load.' },
+  }
+
+  export async function load({ params }) {
+    const page = pages[params.slug]
+    if (!page) throw notFound()
+    return page
+  }
+</script>
+
+<style scoped>
+  article { line-height: 1.5; }
+</style>
+
+<template>
+  <article>
+    <h1>{title}</h1>
+    <p>{body}</p>
+  </article>
+</template>

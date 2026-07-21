@@ -3,8 +3,17 @@
 </script>
 
 <script server>
+  import { redirect } from '@vexjs/server'
+
   export async function load() {
     return { title: 'vexjs' }
+  }
+
+  export const actions = {
+    login: async ({ session }) => {
+      session!.set({ demo: true })
+      return redirect('/admin')
+    },
   }
 </script>
 
@@ -15,4 +24,7 @@
 <template>
   <h1>{title}</h1>
   <p>SSG home — pre-rendered at build time. Use the nav for client-side routing.</p>
+  <form method="POST" action="?/login">
+    <button type="submit">Demo login → /admin</button>
+  </form>
 </template>

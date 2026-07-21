@@ -21,7 +21,9 @@
   <div class="shell">
     <nav>
       <a href="/">Home</a>
+      <a href="/docs/intro">Docs</a>
       <a href="/posts/1">Post</a>
+      <a href="/stream">Stream</a>
       <a href="/admin">Admin</a>
     </nav>
     <slot />

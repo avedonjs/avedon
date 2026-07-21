@@ -6,6 +6,8 @@ function escapeForTemplateLiteral(s: string): string {
 
 export interface CompiledTemplate {
   ssrExpr: string
+  /** statements that call __enqueue / __awaitBoundary / __pipeChildren */
+  ssrStream: string
   /** statements that build `el` HTMLElement from state */
   clientBuild: string
 }
@@ -14,6 +16,7 @@ export function compileMarkup(markup: string, hash: string): CompiledTemplate {
   const tokens = tokenize(markup)
   return {
     ssrExpr: emitSsr(tokens, hash),
+    ssrStream: emitSsrStream(tokens, hash),
     clientBuild: emitClient(tokens, hash),
   }
 }
@@ -416,13 +419,98 @@ function emitSsr(tokens: Token[], hash: string): string {
       const idx = t.index ? `, ${t.index}` : ''
       parts.push(`((${t.list}) || []).map((${t.item}${idx}) => (${body})).join('')`)
     } else if (t.type === 'await') {
-      // SSR: empty placeholder; resolved on client
+      // Sync render(): empty placeholder; streaming path uses emitSsrStream
       parts.push('``')
     } else if (t.type === 'element') {
       parts.push(emitSsrElement(t, hash))
     }
   }
   return parts.length ? parts.join(' + ') : '``'
+}
+
+/** Statement-based SSR for out-of-order streaming (`__enqueue`, `__awaitBoundary`). */
+function emitSsrStream(tokens: Token[], hash: string): string {
+  const lines: string[] = []
+  for (const t of tokens) {
+    if (t.type === 'text') {
+      lines.push(`__enqueue(\`${escapeForTemplateLiteral(t.value)}\`);`)
+    } else if (t.type === 'slot') {
+      lines.push(`await __pipeChildren(__props.children);`)
+    } else if (t.type === 'expr') {
+      lines.push(`__enqueue(__escape(${t.value}));`)
+    } else if (t.type === 'if') {
+      const thenBody = emitSsrStream(t.then, hash)
+      const elseBody = t.else ? emitSsrStream(t.else, hash) : ''
+      lines.push(`if (${t.cond}) {\n${indentStream(thenBody)}\n} else {\n${indentStream(elseBody)}\n}`)
+    } else if (t.type === 'each') {
+      const body = emitSsrStream(t.body, hash)
+      if (t.index) {
+        lines.push(
+          `{\n  const __list = (${t.list}) || [];\n  let ${t.index} = 0;\n  for (const ${t.item} of __list) {\n${indentStream(body)}\n    ${t.index}++;\n  }\n}`,
+        )
+      } else {
+        lines.push(
+          `for (const ${t.item} of ((${t.list}) || [])) {\n${indentStream(body)}\n}`,
+        )
+      }
+    } else if (t.type === 'await') {
+      const thenBody = emitSsrStream(t.thenBody, hash)
+      const catchPart = t.catchBody
+        ? `, async (${t.catchName ?? 'error'}, __enqueue) => {\n` +
+          `  const __awaitBoundary = (p, t, c) => __ctrl.enqueueBoundary(p, t, c, __enqueue);\n` +
+          `${indentStream(emitSsrStream(t.catchBody, hash))}\n}`
+        : ''
+      lines.push(
+        `__awaitBoundary(Promise.resolve(${t.promise}), async (${t.thenName}, __enqueue) => {\n` +
+          `  const __awaitBoundary = (p, t, c) => __ctrl.enqueueBoundary(p, t, c, __enqueue);\n` +
+          `${indentStream(thenBody)}\n}${catchPart});`,
+      )
+    } else if (t.type === 'element') {
+      lines.push(emitSsrStreamElement(t, hash))
+    }
+  }
+  return lines.join('\n')
+}
+
+function indentStream(code: string): string {
+  if (!code.trim()) return ''
+  return code
+    .split('\n')
+    .map((l) => (l.trim() ? '  ' + l : l))
+    .join('\n')
+}
+
+function emitSsrStreamElement(el: Token & { type: 'element' }, hash: string): string {
+  const attrParts: string[] = [`\` ${hash}\``]
+  for (const a of el.attrs) {
+    if (a.kind === 'event') continue
+    if (a.kind === 'bind' && a.name === 'bind:value') {
+      attrParts.push(`\` value="\` + __escape(${a.value}) + \`"\``)
+      continue
+    }
+    if (a.kind === 'expr') {
+      attrParts.push(`\` ${a.name}="\` + __escape(${a.value}) + \`"\``)
+    } else if (a.value == null) {
+      attrParts.push(`\` ${a.name}\``)
+    } else {
+      attrParts.push('`' + escapeForTemplateLiteral(` ${a.name}="${a.value}"`) + '`')
+    }
+  }
+  const closeOpen = el.selfClosing || VOID.has(el.tag.toLowerCase()) ? ' />`' : '>`'
+  const open =
+    '`' +
+    escapeForTemplateLiteral(`<${el.tag}`) +
+    '` + ' +
+    attrParts.join(' + ') +
+    ' + `' +
+    closeOpen
+  const lines = [`__enqueue(${open});`]
+  if (!el.selfClosing && !VOID.has(el.tag.toLowerCase())) {
+    const children = emitSsrStream(el.children, hash)
+    if (children.trim()) lines.push(children)
+    lines.push(`__enqueue(\`${escapeForTemplateLiteral(`</${el.tag}>`)}\`);`)
+  }
+  return lines.join('\n')
 }
 
 function emitSsrElement(el: Token & { type: 'element' }, hash: string): string {

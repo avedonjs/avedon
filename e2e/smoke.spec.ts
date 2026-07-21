@@ -8,10 +8,10 @@ test('home ssg/ssr renders brand', async ({ page }) => {
 test('post ssr + client like button', async ({ page }) => {
   await page.goto('/posts/1')
   await expect(page.locator('h1')).toHaveText('Hello vexjs')
-  const btn = page.getByRole('button', { name: /Optimistic/ })
-  const before = await btn.textContent()
-  await btn.click()
-  await expect(btn).not.toHaveText(before || '')
+  const likes = page.locator('text=Likes:')
+  const before = await likes.textContent()
+  await page.getByRole('button', { name: /Optimistic/ }).click()
+  await expect(likes).not.toHaveText(before || '')
 })
 
 test('client nav does not full-reload', async ({ page }) => {

@@ -9,7 +9,7 @@ vexjs is a pnpm + Turborepo monorepo. Applications depend on published-style wor
 | [`@vexjs/shared`](../packages/shared) | Shared types and the adapter interface |
 | [`@vexjs/compiler`](../packages/compiler) | Parse `.vex`, emit client/server modules, scoped CSS |
 | [`@vexjs/runtime`](../packages/runtime) | `signal` / `computed` / `effect`, hydration, client router, form enhance |
-| [`@vexjs/server`](../packages/server) | Route match, guards, `load` / `actions` / `api_*`, SSR orchestration |
+| [`@vexjs/server`](../packages/server) | Route match, guards, middleware (`sequence` / CORS / logger / rateLimit), `load` / `actions` / `api_*`, SSR orchestration |
 | [`@vexjs/vite-plugin`](../packages/vite-plugin) | Vite transform, HMR, and dev middleware for `.vex` |
 
 ## Adapters
@@ -27,6 +27,7 @@ Adapters sit outside the platform-agnostic server core so deploy targets can var
 | Package | Commands |
 |---------|----------|
 | [`vex`](../packages/cli) | `create`, `dev`, `build`, `start` |
+| [`create-vex-app`](../packages/create-vex-app) | `pnpm create vex-app` / `npm create vex-app` (same scaffold as `vex create`) |
 
 ## Example application
 

@@ -1,0 +1,22 @@
+{
+  "name": "__APP_NAME__",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vex dev",
+    "build": "vex build",
+    "start": "vex start",
+    "preview": "vex preview"
+  },
+  "dependencies": {
+    "@vexjs/adapter-node": "^0.1.0",
+    "@vexjs/runtime": "^0.1.0",
+    "@vexjs/server": "^0.1.0",
+    "@vexjs/vite-plugin": "^0.1.0",
+    "vex": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
+  }
+}

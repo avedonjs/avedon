@@ -9,6 +9,8 @@ Official documentation for **vexjs**, a TypeScript-first full-stack web framewor
 | [Getting started](./guide.md) | New contributors and app authors |
 | [`.vex` components](./vex-components.md) | Writing pages and UI |
 | [Routing](./routing.md) | Declaring routes, layouts, and guards |
+| [Middleware](./middleware.md) | Logging, CORS, rate-limit (route-agnostic) |
+| [Session & cookies](./session.md) | Sealed session cookie + `requireSession` |
 | [Rendering](./rendering.md) | Choosing `ssr`, `ssg`, or `csr` |
 | [Packages](./packages.md) | Understanding the monorepo |
 

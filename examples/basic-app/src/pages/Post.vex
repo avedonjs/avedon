@@ -10,23 +10,30 @@
 
 <script server>
   import { db } from '../lib/db'
-  import { json, notFound } from '@vexjs/server'
+  import { json, notFound, type LoadEvent } from '@vexjs/server'
 
-  export async function load({ params }) {
+  export type PostPageData = {
+    post: { id: string; title: string; body: string; likes: number }
+  }
+
+  export async function load({
+    params,
+  }: LoadEvent<'/posts/:id'>): Promise<{ data: PostPageData }> {
+    // params.id is typed as string via LoadEvent<'/posts/:id'>
     const post = db.post.find(params.id)
     if (!post) throw notFound()
     return { data: { post } }
   }
 
   export const actions = {
-    async like({ params }) {
+    async like({ params }: LoadEvent<'/posts/:id'>) {
       const post = db.post.incrementLikes(params.id)
       if (!post) throw notFound()
       return { data: { post }, ok: true }
     },
   }
 
-  export async function api_GET({ params }) {
+  export async function api_GET({ params }: LoadEvent<'/posts/:id'>) {
     const post = db.post.find(params.id)
     if (!post) throw notFound()
     return json({ post })

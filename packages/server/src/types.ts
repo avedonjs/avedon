@@ -3,58 +3,90 @@ import type {
   AdapterBuilder,
   AdapterInterface,
   ApiHandler,
+  CookieSerializeOptions,
+  Cookies,
   ExtractParams,
   GuardFn,
+  JoinPaths,
   LoadContext,
+  LoadEvent,
   LoadResult,
+  MergeParams,
+  ParamsRecord,
   RenderMode,
+  Session,
 } from '@vexjs/shared'
 
-export type { RenderMode, ActionHandler, ApiHandler, GuardFn, LoadResult, AdapterInterface, AdapterBuilder, ExtractParams }
-
-/** Alias used throughout the server package. */
-export type LoadEvent = LoadContext
-
-export interface VexComponentModule {
-  render: (props?: Record<string, unknown>) => string
-  mount?: (target: Element, props?: Record<string, unknown>) => { destroy(): void; update(p: Record<string, unknown>): void }
-  css?: string
-  cssHash?: string
-  load?: (event: LoadEvent) => Promise<LoadResult> | LoadResult
-  actions?: Record<string, ActionHandler>
-  api?: Record<string, ApiHandler>
-  api_GET?: ApiHandler
-  api_POST?: ApiHandler
-  api_PUT?: ApiHandler
-  api_PATCH?: ApiHandler
-  api_DELETE?: ApiHandler
-  default?: VexComponentModule
+export type {
+  RenderMode,
+  ActionHandler,
+  ApiHandler,
+  GuardFn,
+  LoadResult,
+  AdapterInterface,
+  AdapterBuilder,
+  ExtractParams,
+  JoinPaths,
+  MergeParams,
+  LoadContext,
+  LoadEvent,
+  ParamsRecord,
+  Cookies,
+  Session,
+  CookieSerializeOptions,
 }
 
+export interface VexComponentModule<Params extends ParamsRecord = Record<string, string>> {
+  render: (props?: Record<string, unknown>) => string
+  renderInto?: (
+    ctrl: import('@vexjs/runtime').RenderStreamController,
+    props?: Record<string, unknown>,
+  ) => Promise<void>
+  renderToStream?: (props?: Record<string, unknown>) => ReadableStream<Uint8Array>
+  mount?: (
+    target: Element,
+    props?: Record<string, unknown>,
+  ) => { destroy(): void; update(p: Record<string, unknown>): void }
+  css?: string
+  cssHash?: string
+  load?: (event: LoadContext<Params>) => Promise<LoadResult> | LoadResult
+  actions?: Record<string, ActionHandler<Params>>
+  api?: Record<string, ApiHandler<Params>>
+  api_GET?: ApiHandler<Params>
+  api_POST?: ApiHandler<Params>
+  api_PUT?: ApiHandler<Params>
+  api_PATCH?: ApiHandler<Params>
+  api_DELETE?: ApiHandler<Params>
+  default?: VexComponentModule<Params>
+}
+
+type ComponentRef<Params extends ParamsRecord> =
+  | VexComponentModule<Params>
+  | (() => Promise<VexComponentModule<Params>>)
+
+/** Runtime route shape (matcher / pipeline). */
 export interface RouteConfig {
   path: string
-  component: VexComponentModule | (() => Promise<VexComponentModule>)
-  /** Default: 'ssr' */
+  component: ComponentRef<Record<string, string>>
   render?: RenderMode
-  layout?: VexComponentModule | (() => Promise<VexComponentModule>)
+  layout?: ComponentRef<Record<string, string>>
   children?: Routes
-  /** Preferred guard name (spec). */
   guard?: GuardFn
-  /** @deprecated Prefer `guard`. */
   canActivate?: GuardFn
   canMatch?: GuardFn
-  /** SSG path list (or getStaticPaths-style). */
   entries?: () => Promise<string[]> | string[]
   getStaticPaths?: () => Promise<string[]> | string[]
+  /**
+   * ISR: regenerate this SSG page every N seconds (stale-while-revalidate).
+   * Omit for immutable static HTML. `0` regenerates on every request (deduped).
+   * Only meaningful with `render: 'ssg'`.
+   */
+  revalidate?: number
   error?: VexComponentModule
   notFound?: VexComponentModule
 }
 
 export type Routes = RouteConfig[]
-
-export function defineRoutes(routes: Routes): Routes {
-  return routes
-}
 
 export interface HandleArgs {
   request: Request
@@ -63,12 +95,94 @@ export interface HandleArgs {
 
 export type HandleHook = (args: HandleArgs) => Promise<Response> | Response
 
+/** Route-agnostic middleware; same shape as `HandleHook`. */
+export type Middleware = HandleHook
+
+/** `false` disables checks; otherwise Origin/Referer must match request origin (plus allowlist). */
+export type CsrfOptions = false | { trustedOrigins?: string[] }
+
 export interface HandlerOptions {
   routes: Routes
   appHtml: string
-  hooks?: { handle?: HandleHook }
+  hooks?: { handle?: HandleHook; middleware?: Middleware[] }
   errorComponent?: VexComponentModule
   notFoundComponent?: VexComponentModule
   clientEntry?: string
   getCss?: () => string
+  /** CSRF for form `actions` (default: Origin/Referer check). Set `false` to disable. */
+  csrf?: CsrfOptions
+  /** Sealed session cookie (Web Crypto). Requires `secret` (32+ chars). */
+  session?: SessionOptions
+}
+
+export type SessionOptions = {
+  secret: string
+  name?: string
+  maxAge?: number
+  cookie?: CookieSerializeOptions
+}
+
+type RouteRest<Params extends ParamsRecord> = {
+  component: ComponentRef<Params>
+  render?: RenderMode
+  layout?: ComponentRef<Params>
+  guard?: GuardFn<Params>
+  canActivate?: GuardFn<Params>
+  canMatch?: GuardFn<Params>
+  entries?: () => Promise<string[]> | string[]
+  getStaticPaths?: () => Promise<string[]> | string[]
+  /** ISR interval in seconds for `render: 'ssg'` (see RouteConfig.revalidate). */
+  revalidate?: number
+  error?: VexComponentModule
+  notFound?: VexComponentModule
+  /**
+   * Nested routes. Prefer `children: (r) => [r('child', { ... })]` so child
+   * guards inherit parent params via ExtractParams merge.
+   */
+  children?: Routes | ((r: ChildRouteFactory<Params>) => Routes)
+}
+
+export type ChildRouteFactory<ParentParams extends ParamsRecord> = <const P extends string>(
+  path: P,
+  config: RouteRest<MergeParams<ParentParams, ExtractParams<P>>>,
+) => RouteConfig & { path: P }
+
+/**
+ * Build a typed route. Path is a separate argument so TypeScript can infer
+ * `params` for `guard` / component load contexts (`ExtractParams<P>`).
+ *
+ * @example
+ * route('/posts/:id', {
+ *   component: Post,
+ *   guard: (e) => e.params.id.length > 0,
+ * })
+ */
+export function route<const P extends string, ParentParams extends ParamsRecord = {}>(
+  path: P,
+  config: RouteRest<MergeParams<ParentParams, ExtractParams<P>>>,
+): RouteConfig & { path: P } {
+  type Params = MergeParams<ParentParams, ExtractParams<P>>
+  const childFactory = ((childPath: string, childConfig: RouteRest<any>) =>
+    route(childPath, childConfig)) as ChildRouteFactory<Params>
+
+  const { children, ...rest } = config
+  const resolved: Routes | undefined =
+    typeof children === 'function' ? children(childFactory) : children
+
+  return {
+    path,
+    ...rest,
+    ...(resolved ? { children: resolved } : {}),
+  } as RouteConfig & { path: P }
+}
+
+/** Full path type for a parent/child pair (for tests / docs). */
+export type NestedPath<Parent extends string, Child extends string> = JoinPaths<Parent, Child>
+
+/**
+ * Define a route table. Prefer `route('/path/:id', { ... })` entries so guards
+ * get typed `params`. Plain `{ path, component }` objects remain valid at runtime.
+ */
+export function defineRoutes<const T extends readonly RouteConfig[]>(routes: T): T {
+  return routes
 }

@@ -64,6 +64,20 @@ export function parse(source: string): ParsedVex {
   }
 }
 
+export type VexBlockKind = 'server' | 'client' | 'style' | 'template'
+
+/** Which `.vex` blocks differ between two source versions. */
+export function changedBlocks(prev: string, next: string): Set<VexBlockKind> {
+  const a = parse(prev)
+  const b = parse(next)
+  const out = new Set<VexBlockKind>()
+  if (a.serverScript !== b.serverScript) out.add('server')
+  if (a.clientScript !== b.clientScript) out.add('client')
+  if (a.style !== b.style) out.add('style')
+  if (a.markup !== b.markup) out.add('template')
+  return out
+}
+
 export function hashStyle(css: string, filename: string): string {
   let h = 2166136261
   const input = filename + '\0' + css

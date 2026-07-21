@@ -1,3 +1,17 @@
+export {
+  createRenderStream,
+  oooInjectScript,
+  settleVexStream,
+  streamToString,
+} from './stream.js'
+export type {
+  BoundaryRender,
+  EnqueueHtml,
+  RenderStreamController,
+} from './stream.js'
+
+import { settleVexStream } from './stream.js'
+
 export type Subscriber<T> = (value: T) => void
 
 export interface Readable<T> {
@@ -41,29 +55,34 @@ function trigger(sig: object) {
   for (const fn of [...deps]) fn()
 }
 
-export function signal<T>(value: T): Signal<T> {
+export function signal<T>(value: T, hmrKey?: string): Signal<T> {
+  let initial = value
+  if (hmrKey && pendingHmrSignals && hmrKey in pendingHmrSignals) {
+    initial = pendingHmrSignals[hmrKey] as T
+  }
+  let current = initial
   const sig: Signal<T> = {
     get() {
       track(sig)
-      return value
+      return current
     },
     set(next) {
-      if (Object.is(value, next)) return
-      value = next
+      if (Object.is(current, next)) return
+      current = next
       trigger(sig)
     },
     update(fn) {
-      this.set(fn(value))
+      this.set(fn(current))
     },
     subscribe(fn) {
-      const wrap: EffectFn = () => fn(value)
+      const wrap: EffectFn = () => fn(current)
       let deps = effectDeps.get(sig)
       if (!deps) {
         deps = new Set()
         effectDeps.set(sig, deps)
       }
       deps.add(wrap)
-      fn(value)
+      fn(current)
       return () => deps!.delete(wrap)
     },
     toString() {
@@ -73,7 +92,40 @@ export function signal<T>(value: T): Signal<T> {
       return this.get()
     },
   }
+  if (hmrKey && activeSignalBag) {
+    activeSignalBag[hmrKey] = sig
+  }
   return sig
+}
+
+/** Pending signal values applied on the next mount (dev HMR only). */
+let pendingHmrSignals: Record<string, unknown> | null = null
+/** Signal bag for the mount currently executing. */
+let activeSignalBag: Record<string, Signal<unknown>> | null = null
+
+export type HmrComponentState = {
+  data?: Record<string, unknown>
+  signals: Record<string, unknown>
+}
+
+export function __hmrPrepareSignals(state: Record<string, unknown> | null | undefined) {
+  pendingHmrSignals = state && Object.keys(state).length ? { ...state } : null
+}
+
+export function __hmrBeginSignalBag(): Record<string, Signal<unknown>> {
+  activeSignalBag = {}
+  return activeSignalBag
+}
+
+export function __hmrEndSignalBag() {
+  pendingHmrSignals = null
+  activeSignalBag = null
+}
+
+export function __hmrSnapshotSignals(bag: Record<string, Signal<unknown>>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, s] of Object.entries(bag)) out[k] = s.get()
+  return out
 }
 
 export function computed<T>(fn: () => T): Signal<T> {
@@ -170,6 +222,8 @@ export function escapeHtml(value: unknown): string {
 export interface MountResult {
   destroy(): void
   update(props: Record<string, unknown>): void
+  /** Dev HMR: snapshot of data + named signal values. */
+  getHmrState?(): HmrComponentState
 }
 
 export type NavigateOptions = {
@@ -241,7 +295,10 @@ function applyDocument(html: string) {
   const nextData = doc.getElementById('__VEX_DATA__')
   const app = document.getElementById('app')
   const dataEl = document.getElementById('__VEX_DATA__')
-  if (app && nextApp) app.innerHTML = nextApp.innerHTML
+  if (app && nextApp) {
+    app.innerHTML = nextApp.innerHTML
+    settleVexStream(app)
+  }
   if (dataEl && nextData) dataEl.textContent = nextData.textContent
   const nextTitle = doc.querySelector('title')
   if (nextTitle) document.title = nextTitle.textContent ?? document.title

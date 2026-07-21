@@ -1,10 +1,12 @@
 import { nodeAdapter, type Builder } from '@vexjs/adapter-node'
-import { paramsFromPath, renderShell, resolveComponent, type Routes } from '@vexjs/server'
+import type { Routes } from '@vexjs/server'
 import { vex } from '@vexjs/vite-plugin'
+import { formatNextSteps, scaffoldApp } from 'create-vex-app'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { build as viteBuild, createServer } from 'vite'
+import { buildSsgPages, flattenRoutes } from './ssg.js'
 
 async function main() {
   const [cmd = 'help', ...args] = process.argv.slice(2)
@@ -129,45 +131,7 @@ async function cmdBuild() {
   const serverMod = await import(pathToFileURL(serverEntryPath).href)
   const routes: Routes = serverMod.routes ?? serverMod.default
 
-  const ssgPages: Array<{ path: string; html: string }> = []
-  for (const route of flattenRoutes(routes)) {
-    if ((route.render ?? 'ssr') !== 'ssg') continue
-    const listFn = route.entries ?? route.getStaticPaths
-    const paths = listFn != null ? await listFn() : [route.path.includes(':') ? null : route.path]
-    for (const p of paths) {
-      if (!p) continue
-      const mod = await resolveComponent(route.component)
-      const params = paramsFromPath(route.path, p) ?? {}
-      let data: Record<string, unknown> = {}
-      if (mod.load) {
-        const loaded = await mod.load({
-          params,
-          request: new Request(new URL(p, 'http://ssg.local')),
-          url: new URL(p, 'http://ssg.local'),
-        })
-        if (loaded && !(loaded instanceof Response)) data = loaded
-      }
-      let body = `<div data-vex-page>${mod.render(data)}</div>`
-      const cssParts: string[] = []
-      if (mod.css) cssParts.push(mod.css)
-      // wrap layouts root→leaf reverse
-      const chain = [route]
-      for (let i = chain.length - 1; i >= 0; i--) {
-        const r = chain[i]
-        if (!r.layout) continue
-        const layout = await resolveComponent(r.layout)
-        if (layout.css) cssParts.push(layout.css)
-        body = layout.render({ ...data, children: body })
-      }
-      const html = renderShell(appHtml, {
-        body,
-        css: cssParts.join('\n'),
-        props: data,
-        clientEntry: '/assets/client.js',
-      })
-      ssgPages.push({ path: p, html })
-    }
-  }
+  const ssgPages = await buildSsgPages(routes, appHtml)
 
   const builder: Builder = {
     getClientDirectory: () => path.join(outDir, 'client'),
@@ -192,15 +156,6 @@ async function cmdBuild() {
   console.log('Build complete → build/')
 }
 
-function flattenRoutes(routes: Routes): Routes {
-  const out: Routes = []
-  for (const r of routes) {
-    out.push(r)
-    if (r.children) out.push(...flattenRoutes(r.children))
-  }
-  return out
-}
-
 function copyDir(src: string, dest: string) {
   fs.mkdirSync(dest, { recursive: true })
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
@@ -222,118 +177,12 @@ async function cmdPreview() {
 
 async function cmdCreate(name: string) {
   const dest = path.resolve(name)
-  if (fs.existsSync(dest)) {
-    console.error(`Directory exists: ${dest}`)
+  try {
+    const result = scaffoldApp(dest, path.basename(dest))
+    console.log(formatNextSteps(result))
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err)
     process.exit(1)
-  }
-  writeTemplate(dest, name)
-  console.log(`Created ${name}
-  cd ${name}
-  npm install
-  npx vex dev
-`)
-}
-
-function writeTemplate(dest: string, name: string) {
-  const files: Record<string, string> = {
-    'package.json': JSON.stringify(
-      {
-        name,
-        private: true,
-        type: 'module',
-        scripts: {
-          dev: 'vex dev',
-          build: 'vex build',
-          preview: 'vex preview',
-        },
-        dependencies: {
-          '@vexjs/adapter-node': '0.1.0',
-          '@vexjs/runtime': '0.1.0',
-          '@vexjs/server': '0.1.0',
-          '@vexjs/vite-plugin': '0.1.0',
-          vex: '0.1.0',
-        },
-        devDependencies: {
-          typescript: '^5.8.2',
-          vite: '^6.2.2',
-        },
-      },
-      null,
-      2,
-    ),
-    'vex.config.ts': `import { nodeAdapter } from '@vexjs/adapter-node'
-
-export default {
-  adapter: nodeAdapter({ out: 'build' }),
-}
-`,
-    'src/app.html': `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    %vex.head%
-  </head>
-  <body>
-    <div id="app">%vex.body%</div>
-  </body>
-</html>
-`,
-    'src/client.ts': `import 'virtual:vex-client-entry'
-`,
-    'src/server-entry.ts': `import { routes } from './routes'
-import appHtml from './app.html?raw'
-export { routes, appHtml }
-export { default as hooks } from './hooks.server'
-`,
-    'src/hooks.server.ts': `import type { HandleHook } from '@vexjs/server'
-
-export const handle: HandleHook = async ({ request, resolve }) => {
-  return resolve(request)
-}
-
-export default { handle }
-`,
-    'src/routes.ts': `import type { Routes } from '@vexjs/server'
-import Home from './pages/Home.vex'
-
-export const routes: Routes = [
-  { path: '/', component: Home, render: 'ssr' },
-]
-`,
-    'src/pages/Home.vex': `<script lang="ts">
-  export let title
-</script>
-
-<script lang="ts" server>
-  export async function load() {
-    return { title: 'Welcome to vexjs' }
-  }
-</script>
-
-<style>
-  h1 { font-family: Georgia, serif; }
-</style>
-
-<h1>{title}</h1>
-<p>Edit src/pages/Home.vex to get started.</p>
-`,
-    'src/error.vex': `<script lang="ts">
-  export let status
-  export let message
-</script>
-<h1>{status}</h1>
-<p>{message}</p>
-`,
-    'src/not-found.vex': `<h1>404</h1>
-<p>Page not found.</p>
-`,
-  }
-
-  for (const [rel, contents] of Object.entries(files)) {
-    const file = path.join(dest, rel)
-    fs.mkdirSync(path.dirname(file), { recursive: true })
-    fs.writeFileSync(file, contents)
   }
 }
 

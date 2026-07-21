@@ -4,8 +4,15 @@ vexjs uses **explicit** route tables. There is no file-based route discovery: yo
 
 ## Declaring routes
 
+Two styles are supported; neither is deprecated.
+
+| Style | When to use |
+|-------|-------------|
+| **`route(path, config)`** (recommended for new code) | Path is a separate argument, so TypeScript can type `guard` / load contexts as `ExtractParams<path>` (e.g. `params.id: string`). |
+| **Object literal `{ path, … }`** | Still fully supported at runtime. Convenient for static routes; **param inference on inline `guard` callbacks is limited** (TS cannot contextual-type the callback from `path` inside the same object). |
+
 ```ts
-import { defineRoutes } from '@vexjs/server'
+import { defineRoutes, route } from '@vexjs/server'
 import Layout from './pages/Layout.vex'
 import Home from './pages/Home.vex'
 import Post from './pages/Post.vex'
@@ -20,33 +27,54 @@ export default defineRoutes([
     component: Home,
     render: 'ssg',
   },
-  {
-    path: '/posts/:id',
+  route('/posts/:id', {
     layout: Layout,
     component: Post,
     render: 'ssr',
-  },
+    // e.params.id is string
+    guard: (e) => Boolean(e.params.id),
+  }),
   {
     path: '/admin',
     layout: Layout,
     component: Admin,
     render: 'csr',
-    guard: requireAuth,
+    guard: requireAuth, // separately typed via LoadEvent / LoadContext
     error: AdminError,
   },
 ])
 ```
 
+Nested routes that need parent params in the child guard:
+
+```ts
+route('/users/:userId', {
+  component: UserLayout,
+  children: (r) => [
+    r('posts/:postId', {
+      component: UserPost,
+      guard: (e) => Boolean(e.params.userId && e.params.postId),
+    }),
+  ],
+})
+```
+
+Inside a `.vex` `<script server>` block, type `load` / `actions` with `LoadEvent<'/posts/:id'>` the same way (path is not known from `routes.ts` alone).
+
 ## Route fields
 
 | Field | Description |
 |-------|-------------|
-| `path` | Path pattern (`:param` segments supported) |
+| `path` | Path pattern (`:param`, `:id?`, `*rest` / `*` supported in types) |
 | `component` | Page `.vex` module |
 | `layout` | Optional layout `.vex` wrapping the page |
 | `render` | `'ssr'` \| `'ssg'` \| `'csr'` (see [Rendering](./rendering.md)) |
+| `getStaticPaths` | For `ssg` routes with params: `() => string[]` of full paths (alias: `entries`) |
+| `revalidate` | Optional ISR interval in seconds for `ssg` (stale-while-revalidate; see [Rendering](./rendering.md)) |
 | `guard` | Optional activation check (`canActivate` is an alias) |
-| `error` | Optional error UI for that route |
+| `error` | Optional error UI for that route (also used when `error()` is thrown in `load` / actions) |
+| `notFound` | Optional 404 UI for that route (also used when `notFound()` is thrown) |
+| `children` | Nested routes (array, or `(r) => […]` when using `route()`) |
 
 ## Guards
 
@@ -54,12 +82,16 @@ Guards run before the route activates. Return or resolve in a way that allows na
 
 ```ts
 // examples/basic-app/src/guards/auth.ts
-export async function requireAuth(/* event */) {
-  // allow or deny
+import type { LoadEvent } from '@vexjs/server'
+
+export function requireAuth(event: LoadEvent): boolean {
+  return event.url.searchParams.get('auth') === '1'
 }
 ```
 
-Attach with `guard: requireAuth` on the route entry.
+Attach with `guard: requireAuth` on the route entry, or an inline callback on `route('/path/:id', { guard: (e) => … })`.
+
+For cross-cutting concerns (logging, CORS, rate limits) that are not route-specific, use [Middleware](./middleware.md) instead of guards.
 
 ## Layouts
 
@@ -67,7 +99,11 @@ Layouts are `.vex` components that wrap child pages. Share chrome (nav, shell) v
 
 ## Errors and not-found
 
-Apps can provide global and per-route error / not-found `.vex` modules (see `examples/basic-app/src/error.vex` and `not-found.vex`). Prefer throwing helpers such as `notFound()` from `@vexjs/server` inside `load` or actions.
+Apps can provide global and per-route error / not-found `.vex` modules (see `examples/basic-app/src/error.vex` and `not-found.vex`). Prefer throwing helpers such as `notFound()` or `error(status)` from `@vexjs/server` inside `load` or actions:
+
+- `notFound()` → status **404** and the nearest route `notFound` (else global `notFoundComponent`)
+- `error(status)` → that status and the nearest route `error` (else global `errorComponent`)
+- Failed `guard` / `canActivate` → **403** via the route `error` chain
 
 ## Client navigation
 

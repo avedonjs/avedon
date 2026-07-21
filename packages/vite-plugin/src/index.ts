@@ -1,5 +1,6 @@
-import { compile, compileSsr } from '@vexjs/compiler'
+import { changedBlocks, compile, compileSsr } from '@vexjs/compiler'
 import { createHandler } from '@vexjs/server'
+import { pipeWebResponse } from '@vexjs/server/node'
 import fs from 'node:fs'
 import path from 'node:path'
 import type { IncomingMessage } from 'node:http'
@@ -17,9 +18,15 @@ export interface VexPluginOptions {
 export function vex(options: VexPluginOptions = {}): Plugin {
   const root = options.root ?? process.cwd()
   const writeDts = options.writeDts !== false
+  /** Previous `.vex` source for block-diff HMR. */
+  const prevVexSource = new Map<string, string>()
+  let isDev = false
 
   return {
     name: 'vex',
+    configResolved(config) {
+      isDev = config.command === 'serve'
+    },
     configureServer(devServer) {
       devServer.middlewares.use(async (req, res, next) => {
         try {
@@ -35,6 +42,7 @@ export function vex(options: VexPluginOptions = {}): Plugin {
           const routes = routesMod.routes ?? routesMod.default
 
           const hooks = await loadOptional(devServer, path.join(root, 'src/hooks.server.ts'))
+          const serverEntry = await loadOptional(devServer, path.join(root, 'src/server-entry.ts'))
           const errorComponent = await loadOptional(devServer, path.join(root, 'src/error.vex'))
           const notFoundComponent = await loadOptional(
             devServer,
@@ -50,6 +58,7 @@ export function vex(options: VexPluginOptions = {}): Plugin {
             notFoundComponent: ((notFoundComponent as { default?: unknown })?.default ??
               notFoundComponent) as never,
             clientEntry: '/src/client.ts',
+            session: (serverEntry as { session?: unknown } | null)?.session as never,
           })
 
           const host = req.headers.host ?? 'localhost'
@@ -59,11 +68,7 @@ export function vex(options: VexPluginOptions = {}): Plugin {
           const request = await nodeToWebRequest(req, host)
           req.url = orig
           const response = await handler(request)
-          res.statusCode = response.status
-          response.headers.forEach((v, k) => {
-            res.setHeader(k, v)
-          })
-          res.end(Buffer.from(await response.arrayBuffer()))
+          await pipeWebResponse(res, response)
         } catch (err) {
           devServer.ssrFixStacktrace(err as Error)
           next(err)
@@ -77,15 +82,16 @@ export function vex(options: VexPluginOptions = {}): Plugin {
     },
     load(id) {
       if (id !== '\0vex-client-entry') return null
-      return clientEntrySource()
+      return clientEntrySource(isDev)
     },
     transform(code, id, opts) {
       const cleanId = id.split('?')[0]
       if (!cleanId.endsWith('.vex')) return null
+      if (!prevVexSource.has(cleanId)) prevVexSource.set(cleanId, code)
       const filename = path.basename(cleanId)
       const result = opts?.ssr
         ? compileSsr(code, { filename })
-        : compile(code, { filename, generate: 'client' })
+        : compile(code, { filename, generate: 'client', hmr: isDev && !opts?.ssr })
       if (writeDts && result.dts) {
         const dtsPath = cleanId + '.d.ts'
         try {
@@ -98,15 +104,33 @@ export function vex(options: VexPluginOptions = {}): Plugin {
     },
     async handleHotUpdate(ctx) {
       if (!ctx.file.endsWith('.vex')) return
+      const next = await ctx.read()
+      const prev = prevVexSource.get(ctx.file) ?? next
+      prevVexSource.set(ctx.file, next)
+
+      const changed = changedBlocks(prev, next)
       const mods = new Set<ModuleNode>()
       for (const mod of ctx.modules) {
         mods.add(mod)
         mod.importers.forEach((i) => mods.add(i))
       }
-      // Also invalidate SSR graph
       const ssrMod = ctx.server.moduleGraph.getModuleById(ctx.file)
       if (ssrMod) mods.add(ssrMod)
-      ctx.server.ws.send({ type: 'full-reload' })
+
+      // Server script change → full reload (intentional).
+      if (changed.has('server')) {
+        ctx.server.ws.send({ type: 'full-reload' })
+        return [...mods]
+      }
+
+      // Client / template / style → state-preserving custom HMR (no full-reload).
+      if (changed.size > 0) {
+        ctx.server.ws.send({
+          type: 'custom',
+          event: 'vex:update',
+          data: { file: ctx.file, timestamp: Date.now() },
+        })
+      }
       return [...mods]
     },
   }
@@ -122,10 +146,35 @@ async function loadOptional(server: ViteDevServer, absPath: string) {
   return server.ssrLoadModule(pathToUrl(absPath, server.config.root))
 }
 
-function clientEntrySource(): string {
+function clientEntrySource(isDev: boolean): string {
+  const hmrBlock = isDev
+    ? `
+if (import.meta.hot) {
+  import.meta.hot.on('vex:update', async (payload) => {
+    const state = current?.getHmrState?.() ?? null;
+    const ts = (payload && payload.timestamp) || Date.now();
+    try {
+      const routesMod = await import(/* @vite-ignore */ '/src/routes.ts?t=' + ts);
+      routes = routesMod.routes ?? routesMod.default ?? routes;
+    } catch {
+      // keep previous routes table
+    }
+    await boot(state);
+  });
+}
+`
+    : ''
+
   return `
-import { installClientRouter, setClientBoot, evaluateCanActivate } from '@vexjs/runtime';
-import { routes } from '/src/routes.ts';
+import {
+  installClientRouter,
+  setClientBoot,
+  evaluateCanActivate,
+  ${isDev ? '__hmrPrepareSignals,' : ''}
+} from '@vexjs/runtime';
+import { routes as initialRoutes } from '/src/routes.ts';
+
+let routes = initialRoutes;
 
 function flatten(routes, out = []) {
   for (const r of routes) {
@@ -171,7 +220,6 @@ async function resolveMod(mod) {
 let current;
 
 function abandon() {
-  // Drop reference only — DOM is about to be replaced by applyDocument.
   current = null;
 }
 
@@ -186,7 +234,7 @@ async function mountInto(comp, target, data, forceMount) {
   }
 }
 
-async function boot() {
+async function boot(hmrState) {
   const route = flatten(routes).find((r) => match(r.path, location.pathname));
   if (!route) return;
   const app = document.getElementById('app');
@@ -196,7 +244,12 @@ async function boot() {
     current = null;
   }
 
-  const data = JSON.parse(document.getElementById('__VEX_DATA__')?.textContent || '{}');
+  let data = JSON.parse(document.getElementById('__VEX_DATA__')?.textContent || '{}');
+  if (hmrState && hmrState.data !== undefined) {
+    data = { ...data, data: hmrState.data };
+  }
+  ${isDev ? `if (hmrState?.signals) { __hmrPrepareSignals(hmrState.signals); }` : ''}
+
   const url = new URL(location.href);
   const guard = await evaluateCanActivate(route.guard || route.canActivate, {
     params: paramsFromPath(route.path, location.pathname),
@@ -213,7 +266,7 @@ async function boot() {
   const target = outlet;
 
   if (guard.type === 'deny') {
-    if (!route.error) return; // keep SSR error HTML from navigate/applyDocument
+    if (!route.error) return;
     const err = await resolveMod(route.error);
     const props = { ...data, status: data.status ?? guard.status, message: data.message ?? guard.message };
     await mountInto(err, target, props, true);
@@ -221,19 +274,14 @@ async function boot() {
   }
 
   const comp = await resolveMod(route.component);
-  const csr = route.render === 'csr' || target.hasAttribute('data-vex-csr');
-  await mountInto(comp, target, data, csr);
+  const force = Boolean(hmrState) || route.render === 'csr' || target.hasAttribute('data-vex-csr');
+  await mountInto(comp, target, data, force);
 }
 
 setClientBoot(() => boot(), { abandon });
 installClientRouter();
 boot();
-
-if (import.meta.hot) {
-  import.meta.hot.accept(() => {
-    boot();
-  });
-}
+${hmrBlock}
 `
 }
 
