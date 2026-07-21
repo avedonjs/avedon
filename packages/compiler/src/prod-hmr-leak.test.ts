@@ -27,7 +27,9 @@ describe('prod HMR leak', () => {
     { timeout: 120_000 },
     () => {
       const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
-      execSync('pnpm -F @avedon/compiler build && pnpm -F @avedon/vite-plugin build && pnpm -F example build:app', {
+      execSync(
+        'pnpm -F avedon build && pnpm -F @avedon/compiler build && pnpm -F @avedon/vite-plugin build && pnpm -F example build:app',
+        {
         cwd: repoRoot,
         stdio: 'pipe',
       })

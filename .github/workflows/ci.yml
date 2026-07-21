@@ -111,5 +111,8 @@ jobs:
       - name: Build (test dependency)
         run: pnpm build
 
+      - name: Refresh workspace binaries after build
+        run: pnpm install --frozen-lockfile
+
       - name: Unit & integration tests
         run: pnpm test
