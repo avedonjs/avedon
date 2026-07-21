@@ -30,7 +30,8 @@ Logos use **`currentColor`**; set `color` in HTML/CSS for single-color (black/wh
 | `favicon/favicon-16x16.png` | Favicon |
 | `favicon/favicon-32x32.png` | Favicon / tab |
 | `favicon/apple-touch-icon.png` | 180×180 touch icon |
-| `og-image.png` | 1200×630 Open Graph |
+| `github-org-avatar.png` | 1024×1024 org/profile avatar (`#09090B` + light monogram) |
+| `og-image.png` | 1200×630 Open Graph / GitHub social preview |
 | `og-image.svg` | OG source (for re-export) |
 
 ## Clear space
@@ -80,7 +81,16 @@ rsvg-convert -w 16 -h 16 logo/icon.svg -o logo/favicon/favicon-16x16.png
 rsvg-convert -w 32 -h 32 logo/icon.svg -o logo/favicon/favicon-32x32.png
 rsvg-convert -w 180 -h 180 logo/icon.svg -o logo/favicon/apple-touch-icon.png
 rsvg-convert -w 1200 -h 630 logo/og-image.svg -o logo/og-image.png
+sed 's/currentColor/#FAFAFA/g' logo/icon.svg | rsvg-convert -w 1024 -h 1024 -b '#09090B' -o logo/github-org-avatar.png
 ```
+
+## GitHub About / social
+
+GitHub has no public API for social preview or org avatar uploads. Use:
+
+- **Org avatar:** Settings → [Organization profile](https://github.com/organizations/avedonjs/settings/profile) → upload `logo/github-org-avatar.png`
+- **Repo social preview:** [Repository settings → Social preview](https://github.com/avedonjs/avedon/settings#social-preview) → upload `logo/og-image.png`
+- **Topics / description:** editable via `gh repo edit`
 
 ## Typography (wordmark)
 
