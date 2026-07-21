@@ -41,14 +41,37 @@ const build = spawn(process.execPath, [cli, 'build'], {
   cwd: example,
   stdio: 'inherit',
 })
-const buildCode = await new Promise((resolve) => build.on('close', resolve))
+const buildCode = await new Promise((resolve, reject) => {
+  const timer = setTimeout(() => {
+    build.kill('SIGKILL')
+    reject(new Error('avedon build timed out after 180s'))
+  }, 180_000)
+  build.on('close', (code) => {
+    clearTimeout(timer)
+    resolve(code)
+  })
+})
 if (buildCode !== 0) throw new Error('avedon build failed')
 
 const child = spawn(process.execPath, ['build/server.js'], {
   cwd: example,
   stdio: ['ignore', 'pipe', 'pipe'],
   env: { ...process.env, PORT: String(port) },
+  detached: true,
 })
+
+function killServer() {
+  if (child.pid == null) return
+  try {
+    process.kill(-child.pid, 'SIGKILL')
+  } catch {
+    try {
+      child.kill('SIGKILL')
+    } catch {
+      /* already dead */
+    }
+  }
+}
 
 try {
   await waitFor(`${base}/isr-lab`)
@@ -75,5 +98,5 @@ try {
 
   console.log('isr-smoke ok')
 } finally {
-  child.kill('SIGKILL')
+  killServer()
 }

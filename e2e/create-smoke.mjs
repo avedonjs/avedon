@@ -48,7 +48,21 @@ await run('pnpm', ['install'], { cwd: root })
 const dev = spawn('pnpm', ['exec', 'avedon', 'dev'], {
   cwd: appDir,
   stdio: ['ignore', 'pipe', 'pipe'],
+  detached: true,
 })
+
+function killDevTree() {
+  if (dev.pid == null) return
+  try {
+    process.kill(-dev.pid, 'SIGKILL')
+  } catch {
+    try {
+      dev.kill('SIGKILL')
+    } catch {
+      /* already dead */
+    }
+  }
+}
 
 try {
   await waitFor('http://localhost:5173/')
@@ -58,6 +72,6 @@ try {
   }
   console.log('create-smoke ok')
 } finally {
-  dev.kill('SIGKILL')
+  killDevTree()
   fs.rmSync(appDir, { recursive: true, force: true })
 }

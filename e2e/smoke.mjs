@@ -26,6 +26,7 @@ async function waitFor(url, ms = 30_000) {
 const child = spawn(process.execPath, [cli, 'dev'], {
   cwd: example,
   stdio: ['ignore', 'pipe', 'pipe'],
+  detached: true,
 })
 
 let stderr = ''
@@ -33,6 +34,19 @@ child.stderr?.on('data', (d) => {
   stderr += String(d)
 })
 child.stdout?.on('data', () => {})
+
+function killDevTree() {
+  if (child.pid == null) return
+  try {
+    process.kill(-child.pid, 'SIGKILL')
+  } catch {
+    try {
+      child.kill('SIGKILL')
+    } catch {
+      /* already dead */
+    }
+  }
+}
 
 try {
   await waitFor('http://localhost:5173/')
@@ -149,5 +163,5 @@ try {
   console.error(stderr.slice(-2000))
   throw err
 } finally {
-  child.kill('SIGKILL')
+  killDevTree()
 }
