@@ -2,31 +2,45 @@
   export let children
 </script>
 
-<style>
-  :global(body) {
-    font-family: Georgia, 'Times New Roman', serif;
+<style unscoped>
+  :root {
+    --bg: #09090b;
+    --fg: #fafafa;
+    --muted: #a1a1aa;
+    --accent: #06b6d4;
+    --accent-deep: #0891b2;
+    --line: rgba(250, 250, 250, 0.12);
+    --font: 'Syne', sans-serif;
+  }
+
+  body {
     margin: 0;
-    background: linear-gradient(160deg, #f7f3ea, #e8eef5);
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  .shell {
     min-height: 100vh;
   }
-  .shell {
-    max-width: 40rem;
+
+  /* Non-home lab pages keep a readable column if visited directly. */
+  .shell > :not(:has([data-starter-stage])) {
+    display: block;
+    box-sizing: border-box;
+    max-width: 42rem;
     margin: 0 auto;
-    padding: 1.5rem;
+    padding: 1.5rem clamp(1rem, 3vw, 2rem);
   }
-  .shell nav a { margin-right: 0.75rem; }
 </style>
 
 <template>
   <div class="shell">
-    <nav>
-      <a href="/">Home</a>
-      <a href="/docs/intro">Docs</a>
-      <a href="/posts/1">Post</a>
-      <a href="/stream">Stream</a>
-      <a href="/login">Login</a>
-      <a href="/admin">Admin</a>
-    </nav>
     <slot />
   </div>
 </template>

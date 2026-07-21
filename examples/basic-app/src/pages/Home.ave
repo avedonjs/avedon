@@ -1,30 +1,207 @@
-<script>
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
   export let title
+
+  const count = signal(0)
+
+  function inc() {
+    count.set(count.get() + 1)
+  }
+
+  function reset() {
+    count.set(0)
+  }
 </script>
 
 <script server>
-  import { redirect } from '@avedon/server'
-
   export async function load() {
     return { title: 'avedon' }
-  }
-
-  export const actions = {
-    login: async ({ session }) => {
-      session!.set({ demo: true })
-      return redirect('/admin')
-    },
   }
 </script>
 
 <style scoped>
-  h1 { letter-spacing: -0.02em; }
+  .stage {
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.75rem;
+    width: min(100%, 56rem);
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  .stage-glow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(70vw, 36rem);
+    height: min(70vw, 36rem);
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.16), transparent 68%);
+    pointer-events: none;
+    z-index: -1;
+    will-change: transform;
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+
+  .stage-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(250, 250, 250, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(250, 250, 250, 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at 30% 20%, #000 20%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .brand {
+    margin: 0;
+    font-size: clamp(3.5rem, 12vw, 7rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    padding-right: 0.06em;
+    animation: rise 0.7s ease both;
+  }
+
+  .headline {
+    margin: 0;
+    max-width: 18ch;
+    font-size: clamp(1.35rem, 3.5vw, 2rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    animation: rise 0.7s ease 0.06s both;
+  }
+
+  .support {
+    margin: 0;
+    max-width: 36rem;
+    color: var(--muted);
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.5;
+    animation: rise 0.7s ease 0.12s both;
+  }
+
+  .demo {
+    margin-top: 0.25rem;
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    max-width: 22rem;
+    animation: rise 0.7s ease 0.18s both;
+  }
+
+  .demo-label {
+    margin: 0 0 0.75rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .demo-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .demo-count {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .demo-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .demo-actions button {
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.3rem;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .demo-actions button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.6rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes drift {
+    0% {
+      transform: translate(8%, -18%) scale(1);
+    }
+    33% {
+      transform: translate(-55%, 35%) scale(1.08);
+    }
+    66% {
+      transform: translate(-15%, 70%) scale(0.92);
+    }
+    100% {
+      transform: translate(-70%, -5%) scale(1.05);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brand,
+    .headline,
+    .support,
+    .demo {
+      animation: none;
+    }
+
+    .stage-glow {
+      animation: none;
+      transform: translate(8%, -18%);
+    }
+  }
 </style>
 
 <template>
-  <h1>{title}</h1>
-  <p>SSG home — pre-rendered at build time. Use the nav for client-side routing.</p>
-  <form method="POST" action="?/login">
-    <button type="submit">Demo login → /admin</button>
-  </form>
+  <main class="stage" data-starter-stage>
+    <div class="stage-glow" aria-hidden="true"></div>
+    <div class="stage-grid" aria-hidden="true"></div>
+    <p class="brand">{title}</p>
+    <h1 class="headline">Full-stack TypeScript, one .ave file.</h1>
+    <p class="support">Edit src/pages/Home.ave and save — the dev server reloads with your changes.</p>
+    <section class="demo">
+      <p class="demo-label">Live signal — this runs in the browser.</p>
+      <div class="demo-row">
+        <span class="demo-count">{count}</span>
+        <div class="demo-actions">
+          <button type="button" on:click={inc}>Increment</button>
+          <button type="button" on:click={reset}>Reset</button>
+        </div>
+      </div>
+    </section>
+  </main>
 </template>

@@ -54,7 +54,8 @@ try {
   const home = await (await fetch('http://localhost:5173/')).text()
   if (!home.includes('avedon')) throw new Error('Home SSR missing brand')
   if (!home.includes('data-avedon-page')) throw new Error('Home missing data-avedon-page outlet')
-  if (!home.includes('href="/admin"')) throw new Error('Layout nav missing')
+  if (!home.includes('Live signal')) throw new Error('Home missing signal demo')
+  if (!home.includes('Increment')) throw new Error('Home missing counter controls')
 
   const post = await (await fetch('http://localhost:5173/posts/1')).text()
   if (!post.includes('Hello avedon')) throw new Error('Post SSR missing title')
