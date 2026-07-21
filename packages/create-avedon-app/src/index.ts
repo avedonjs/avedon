@@ -1,12 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { ScaffoldOptions, ScaffoldResult } from './types.js'
+import { applyOrm } from './apply-orm.js'
+import { applyTailwind } from './apply-tailwind.js'
 
-export type ScaffoldResult = {
-  dest: string
-  name: string
-  packageManager: 'pnpm' | 'npm' | 'yarn' | 'bun'
-}
+export type { OrmChoice, ScaffoldOptions, ScaffoldResult, CreateOptions } from './types.js'
+export { parseCreateArgs, resolveCreateOptions } from './options.js'
+export type { ParsedCreateArgs } from './options.js'
 
 function detectPackageManager(): ScaffoldResult['packageManager'] {
   const ua = process.env.npm_config_user_agent ?? ''
@@ -87,8 +88,27 @@ function copyDir(src: string, dest: string, name: string) {
   }
 }
 
+function normalizeOptions(
+  destInput: string,
+  options?: ScaffoldOptions | string,
+): Required<Pick<ScaffoldOptions, 'name' | 'tailwind' | 'orm'>> {
+  if (typeof options === 'string') {
+    return { name: path.basename(options), tailwind: false, orm: 'none' }
+  }
+  const rawName = options?.name ?? path.resolve(destInput)
+  return {
+    name: path.basename(rawName),
+    tailwind: options?.tailwind ?? false,
+    orm: options?.orm ?? 'none',
+  }
+}
+
 /** Scaffold a new avedon app into `dest` (absolute or relative). */
-export function scaffoldApp(destInput: string, name = path.basename(destInput)): ScaffoldResult {
+export function scaffoldApp(
+  destInput: string,
+  options?: ScaffoldOptions | string,
+): ScaffoldResult {
+  const opts = normalizeOptions(destInput, options)
   const dest = path.resolve(destInput)
   if (fs.existsSync(dest)) {
     throw new Error(`Directory exists: ${dest}`)
@@ -97,7 +117,7 @@ export function scaffoldApp(destInput: string, name = path.basename(destInput)):
   if (!fs.existsSync(tmpl)) {
     throw new Error(`Template not found at ${tmpl}`)
   }
-  copyDir(tmpl, dest, name)
+  copyDir(tmpl, dest, opts.name)
 
   const monorepoRoot =
     process.env.AVEDON_MONOREPO_ROOT?.trim() ||
@@ -107,11 +127,25 @@ export function scaffoldApp(destInput: string, name = path.basename(destInput)):
     linkScaffoldToMonorepo(dest, monorepoRoot)
   }
 
-  return { dest, name, packageManager: detectPackageManager() }
+  if (opts.orm !== 'none') {
+    applyOrm(dest, opts.orm)
+  }
+
+  if (opts.tailwind) {
+    applyTailwind(dest)
+  }
+
+  return {
+    dest,
+    name: opts.name,
+    packageManager: detectPackageManager(),
+    tailwind: opts.tailwind,
+    orm: opts.orm,
+  }
 }
 
 export function formatNextSteps(result: ScaffoldResult): string {
-  const { name, packageManager } = result
+  const { name, packageManager, tailwind, orm } = result
   const install =
     packageManager === 'pnpm'
       ? 'pnpm install'
@@ -128,10 +162,24 @@ export function formatNextSteps(result: ScaffoldResult): string {
         : packageManager === 'bun'
           ? 'bunx avedon dev'
           : 'npx avedon dev'
+
+  let extra = ''
+  if (tailwind) {
+    extra += '\n  Tailwind is ready — edit classes in src/pages/Home.ave'
+  }
+  if (orm !== 'none') {
+    extra += '\n  Copy .env.example → .env and set DATABASE_URL'
+    if (orm === 'drizzle') {
+      extra += '\n  Then use db:generate / db:push when you add a Drizzle schema'
+    } else {
+      extra += '\n  Then run db:generate after you add Prisma models'
+    }
+  }
+
   return `Created ${name}
 
   cd ${name}
   ${install}
-  ${run}
+  ${run}${extra}
 `
 }

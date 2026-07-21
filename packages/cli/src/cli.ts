@@ -1,7 +1,7 @@
 import { nodeAdapter, type Builder } from '@avedon/adapter-node'
 import type { Routes } from '@avedon/server'
 import { avedon } from '@avedon/vite-plugin'
-import { formatNextSteps, scaffoldApp } from 'create-avedon-app'
+import { formatNextSteps, resolveCreateOptions, scaffoldApp } from 'create-avedon-app'
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -27,7 +27,7 @@ async function main() {
       await cmdPreview()
       break
     case 'create':
-      await cmdCreate(args[0] ?? 'my-avedon-app')
+      await cmdCreate(args)
       break
     default:
       console.error(`Unknown command: ${cmd}\n`)
@@ -40,7 +40,7 @@ function printHelp() {
   console.log(`avedon CLI
 
 Usage:
-  avedon create [name]
+  avedon create [name] [--yes] [--tailwind|--no-tailwind] [--orm=none|drizzle|prisma]
   avedon dev
   avedon build
   avedon start
@@ -180,10 +180,11 @@ async function cmdPreview() {
   await import(pathToFileURL(serverPath).href)
 }
 
-async function cmdCreate(name: string) {
-  const dest = path.resolve(name)
+async function cmdCreate(argv: string[]) {
   try {
-    const result = scaffoldApp(dest, path.basename(dest))
+    const options = await resolveCreateOptions(argv)
+    const dest = path.resolve(options.name)
+    const result = scaffoldApp(dest, options)
     console.log(formatNextSteps(result))
   } catch (err) {
     console.error(err instanceof Error ? err.message : err)

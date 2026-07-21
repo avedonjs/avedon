@@ -1,7 +1,7 @@
 # Create-app optional add-ons (Tailwind + ORM)
 
 Updated: 2026-07-21  
-**Status:** Approved design  
+**Status:** Implemented (2026-07-21)  
 **Scope:** `packages/create-avedon-app` (+ thin `avedon create` argv passthrough)
 
 ## Goal

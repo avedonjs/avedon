@@ -40,7 +40,7 @@ try {
 
   const create = spawn(
     process.execPath,
-    ['node_modules/create-avedon-app/dist/cli.js', 'test-app'],
+    ['node_modules/create-avedon-app/dist/cli.js', 'test-app', '--yes'],
     { cwd: isolated, stdio: 'inherit' },
   )
   const code = await new Promise((resolve) => create.on('close', resolve))

@@ -33,7 +33,7 @@ function run(cmd, args, opts = {}) {
 
 fs.rmSync(appDir, { recursive: true, force: true })
 
-await run(process.execPath, [cli, 'create', appDir], {
+await run(process.execPath, [cli, 'create', appDir, '--yes'], {
   cwd: root,
   env: { ...process.env, AVEDON_MONOREPO_ROOT: root },
 })
