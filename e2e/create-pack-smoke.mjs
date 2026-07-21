@@ -1,7 +1,7 @@
 /**
  * npm pack + isolated install smoke for create-avedon-app (pre-publish).
  */
-import { execSync, spawn } from 'node:child_process'
+import { execFileSync, execSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -21,7 +21,7 @@ try {
   console.log('--- npm pack output ---')
   console.log(tarball)
 
-  const listing = execSync(`tar -tzf ${JSON.stringify(tarballPath)}`, { encoding: 'utf8' })
+  const listing = execFileSync('tar', ['-tzf', tarballPath], { encoding: 'utf8' })
   console.log('--- tarball listing (first 40 lines) ---')
   console.log(listing.split('\n').slice(0, 40).join('\n'))
 
@@ -32,7 +32,7 @@ try {
     throw new Error('template missing from tarball')
   }
 
-  execSync(`npm install ${JSON.stringify(tarballPath)}`, {
+  execFileSync('npm', ['install', tarballPath], {
     cwd: isolated,
     stdio: 'inherit',
     env: { ...process.env, npm_config_user_agent: 'npm' },

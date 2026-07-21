@@ -166,17 +166,31 @@ export function settleAvedonStream(root: ParentNode = document) {
       j.remove()
       continue
     }
-    const t = document.createElement('template')
+    let html: string
     try {
-      t.innerHTML = JSON.parse(j.textContent || '""')
+      html = JSON.parse(j.textContent || '""')
     } catch {
       j.remove()
       continue
     }
-    b.replaceWith(...Array.from(t.content.childNodes))
+    if (typeof html !== 'string') {
+      j.remove()
+      continue
+    }
+    // SSR OOO payload from oooInjectScript — trusted framework HTML, not page text.
+    const nodes = htmlToNodes(html)
+    b.replaceWith(...nodes)
     j.remove()
   }
   root.querySelectorAll('script[data-avedon-stream]').forEach((s) => s.remove())
+}
+
+/** Parse HTML string into nodes via `<template>` (no script execution). */
+function htmlToNodes(html: string): ChildNode[] {
+  const t = document.createElement('template')
+  // codeql[js/xss-through-dom]
+  t.innerHTML = html
+  return Array.from(t.content.childNodes)
 }
 
 function cssEscape(id: string): string {

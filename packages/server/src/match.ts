@@ -7,7 +7,7 @@ export interface MatchResult {
 }
 
 export function matchRoute(routes: Routes, pathname: string): MatchResult | null {
-  const normalized = pathname.replace(/\/+$/, '') || '/'
+  const normalized = stripTrailingSlashes(pathname) || '/'
   return matchList(routes, normalized, [], {})
 }
 
@@ -66,14 +66,27 @@ function matchPath(
 }
 
 function split(path: string): string[] {
-  return path.replace(/\/+$/, '').replace(/^\/+/, '').split('/').filter(Boolean)
+  const trimmed = stripTrailingSlashes(stripLeadingSlashes(path))
+  if (!trimmed) return []
+  return trimmed.split('/').filter(Boolean)
+}
+
+function stripTrailingSlashes(path: string): string {
+  let end = path.length
+  while (end > 0 && path.charCodeAt(end - 1) === 47 /* / */) end--
+  return end === path.length ? path : path.slice(0, end)
+}
+
+function stripLeadingSlashes(path: string): string {
+  let start = 0
+  while (start < path.length && path.charCodeAt(start) === 47 /* / */) start++
+  return start === 0 ? path : path.slice(start)
 }
 
 /** Extract params by matching a concrete pathname against a route pattern. */
 export function paramsFromPath(pattern: string, pathname: string): Record<string, string> | null {
-  const m = matchPath(pattern, pathname.replace(/\/+$/, '') || '/')
+  const m = matchPath(pattern, stripTrailingSlashes(pathname) || '/')
   if (!m) return null
   if (m.rest && m.rest !== '/') return null
   return m.params
 }
-

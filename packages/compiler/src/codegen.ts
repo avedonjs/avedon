@@ -654,7 +654,9 @@ function emitClientElement(
       lines.push(`__effects.push(() => { ${id}.value = ${a.value} ?? ''; });`)
       lines.push(`${id}.addEventListener('input', () => { ${a.value} = ${id}.value; __invalidate(); });`)
     } else if (a.kind === 'expr') {
-      lines.push(`__effects.push(() => { ${id}.setAttribute(${JSON.stringify(a.name)}, String(${a.value} ?? '')); });`)
+      lines.push(
+        `__effects.push(() => { ${id}.setAttribute(${JSON.stringify(a.name)}, '' + (${a.value} ?? '')); });`,
+      )
     } else if (a.value == null) {
       lines.push(`${id}.setAttribute(${JSON.stringify(a.name)}, '');`)
     } else {
