@@ -1,83 +1,83 @@
-# vexjs Guide
+# Getting started
 
-TypeScript-first full-stack framework with `.vex` components, Angular-style `routes.ts`, and Vite.
+This guide walks through running vexjs from this repository and the core development loop.
 
-## Quick start
+## Prerequisites
 
-```bash
-npm install
-npm run build -w @vexjs/runtime -w @vexjs/compiler -w @vexjs/server -w @vexjs/vite-plugin -w @vexjs/adapter-node -w vex
-cd examples/basic
-npx vex dev
-```
+- Node.js **>= 20**
+- pnpm **>= 9**
 
-Or scaffold:
+## Install and build
+
+From the repository root:
 
 ```bash
-npx vex create my-app
+pnpm install
+pnpm build
 ```
 
-## `.vex` files
+This builds all workspace packages (`@vexjs/*` and `vex`).
 
-```vex
-<script lang="ts">
-  export let title
-  let count = 0
-</script>
+## Run the example app
 
-<script lang="ts" server>
-  export async function load() {
-    return { title: 'Hi' }
-  }
-  export const actions = {
-    default: async ({ formData }) => ({ title: String(formData.get('q')) }),
-  }
-  export const api = {
-    'GET /api/items': async () => Response.json([]),
-  }
-</script>
-
-<style>
-  h1 { font-weight: 600; }
-</style>
-
-<h1>{title}</h1>
-<button on:click={() => count++}>{count}</button>
+```bash
+pnpm -F example dev
 ```
 
-- Client script never receives server exports
-- API keys are absolute from the site root
+The CLI starts Vite on [http://localhost:5173](http://localhost:5173) with the vexjs plugin and SSR middleware.
 
-## Routing
+Useful routes in `examples/basic-app`:
 
-```ts
-import type { Routes } from '@vexjs/server'
-import Home from './pages/Home.vex'
-
-export const routes: Routes = [
-  { path: '/', component: Home, render: 'ssr' },
-  { path: '/about', component: Home, render: 'ssg' },
-  { path: '/app', component: Home, render: 'csr' },
-]
-```
+| Path | Render | Notes |
+|------|--------|-------|
+| `/` | `ssg` | Pre-rendered at build time |
+| `/posts/:id` | `ssr` | `load`, named action, `api_GET` |
+| `/admin` | `csr` | Client-only; `guard` + route `error` |
 
 ## CLI
 
+The `vex` package provides:
+
 | Command | Description |
 |---------|-------------|
-| `vex dev` | Vite + SSR middleware |
-| `vex build` | Client + server + SSG + Node adapter |
-| `vex preview` | Run `build/server.js` |
-| `vex create` | New app template |
+| `vex create [name]` | Scaffold a new app directory |
+| `vex dev` | Development server (Vite + middleware) |
+| `vex build` | Client + server bundles, SSG pages, Node adapter output |
+| `vex start` | Run the production server (`preview` is an alias) |
 
-## Packages
+Inside the example package these map to `pnpm -F example dev`, `build:app`, and `start`.
 
-- `@vexjs/compiler` — `.vex` → JS
-- `@vexjs/runtime` — stores, navigate, enhance, HTML escape
-- `@vexjs/server` — routes + request pipeline
-- `@vexjs/vite-plugin` — transform + HMR + `.vex.d.ts`
-- `@vexjs/adapter-node` — production Node
-- `@vexjs/adapter-bun` / `@vexjs/adapter-cloudflare` — stubs (not implemented yet)
-- `vex` — CLI
+## Verify the monorepo
 
-See [design spec](./superpowers/specs/2026-07-20-vexjs-design.md).
+```bash
+pnpm test
+pnpm test:smoke
+```
+
+End-to-end (Playwright):
+
+```bash
+pnpm test:e2e
+```
+
+## Project layout (example)
+
+```
+examples/basic-app/
+├── src/
+│   ├── routes.ts          # defineRoutes([...])
+│   ├── pages/*.vex        # Route components + layouts
+│   ├── guards/            # Route guards
+│   ├── hooks.server.ts    # Server hooks
+│   ├── client.ts          # Client boot
+│   └── server-entry.ts    # Server entry
+├── package.json
+└── ...
+```
+
+## Next steps
+
+1. Read [`.vex` components](./vex-components.md)
+2. Configure routes in [Routing](./routing.md)
+3. Pick render modes in [Rendering](./rendering.md)
+4. Skim [Packages](./packages.md) if you are changing the framework itself

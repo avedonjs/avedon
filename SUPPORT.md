@@ -12,6 +12,6 @@
 ## Documentation
 
 - [README](./README.md) — overview and quick start
-- [`docs/`](./docs/) — design notes and deeper documentation
+- [Documentation index](./docs/README.md) — guides for components, routing, rendering, and packages
 
 Before opening an issue, search existing issues and skim the README for known behavior.

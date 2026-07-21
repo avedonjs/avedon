@@ -1,27 +1,26 @@
 # vexjs
 
-TypeScript-first full-stack web framework.
+TypeScript-first full-stack web framework for building applications with colocated UI, styles, and server logic.
 
-```
-.vex ──► @vexjs/compiler ──► client + server modules
-routes.ts ──► @vexjs/server ──► adapter-node ──► HTTP
-                 └─ @vexjs/vite-plugin (dev/HMR)
-browser ◄── @vexjs/runtime (hydrate, client nav, forms)
-```
+vexjs gives you a single component format (`.vex`), explicit routing, hybrid rendering, and a Vite-based toolchain aimed at clear boundaries between client and server code.
 
-## Packages
+## Features
 
-| Package | Role |
-|---------|------|
-| `@vexjs/shared` | Shared types + adapter interface |
-| `@vexjs/compiler` | `.vex` parse + codegen |
-| `@vexjs/runtime` | `signal` / hydrate / client nav |
-| `@vexjs/server` | Match, guards, load/actions/api, SSR |
-| `@vexjs/vite-plugin` | Vite transform + middleware |
-| `@vexjs/adapter-node` | Node production server |
-| `vex` | CLI (`dev` / `build` / `start`) |
+- **`.vex` components** — template, scoped styles, client script, and server script in one file
+- **Explicit routing** — `defineRoutes` in `routes.ts` with layouts, guards, and per-route render mode
+- **Hybrid rendering** — `ssr`, `ssg`, and `csr` on a per-route basis (default `ssr`)
+- **Colocated server APIs** — `load`, form `actions`, and `api_*` handlers next to the page UI
+- **Reactive client runtime** — `signal`, `computed`, and `effect` from `@vexjs/runtime`
+- **Adapter model** — platform-agnostic `Request` / `Response` core; Node adapter for production today
+
+## Requirements
+
+- Node.js >= 20
+- pnpm >= 9
 
 ## Quick start
+
+Clone this repository and run the example app:
 
 ```bash
 pnpm install
@@ -29,21 +28,62 @@ pnpm build
 pnpm -F example dev
 ```
 
-Open http://localhost:5173 — Home (SSG), `/posts/1` (SSR + like action + `.json` API), `/admin` (CSR + guard).
+Open [http://localhost:5173](http://localhost:5173).
 
-## `.vex` format
+| Route | Behavior |
+|-------|----------|
+| `/` | SSG home page |
+| `/posts/:id` | SSR page with server action and JSON API |
+| `/admin` | CSR page protected by a guard |
+
+Production-style build of the example:
+
+```bash
+pnpm -F example build:app
+pnpm -F example start
+```
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [Documentation index](./docs/README.md) | Map of all docs |
+| [Getting started](./docs/guide.md) | Setup, CLI, and first app flow |
+| [`.vex` components](./docs/vex-components.md) | File format, scripts, styles, template |
+| [Routing](./docs/routing.md) | `defineRoutes`, layouts, guards, errors |
+| [Rendering](./docs/rendering.md) | `ssr` / `ssg` / `csr` and when to use each |
+| [Packages](./docs/packages.md) | Monorepo package roles |
+| [Design spec](./docs/superpowers/specs/2026-07-20-vexjs-design.md) | Architecture decisions |
+
+## Packages
+
+| Package | Role |
+|---------|------|
+| `@vexjs/shared` | Shared types and adapter interface |
+| `@vexjs/compiler` | `.vex` parse and codegen |
+| `@vexjs/runtime` | Signals, hydration, client navigation, forms |
+| `@vexjs/server` | Matching, guards, load/actions/api, SSR orchestration |
+| `@vexjs/vite-plugin` | Vite transform, HMR, and middleware |
+| `@vexjs/adapter-node` | Node production server |
+| `@vexjs/adapter-bun` | Bun adapter interface (stub) |
+| `@vexjs/adapter-cloudflare` | Cloudflare adapter interface (stub) |
+| `vex` | CLI (`create`, `dev`, `build`, `start`) |
+
+## Example
+
+Minimal `.vex` page with server `load` and client reactivity:
 
 ```vex
 <script server>
-  export async function load() { return { title: 'Hi' } }
-  export const actions = { async like() { return { ok: true } } }
-  export async function api_GET() { return Response.json({ ok: true }) }
+  export async function load() {
+    return { title: 'Hello' }
+  }
 </script>
 
 <script>
   import { signal } from '@vexjs/runtime'
   export let title
-  const n = signal(0)
+  const count = signal(0)
 </script>
 
 <style scoped>
@@ -52,17 +92,30 @@ Open http://localhost:5173 — Home (SSG), `/posts/1` (SSR + like action + `.jso
 
 <template>
   <h1>{title}</h1>
-  <button on:click={() => n.set(n.get() + 1)}>{n}</button>
+  <button type="button" on:click={() => count.set(count.get() + 1)}>
+    {count}
+  </button>
 </template>
 ```
 
-Routing is explicit via `defineRoutes([...])` in `src/routes.ts` (not file-based). Per-route `render: 'ssr' | 'ssg' | 'csr'`.
+Routes are declared explicitly:
 
-## Future work
+```ts
+import { defineRoutes } from '@vexjs/server'
+import Home from './pages/Home.vex'
 
-- Full VS Code language service for `.vex` (today: sibling `.vex.d.ts`)
-- Real Bun / Cloudflare / Vercel / Deno adapters (interface stubs only)
-- CSS-in-JS / Tailwind integrations
+export default defineRoutes([
+  { path: '/', component: Home, render: 'ssg' },
+])
+```
+
+See [`examples/basic-app`](./examples/basic-app) for a fuller walkthrough.
+
+## Roadmap
+
+- Language service for `.vex` (today: sibling `.vex.d.ts` stubs)
+- Production adapters beyond Node (Bun, Cloudflare, and others)
+- First-class CSS tooling integrations
 
 ## Community
 
@@ -71,3 +124,7 @@ Routing is explicit via `defineRoutes([...])` in `src/routes.ts` (not file-based
 - [Security](./SECURITY.md)
 - [Support](./SUPPORT.md)
 - [License (MIT)](./LICENSE)
+
+## License
+
+[MIT](./LICENSE) © Anıl ÖZ
