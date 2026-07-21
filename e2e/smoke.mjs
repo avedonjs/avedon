@@ -58,17 +58,49 @@ try {
     throw new Error('Route error UI missing')
   }
 
-  const allowed = await fetch('http://localhost:5173/admin?auth=1')
-  if (allowed.status !== 200) throw new Error('Admin with auth=1 should pass, got ' + allowed.status)
-  const allowedHtml = await allowed.text()
-  if (!allowedHtml.includes('data-avedon-csr')) throw new Error('CSR shell missing on admin')
-
   const like = await fetch('http://localhost:5173/posts/1?_action=like', {
     method: 'POST',
     headers: { origin: 'http://localhost:5173' },
   })
   const likeHtml = await like.text()
   if (!likeHtml.includes('Hello avedon')) throw new Error('like action failed')
+
+  const csrfNoOrigin = await fetch('http://localhost:5173/posts/1?_action=like', {
+    method: 'POST',
+    headers: { Referer: '' },
+  })
+  if (csrfNoOrigin.status !== 403) {
+    throw new Error(
+      'CSRF expected 403 without Origin/Referer, got ' + csrfNoOrigin.status,
+    )
+  }
+  const csrfEvil = await fetch('http://localhost:5173/posts/1?_action=like', {
+    method: 'POST',
+    headers: { origin: 'https://evil.example' },
+  })
+  if (csrfEvil.status !== 403) {
+    throw new Error('CSRF expected 403 for evil Origin, got ' + csrfEvil.status)
+  }
+
+  const loginRes = await fetch('http://localhost:5173/login?_action=login', {
+    method: 'POST',
+    headers: {
+      origin: 'http://localhost:5173',
+      'content-type': 'application/x-www-form-urlencoded',
+    },
+    body: 'user=admin',
+    redirect: 'manual',
+  })
+  const setCookie = loginRes.headers.get('set-cookie')
+  if (!setCookie) throw new Error('login missing Set-Cookie')
+  const sessionCookie = setCookie.split(';')[0]
+
+  const allowed = await fetch('http://localhost:5173/admin', {
+    headers: { cookie: sessionCookie },
+  })
+  if (allowed.status !== 200) throw new Error('Admin with session should pass, got ' + allowed.status)
+  const allowedHtml = await allowed.text()
+  if (!allowedHtml.includes('data-avedon-csr')) throw new Error('CSR shell missing on admin')
 
   const avedonMod = await fetch('http://localhost:5173/src/pages/Home.ave?import')
   const vexBody = await avedonMod.text()

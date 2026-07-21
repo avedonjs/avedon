@@ -49,7 +49,7 @@ Named (or `default`) handlers for form posts. The example app uses `?_action=nam
 </template>
 ```
 
-Form actions are protected by a same-origin **CSRF** check (Origin, or Referer if Origin is absent). Cross-site POSTs get `403`. Disable with `csrf: false` on the handler options, or allow extra origins via `csrf: { trustedOrigins: ['https://app.example'] }`.
+Form actions are protected by a same-origin **CSRF** check (Origin, or Referer if Origin is absent). Cross-site POSTs get `403`. There is no hidden CSRF token in v1 — see [Middleware — CSRF](./middleware.md). Disable with `csrf: false` on the handler options, or allow extra origins via `csrf: { trustedOrigins: ['https://app.example'] }`.
 
 ### `api_*`
 

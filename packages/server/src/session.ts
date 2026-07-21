@@ -15,6 +15,10 @@ export function validateSessionOptions(session: SessionOptions | undefined): voi
   }
 }
 
+export function getSession(event: LoadEvent): Session | undefined {
+  return event.session
+}
+
 export async function createSession(
   cookies: CookiesBag,
   url: URL,

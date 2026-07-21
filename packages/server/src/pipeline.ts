@@ -19,6 +19,100 @@ import type {
 import { createRenderStream, streamToString, type RenderStreamController } from '@avedon/runtime'
 import { buildRequestContext, validateSessionOptions } from './session.js'
 
+/** Wait up to this long for `load()` before flushing the HTML shell (streaming SSR default). */
+const SSR_SHELL_FLUSH_MS = 40
+
+type LoadOutcome =
+  | { kind: 'pending' }
+  | { kind: 'data'; data: Record<string, unknown> }
+  | { kind: 'response'; response: Response }
+  | { kind: 'throw'; err: unknown }
+
+function startLoadOutcome(
+  component: AvedonComponentModule,
+  event: LoadEvent,
+  extra: Record<string, unknown>,
+): { promise: Promise<void>; get: () => LoadOutcome } {
+  let outcome: LoadOutcome = { kind: 'pending' }
+  const promise = (async () => {
+    if (!component.load) {
+      outcome = { kind: 'data', data: { ...extra } }
+      return
+    }
+    try {
+      const loaded = await component.load(event)
+      if (loaded instanceof Response) {
+        outcome = { kind: 'response', response: loaded }
+        return
+      }
+      let data: Record<string, unknown> = { ...extra }
+      if (loaded) data = { ...data, ...loaded }
+      outcome = { kind: 'data', data }
+    } catch (err) {
+      outcome = { kind: 'throw', err }
+    }
+  })()
+  return { promise, get: () => outcome }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+function clientRedirectScript(response: Response): string {
+  const loc = response.headers.get('Location') ?? '/'
+  return `<script>window.location.href=${JSON.stringify(loc)}</script>`
+}
+
+async function responseFromLoadOutcome(
+  options: HandlerOptions,
+  matched: MatchResult,
+  request: Request,
+  outcome: Extract<LoadOutcome, { kind: 'response' | 'throw' }>,
+): Promise<Response> {
+  if (outcome.kind === 'response') return outcome.response
+  const err = outcome.err
+  if (err instanceof Response) return err
+  if (isHttpError(err)) return renderHttpError(options, err, request, matched)
+  throw err
+}
+
+async function writeLoadFailureIntoStream(
+  ctrl: RenderStreamController,
+  options: HandlerOptions,
+  matched: MatchResult,
+  request: Request,
+  err: unknown,
+): Promise<void> {
+  if (err instanceof Response) {
+    ctrl.enqueueHtml(clientRedirectScript(err))
+    return
+  }
+  if (isHttpError(err)) {
+    if (err.status === 404) {
+      const mod = pickRouteComponent(matched, 'notFound', options.notFoundComponent)
+      if (mod) {
+        const c = await resolveComponent(mod)
+        ctrl.enqueueHtml(`<div data-avedon-page>${c.render({ url: request.url })}</div>`)
+        return
+      }
+      ctrl.enqueueHtml('<div data-avedon-page><p>Not Found</p></div>')
+      return
+    }
+    const mod = pickRouteComponent(matched, 'error', options.errorComponent)
+    if (mod) {
+      const c = await resolveComponent(mod)
+      ctrl.enqueueHtml(
+        `<div data-avedon-page>${c.render({ status: err.status, message: err.body })}</div>`,
+      )
+      return
+    }
+    ctrl.enqueueHtml(`<div data-avedon-page><p>${err.body || `HTTP ${err.status}`}</p></div>`)
+    return
+  }
+  throw err
+}
+
 export function createHandler(options: HandlerOptions) {
   validateSessionOptions(options.session)
 
@@ -144,13 +238,18 @@ async function dispatchMatched(
       } catch {
         formData = new FormData()
       }
-      const result = await handler({ ...event, formData })
-      if (result instanceof Response) return finalize(result)
-      const extra =
-        result && typeof result === 'object' && !Array.isArray(result)
-          ? (result as Record<string, unknown>)
-          : { result }
-      return finalize(await renderPage(options, matched, component, event, extra))
+      try {
+        const result = await handler({ ...event, formData })
+        if (result instanceof Response) return finalize(result)
+        const extra =
+          result && typeof result === 'object' && !Array.isArray(result)
+            ? (result as Record<string, unknown>)
+            : { result }
+        return finalize(await renderPage(options, matched, component, event, extra))
+      } catch (err) {
+        if (err instanceof Response) return finalize(err)
+        throw err
+      }
     }
   }
 
@@ -231,19 +330,17 @@ async function renderPage(
   const route = matched.route
   const mode = route.render ?? 'ssr'
 
-  let data: Record<string, unknown> = {}
-  if (mode !== 'csr' && component.load) {
-    const loaded = await component.load(event)
-    if (loaded instanceof Response) return loaded
-    if (loaded) data = { ...data, ...loaded }
-  }
-  data = { ...data, ...extra }
-
   const cssParts: string[] = []
   if (component.css) cssParts.push(component.css)
 
   if (mode === 'csr') {
-    const body = `<div data-avedon-csr></div>`
+    let data: Record<string, unknown> = { ...extra }
+    if (component.load) {
+      const loaded = await component.load(event)
+      if (loaded instanceof Response) return loaded
+      if (loaded) data = { ...data, ...loaded }
+    }
+    const body = `<div data-avedon-csr"></div>`
     for (let i = matched.chain.length - 1; i >= 0; i--) {
       const r = matched.chain[i]
       if (!r.layout) continue
@@ -274,25 +371,78 @@ async function renderPage(
   }
   if (options.getCss?.()) cssParts.push(options.getCss())
 
-  const prefix = renderShellPrefix(options.appHtml, {
-    css: cssParts.filter(Boolean).join('\n'),
-  })
-  const suffix = renderShellSuffixFromTemplate(options.appHtml, {
-    props: data,
-    clientEntry: options.clientEntry,
-  })
+  const css = cssParts.filter(Boolean).join('\n')
 
-  let writeBody: (ctrl: RenderStreamController) => Promise<void> = async (ctrl) => {
-    ctrl.enqueueHtml('<div data-avedon-page>')
-    await writeComponent(component, data, ctrl)
-    ctrl.enqueueHtml('</div>')
+  if (route.bufferHtml) {
+    let data: Record<string, unknown> = { ...extra }
+    if (component.load) {
+      const loaded = await component.load(event)
+      if (loaded instanceof Response) return loaded
+      if (loaded) data = { ...data, ...loaded }
+    }
+    const body = await renderPageBodyBuffered(component, data, layouts)
+    const html = renderShell(options.appHtml, {
+      body,
+      css,
+      props: data,
+      clientEntry: options.clientEntry,
+    })
+    return new Response(html, {
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    })
   }
 
-  for (const layout of layouts) {
-    const inner = writeBody
-    writeBody = async (ctrl) => {
-      await writeComponent(layout, { ...data, children: inner }, ctrl)
+  const prefix = renderShellPrefix(options.appHtml, { css })
+
+  const buildWriters = (data: Record<string, unknown>) => {
+    let writeBody: (ctrl: RenderStreamController) => Promise<void> = async (ctrl) => {
+      ctrl.enqueueHtml('<div data-avedon-page>')
+      await writeComponent(component, data, ctrl)
+      ctrl.enqueueHtml('</div>')
     }
+    for (const layout of layouts) {
+      const inner = writeBody
+      writeBody = async (ctrl) => {
+        await writeComponent(layout, { ...data, children: inner }, ctrl)
+      }
+    }
+    return writeBody
+  }
+
+  const suffixFor = (data: Record<string, unknown>) =>
+    renderShellSuffixFromTemplate(options.appHtml, {
+      props: data,
+      clientEntry: options.clientEntry,
+    })
+
+  const { promise: loadPromise, get: getLoadOutcome } = startLoadOutcome(component, event, extra)
+  await Promise.race([loadPromise, sleep(SSR_SHELL_FLUSH_MS)])
+
+  const early = getLoadOutcome()
+  if (early.kind === 'response' || early.kind === 'throw') {
+    return responseFromLoadOutcome(options, matched, event.request, early)
+  }
+
+  if (early.kind === 'data') {
+    const writeBody = buildWriters(early.data)
+    const ctrl = createRenderStream()
+    const stream = ctrl.stream
+    void (async () => {
+      try {
+        ctrl.enqueueHtml(prefix)
+        await writeBody(ctrl)
+        await ctrl.waitPending()
+        ctrl.enqueueHtml(suffixFor(early.data))
+        ctrl.close()
+      } catch (err) {
+        ctrl.error(err)
+      }
+    })()
+    return new Response(stream, {
+      status: 200,
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    })
   }
 
   const ctrl = createRenderStream()
@@ -300,9 +450,27 @@ async function renderPage(
   void (async () => {
     try {
       ctrl.enqueueHtml(prefix)
-      await writeBody(ctrl)
+      await loadPromise
+      const final = getLoadOutcome()
+      if (final.kind === 'response') {
+        ctrl.enqueueHtml(clientRedirectScript(final.response))
+        ctrl.enqueueHtml(suffixFor(extra))
+        ctrl.close()
+        return
+      }
+      if (final.kind === 'throw') {
+        await writeLoadFailureIntoStream(ctrl, options, matched, event.request, final.err)
+        ctrl.enqueueHtml(suffixFor(extra))
+        ctrl.close()
+        return
+      }
+      if (final.kind !== 'data') {
+        ctrl.error(new Error('load did not settle after await'))
+        return
+      }
+      await buildWriters(final.data)(ctrl)
       await ctrl.waitPending()
-      ctrl.enqueueHtml(suffix)
+      ctrl.enqueueHtml(suffixFor(final.data))
       ctrl.close()
     } catch (err) {
       ctrl.error(err)
@@ -313,6 +481,29 @@ async function renderPage(
     status: 200,
     headers: { 'content-type': 'text/html; charset=utf-8' },
   })
+}
+
+async function renderPageBodyBuffered(
+  component: AvedonComponentModule,
+  data: Record<string, unknown>,
+  layouts: AvedonComponentModule[],
+): Promise<string> {
+  const ctrl = createRenderStream()
+  let writeBody: (c: RenderStreamController) => Promise<void> = async (c) => {
+    c.enqueueHtml('<div data-avedon-page>')
+    await writeComponent(component, data, c)
+    c.enqueueHtml('</div>')
+  }
+  for (const layout of layouts) {
+    const inner = writeBody
+    writeBody = async (c) => {
+      await writeComponent(layout, { ...data, children: inner }, c)
+    }
+  }
+  await writeBody(ctrl)
+  await ctrl.waitPending()
+  ctrl.close()
+  return streamToString(ctrl.stream)
 }
 
 async function writeComponent(

@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { scaffoldApp } from './index.js'
+import { fileURLToPath } from 'node:url'
 
 const dirs: string[] = []
 
@@ -38,5 +39,21 @@ describe('scaffoldApp', () => {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
     dirs.push(dest)
     expect(() => scaffoldApp(dest, 'x')).toThrow(/Directory exists/)
+  })
+
+  it('links file: deps when monorepo root is found', () => {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
+    dirs.push(dest)
+    const app = path.join(dest, 'linked-app')
+    const repoRoot = path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..'))
+    process.env.AVEDON_MONOREPO_ROOT = repoRoot
+    try {
+      scaffoldApp(app, 'linked-app')
+      const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
+      expect(pkg.dependencies.avedon).toMatch(/^file:/)
+      expect(pkg.dependencies['@avedon/server']).toMatch(/^file:/)
+    } finally {
+      delete process.env.AVEDON_MONOREPO_ROOT
+    }
   })
 })

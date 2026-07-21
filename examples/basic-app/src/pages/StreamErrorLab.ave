@@ -1,0 +1,12 @@
+<script server>
+  import { notFound } from '@avedon/server'
+
+  export async function load() {
+    await new Promise((r) => setTimeout(r, 800))
+    throw notFound('stream-after-shell')
+  }
+</script>
+
+<template>
+  <p>should not render</p>
+</template>

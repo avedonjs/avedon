@@ -1,0 +1,15 @@
+<script server>
+  import { redirect } from '@avedon/server'
+
+  export async function load({ params }) {
+    const mode = params.mode
+    if (mode === 'slow') {
+      await new Promise((r) => setTimeout(r, 800))
+    }
+    redirect('/?stream-redirect=ok')
+  }
+</script>
+
+<template>
+  <p data-stream-redirect-lab>redirecting…</p>
+</template>

@@ -1,6 +1,13 @@
-# avedon
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="logo/logo-horizontal-dark.png">
+  <img src="logo/logo-horizontal-light.png" alt="Avedon" width="280">
+</picture>
+
+> **Not released yet.** Active development — APIs, CLI behavior, and package versions may change before the first npm release.
 
 TypeScript-first full-stack web framework for building applications with colocated UI, styles, and server logic.
+
+# avedon
 
 avedon gives you a single component format (`.ave`), explicit routing, hybrid rendering, and a Vite-based toolchain aimed at clear boundaries between client and server code.
 

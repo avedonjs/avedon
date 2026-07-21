@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Avedon">
+  <title>Avedon TypeScript-first full-stack framework</title>
+  <rect width="1200" height="630" fill="#09090b"/>
+  <g opacity="0.08" stroke="#fafafa" stroke-width="2" fill="none">
+    <path d="M80 80v40M80 80h40"/>
+    <path d="M1120 80v40M1120 80h-40"/>
+    <path d="M80 550v-40M80 550h40"/>
+    <path d="M1120 550v-40M1120 550h-40"/>
+  </g>
+  <g transform="translate(520 279) scale(2.2)" fill="#fafafa">
+    <g fill="none" stroke="#fafafa" stroke-width="3" stroke-linecap="square">
+      <path d="M4 4v7M4 4h7"/>
+      <path d="M28 4v7M28 4h-7"/>
+      <path d="M4 28v-7M4 28h7"/>
+      <path d="M28 28v-7M28 28h-7"/>
+    </g>
+    <path fill="#fafafa" d="M16 11 10 26h2.8l1.2-3h4l1.2 3H22L16 11z"/>
+  </g>
+  <text
+    x="600"
+    y="420"
+    text-anchor="middle"
+    fill="#fafafa"
+    font-family="ui-sans-serif, system-ui, Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    font-size="56"
+    font-weight="600"
+    letter-spacing="-0.04em"
+  >avedon</text>
+  <text
+    x="600"
+    y="480"
+    text-anchor="middle"
+    fill="#a1a1aa"
+    font-family="ui-sans-serif, system-ui, Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif"
+    font-size="28"
+    font-weight="400"
+  >TypeScript-first full-stack framework</text>
+  <rect x="560" y="368" width="80" height="3" fill="#06b6d4" rx="1.5"/>
+</svg>

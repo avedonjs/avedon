@@ -3,11 +3,13 @@ import { createCookies } from './cookies.js'
 import { sealPayload, unsealPayload } from './seal.js'
 import {
   createSession,
+  getSession,
   requireSession,
   validateSessionOptions,
   DEFAULT_SESSION_NAME,
 } from './session.js'
 import { createHandler } from './pipeline.js'
+import { redirect } from './errors.js'
 
 const secret = 'test-secret-at-least-32-characters-long'
 
@@ -91,6 +93,37 @@ describe('requireSession + pipeline', () => {
     expect(await res.text()).toContain('admin')
   })
 
+  it('action redirect attaches pending session cookies', async () => {
+    const handler = createHandler({
+      appHtml,
+      session: { secret },
+      routes: [
+        {
+          path: '/login',
+          component: {
+            render: () => 'login',
+            actions: {
+              login: async ({ session }) => {
+                session!.set({ userId: '1' })
+                redirect('/')
+              },
+            },
+          },
+        },
+      ],
+    })
+    const res = await handler(
+      new Request('http://localhost/login?_action=login', {
+        method: 'POST',
+        headers: { origin: 'http://localhost' },
+        body: new URLSearchParams(),
+      }),
+    )
+    expect(res.status).toBe(302)
+    const setCookies = res.headers.getSetCookie?.() ?? []
+    expect(setCookies.some((c) => c.startsWith(`${DEFAULT_SESSION_NAME}=`))).toBe(true)
+  })
+
   it('action set persists Set-Cookie', async () => {
     const handler = createHandler({
       appHtml,
@@ -130,5 +163,12 @@ describe('requireSession + pipeline', () => {
         routes: [{ path: '/', component: { render: () => '' } }],
       }),
     ).toThrow(/32/)
+  })
+})
+
+describe('getSession', () => {
+  it('returns event.session', () => {
+    const session = { data: { x: 1 }, set: () => {}, destroy: () => {} }
+    expect(getSession({ session } as never)).toBe(session)
   })
 })

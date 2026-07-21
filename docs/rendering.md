@@ -14,14 +14,14 @@ Default when unspecified: **`ssr`**.
 
 Server-side rendering runs `load` (and related pipeline steps) per request, then **streams** HTML that the client hydrates.
 
-### Streaming (out-of-order)
+**Default behavior:** SSR routes stream a `ReadableStream` body. The framework does **not** wait for the full page HTML before sending bytes unless you opt out with `bufferHtml: true`.
 
-SSR responses use a `ReadableStream` body:
+### Streaming (default)
 
-1. Document shell (head + opening `#app`) flushes as soon as `load` finishes — improves TTFB on large pages
-2. Sync template HTML streams next
-3. `{#await}` blocks emit a placeholder immediately, then a late injection payload when the promise settles
-4. `__AVEDON_DATA__` and the client entry are sent only after all await boundaries settle (hydrate sees a complete DOM)
+1. **Shell timing:** AVEDON starts `load()` and waits up to ~40ms before flushing the document shell (head + opening `#app`). If `load()` completes within that window with data only, the shell is sent and the body streams as usual. If `load()` is still running after the window, the shell is flushed early so TTFB stays low while slow data loads.
+2. Sync template HTML and `renderInto` / `renderToStream` output stream next; slow component work can follow in later chunks.
+3. `{#await}` blocks emit a placeholder immediately, then a late injection payload when the promise settles.
+4. `__AVEDON_DATA__` and the client entry are sent only after all await boundaries settle (hydrate sees a complete DOM).
 
 Compiled SSR modules export `renderToStream` / `renderInto` (streaming) and sync `render` (back-compat; awaits stay empty in the sync path).
 
@@ -33,7 +33,25 @@ Use for:
 - Pages that must be fresh on every visit
 - Large pages or slow `{#await}` regions where early bytes matter
 
-Example: `/posts/:id` in the basic app; `/stream` demonstrates a delayed `{#await}`.
+Example: `/posts/:id` in the basic app; `/stream` demonstrates a delayed `{#await}`; `/stream-ttfb/stream` vs `/stream-ttfb/buffer` compare default streaming TTFB to buffered SSR.
+
+### `bufferHtml: true` (opt-out)
+
+When set on an SSR route, AVEDON waits for `load()` and the full HTML body, then sends one complete document (no response stream). Use when:
+
+- **`<head>` depends on `load`** — `<title>`, meta tags, or Open Graph fields must be correct in the first HTML snapshot for SEO or social previews.
+- **`load()` often redirects or errors** — e.g. auth gates that must return real HTTP `302`/`404`/`403` without relying on post-shell fallback (see below). Example: `/login` in the basic app uses `bufferHtml: true` for predictable HTML on auth-related GETs.
+- **Simplicity on fast routes** — when streaming buys little, buffering is fine.
+
+### Redirects and errors in `load()`
+
+| When | Behavior |
+|------|----------|
+| `load()` finishes **before** the shell is committed (~40ms window or fast `load`) | Normal HTTP response: `redirect()` → `302` + `Location`; `notFound()` / `error()` → matching status and HTML error page. |
+| Shell **already sent**, then `load()` redirects | Cannot change status or `Location`. AVEDON injects `<script>window.location.href=…</script>` into the stream and closes the document. |
+| Shell **already sent**, then `load()` throws `notFound()` / `error()` | Route `notFound` / `error` component HTML is rendered into the stream (HTTP status stays 200 — already committed). Generic message if no component is configured. |
+
+Form **actions** (POST) are unchanged: redirects and `Set-Cookie` from actions are always full HTTP responses, not streamed page renders.
 
 ## SSG
 

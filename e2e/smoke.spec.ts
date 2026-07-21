@@ -38,6 +38,18 @@ test('admin guard blocks unauthorized', async ({ request }) => {
   expect(res.status()).toBe(403)
 })
 
+test('admin guard allows session after login', async ({ request }) => {
+  const login = await request.post('/login?_action=login', {
+    headers: { origin: 'http://localhost:5173' },
+    form: { user: 'admin' },
+  })
+  expect(login.status()).toBeLessThan(400)
+  const admin = await request.get('/admin')
+  expect(admin.status()).toBe(200)
+  const html = await admin.text()
+  expect(html).toContain('data-avedon-csr')
+})
+
 test('api_GET via .json', async ({ request }) => {
   const res = await request.get('/posts/1.json')
   expect(res.ok()).toBeTruthy()

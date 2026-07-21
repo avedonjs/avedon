@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { build as viteBuild, createServer } from 'vite'
+import { printDevBanner, shouldPrintDevBanner } from './banner.js'
 import { buildSsgPages, flattenRoutes } from './ssg.js'
 
 async function main() {
@@ -74,6 +75,10 @@ async function loadConfig(root = process.cwd()) {
 
 async function cmdDev() {
   const root = process.cwd()
+  const devArgv = process.argv.slice(3)
+  if (shouldPrintDevBanner(devArgv)) {
+    printDevBanner()
+  }
   const server = await createServer({
     root,
     plugins: [avedon({ root })],

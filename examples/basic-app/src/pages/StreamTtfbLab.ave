@@ -1,0 +1,16 @@
+<script>
+  export let ready
+</script>
+
+<script lang="ts" server>
+  const delayMs = 800
+
+  export async function load() {
+    await new Promise((r) => setTimeout(r, delayMs))
+    return { ready: `ok-after-${delayMs}ms` }
+  }
+</script>
+
+<template>
+  <p data-ttfb-lab>{ready}</p>
+</template>

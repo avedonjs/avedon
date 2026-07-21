@@ -1,0 +1,13 @@
+<script>
+  export let builtAt
+</script>
+
+<script lang="ts" server>
+  export async function load() {
+    return { builtAt: Date.now() }
+  }
+</script>
+
+<template>
+  <p data-isr-lab>built:{builtAt}</p>
+</template>

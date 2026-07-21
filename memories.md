@@ -25,6 +25,12 @@ Güncelleme: 2026-07-21
 - Reaktivite: `@avedon/runtime`
 - Toolchain: Vite + `@avedon/vite-plugin`
 
+## Marka görsel
+
+- Logo paketi: `logo/` (crop mark + monogram A; accent `#06B6D4`; explorations altında B/C taslakları)
+- README: `<picture>` + `logo-horizontal-{light,dark}.png`; favicon/OG: `examples/basic-app/public/`
+- Wordmark: küçük harf `avedon`
+
 ## Tercihler
 
 - Ana branch; commit yalnızca kullanıcı isterse
@@ -33,6 +39,8 @@ Güncelleme: 2026-07-21
 
 - **Rename + GitHub (2026-07-21):** kaynak `avedonjs/avedon` (private); eski `hocestnonsatis/vexjs` silindi
 - DoD: `pnpm build`, `pnpm test`, `pnpm test:smoke` geçti (2026-07-21 rename sonrası)
+- **Denetim turu (2026-07-21):** create monorepo `file:` link + `e2e/create-smoke.mjs`; CSRF Origin/Referer dokümantasyonu; streaming TTFB unit test; `e2e/isr-smoke.mjs`; basic-app login + `requireSession`; action redirect + Set-Cookie düzeltmesi; `getSession` export
+- **Streaming SSR varsayılan (2026-07-21):** `earlyShell` kaldırıldı; SSR default stream + ~40ms shell gecikmesi; post-shell redirect → `window.location` script; `bufferHtml` opt-out; `/login` bufferHtml; `e2e/stream-redirect-smoke.mjs`
 
 ## Komutlar
 

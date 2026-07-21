@@ -1,0 +1,32 @@
+<script>
+  export let error
+</script>
+
+<script lang="ts" server>
+  import { redirect } from '@avedon/server'
+
+  export const actions = {
+      login: async ({ session, formData }) => {
+      const user = String(formData.get('user') ?? '').trim()
+      if (user !== 'admin') {
+        return { error: 'Use user "admin" for the demo.' }
+      }
+      session!.set({ userId: user })
+      redirect('/admin')
+    },
+  }
+</script>
+
+<template>
+  <h1>Login</h1>
+  {#if error}
+    <p role="alert">{error}</p>
+  {/if}
+  <form method="POST" action="?_action=login">
+    <label>
+      User
+      <input name="user" value="admin" />
+    </label>
+    <button type="submit">Sign in</button>
+  </form>
+</template>

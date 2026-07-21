@@ -11,9 +11,14 @@ import ErrorLabBoom from './pages/ErrorLabBoom.ave'
 import ErrorLabPlainNf from './pages/ErrorLabPlainNf.ave'
 import ErrorLabNestedBoom from './pages/ErrorLabNestedBoom.ave'
 import ErrorLabParent from './pages/ErrorLabParent.ave'
+import IsrLab from './pages/IsrLab.ave'
+import StreamTtfbLab from './pages/StreamTtfbLab.ave'
+import StreamRedirectLab from './pages/StreamRedirectLab.ave'
+import StreamErrorLab from './pages/StreamErrorLab.ave'
+import Login from './pages/Login.ave'
 import RouteNotFound from './pages/errors/RouteNotFound.ave'
 import RouteError from './pages/errors/RouteError.ave'
-import { requireAuth } from './guards/auth'
+import { requireSession } from '@avedon/server'
 
 const routes = defineRoutes([
   {
@@ -43,11 +48,53 @@ const routes = defineRoutes([
     render: 'ssr',
   },
   {
+    path: '/stream-ttfb/stream',
+    layout: Layout,
+    component: StreamTtfbLab,
+    render: 'ssr',
+  },
+  {
+    path: '/stream-redirect/:mode',
+    layout: Layout,
+    component: StreamRedirectLab,
+    render: 'ssr',
+    notFound: RouteNotFound,
+  },
+  {
+    path: '/stream-ttfb/buffer',
+    layout: Layout,
+    component: StreamTtfbLab,
+    render: 'ssr',
+    bufferHtml: true,
+  },
+  {
+    path: '/isr-lab',
+    layout: Layout,
+    component: IsrLab,
+    render: 'ssg',
+    revalidate: 1,
+    getStaticPaths: () => ['/isr-lab'],
+  },
+  {
+    path: '/stream-error/slow',
+    layout: Layout,
+    component: StreamErrorLab,
+    notFound: RouteNotFound,
+    render: 'ssr',
+  },
+  {
+    path: '/login',
+    layout: Layout,
+    component: Login,
+    render: 'ssr',
+    bufferHtml: true,
+  },
+  {
     path: '/admin',
     layout: Layout,
     component: Admin,
     render: 'csr',
-    guard: requireAuth,
+    guard: requireSession(),
     error: AdminError,
   },
   {

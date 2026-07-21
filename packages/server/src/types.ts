@@ -82,6 +82,12 @@ export interface RouteConfig {
    * Only meaningful with `render: 'ssg'`.
    */
   revalidate?: number
+  /**
+   * SSR opt-out: wait for `load()` and the full document body before sending bytes
+   * (no streaming). Use when `<head>` depends on `load`, or redirects/errors must
+   * stay HTTP-level without a shell-first race.
+   */
+  bufferHtml?: boolean
   error?: AvedonComponentModule
   notFound?: AvedonComponentModule
 }
