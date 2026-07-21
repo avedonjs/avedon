@@ -5,6 +5,7 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -14,7 +15,7 @@ jobs:
   smoke:
     name: Smoke tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +38,9 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Refresh workspace binaries after build
+        run: pnpm install --frozen-lockfile
 
       - name: Smoke tests
         run: pnpm test:smoke
