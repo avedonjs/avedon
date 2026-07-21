@@ -174,21 +174,72 @@ function unwrapGlobal(css: string): string {
   return out
 }
 
+function scopeSelectorList(selector: string, hash: string): string {
+  return selector
+    .split(',')
+    .map((s) => {
+      const t = s.trim()
+      if (!t) return t
+      if (t.includes(hash)) return t
+      // don't scope bare html/body
+      if (t === 'html' || t === 'body' || t.startsWith('body ') || t.startsWith('html ')) return t
+      return `${t}[${hash}]`
+    })
+    .join(', ')
+}
+
+/**
+ * Scope selectors without regex (avoids ReDoS on long whitespace runs).
+ * Mirrors `(^|})\s*([^@{}][^{]*)\{` replacement: `${brace} ${scoped} {`.
+ */
 export function scopeCss(css: string, hash: string): string {
   if (!css.trim()) return ''
-  const unwrapped = unwrapGlobal(css)
-  return unwrapped.replace(/(^|})\s*([^@{}][^{]*)\{/g, (_m, brace: string, selector: string) => {
-    const scoped = selector
-      .split(',')
-      .map((s) => {
-        const t = s.trim()
-        if (!t) return t
-        if (t.includes(hash)) return t
-        // don't scope bare html/body
-        if (t === 'html' || t === 'body' || t.startsWith('body ') || t.startsWith('html ')) return t
-        return `${t}[${hash}]`
-      })
-      .join(', ')
-    return `${brace} ${scoped} {`
-  })
+  const src = unwrapGlobal(css)
+  let out = ''
+  let i = 0
+  let atBlockBoundary = true
+
+  while (i < src.length) {
+    if (!atBlockBoundary) {
+      const ch = src[i]!
+      out += ch
+      i++
+      if (ch === '}') atBlockBoundary = true
+      continue
+    }
+
+    // At ^ or after `}`: optional whitespace, then a non-@ selector until `{`.
+    const brace = out.endsWith('}') ? '}' : ''
+    if (brace) {
+      // `}` already copied in the previous iteration; trim trailing brace from out
+      // so we can re-emit as `${brace} ${scoped} {` like the old replace.
+      out = out.slice(0, -1)
+    }
+
+    let j = i
+    while (j < src.length && isAsciiSpace(src[j]!)) j++
+
+    if (j < src.length) {
+      const first = src[j]!
+      if (first !== '@' && first !== '{' && first !== '}') {
+        const selStart = j
+        while (j < src.length && src[j] !== '{') j++
+        if (j < src.length && src[j] === '{') {
+          const selector = src.slice(selStart, j)
+          out += `${brace} ${scopeSelectorList(selector, hash)} {`
+          i = j + 1
+          atBlockBoundary = false
+          continue
+        }
+      }
+    }
+
+    // No selector match — restore `}` if we peeled it, then copy one char.
+    if (brace) out += brace
+    out += src[i]!
+    i++
+    atBlockBoundary = false
+  }
+
+  return out
 }

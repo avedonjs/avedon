@@ -4,6 +4,26 @@ function escapeForTemplateLiteral(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
 }
 
+/** JSON string literal safe inside JS that may be embedded in HTML `<script>`. */
+function jsLiteral(value: string): string {
+  return JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (ch) => {
+    switch (ch) {
+      case '<':
+        return '\\u003c'
+      case '>':
+        return '\\u003e'
+      case '/':
+        return '\\u002f'
+      case '\u2028':
+        return '\\u2028'
+      case '\u2029':
+        return '\\u2029'
+      default:
+        return ch
+    }
+  })
+}
+
 export interface CompiledTemplate {
   ssrExpr: string
   /** statements that call __enqueue / __awaitBoundary / __pipeChildren */
@@ -554,7 +574,7 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
   for (const t of tokens) {
     const id = `${parent}_n${n++}`
     if (t.type === 'text') {
-      lines.push(`{ const ${id} = document.createTextNode(${JSON.stringify(t.value)}); ${parent}.appendChild(${id}); }`)
+      lines.push(`{ const ${id} = document.createTextNode(${jsLiteral(t.value)}); ${parent}.appendChild(${id}); }`)
     } else if (t.type === 'slot') {
       lines.push(`{
         const ${id} = document.createElement('div');
@@ -641,26 +661,26 @@ function emitClientElement(
   id: string,
 ): string {
   const lines = [
-    `const ${id} = document.createElement(${JSON.stringify(el.tag)});`,
-    `${id}.setAttribute(${JSON.stringify(hash)}, '');`,
+    `const ${id} = document.createElement(${jsLiteral(el.tag)});`,
+    `${id}.setAttribute(${jsLiteral(hash)}, '');`,
   ]
   for (const a of el.attrs) {
     if (a.kind === 'event') {
       const ev = a.name.slice(3)
       lines.push(
-        `${id}.addEventListener(${JSON.stringify(ev)}, function(event){ const __handler = (${a.value}); if (typeof __handler === 'function') __handler.call(this, event); __invalidate(); });`,
+        `${id}.addEventListener(${jsLiteral(ev)}, function(event){ const __handler = (${a.value}); if (typeof __handler === 'function') __handler.call(this, event); __invalidate(); });`,
       )
     } else if (a.kind === 'bind' && a.name === 'bind:value') {
       lines.push(`__effects.push(() => { ${id}.value = ${a.value} ?? ''; });`)
       lines.push(`${id}.addEventListener('input', () => { ${a.value} = ${id}.value; __invalidate(); });`)
     } else if (a.kind === 'expr') {
       lines.push(
-        `__effects.push(() => { ${id}.setAttribute(${JSON.stringify(a.name)}, '' + (${a.value} ?? '')); });`,
+        `__effects.push(() => { ${id}.setAttribute(${jsLiteral(a.name)}, (${a.value}) ?? ''); });`,
       )
     } else if (a.value == null) {
-      lines.push(`${id}.setAttribute(${JSON.stringify(a.name)}, '');`)
+      lines.push(`${id}.setAttribute(${jsLiteral(a.name)}, '');`)
     } else {
-      lines.push(`${id}.setAttribute(${JSON.stringify(a.name)}, ${JSON.stringify(a.value)});`)
+      lines.push(`${id}.setAttribute(${jsLiteral(a.name)}, ${jsLiteral(a.value)});`)
     }
   }
   if (!el.selfClosing && !VOID.has(el.tag.toLowerCase())) {

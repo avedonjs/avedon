@@ -188,7 +188,9 @@ export function settleAvedonStream(root: ParentNode = document) {
 /** Parse HTML string into nodes via `<template>` (no script execution). */
 function htmlToNodes(html: string): ChildNode[] {
   const t = document.createElement('template')
+  // SSR OOO payload from oooInjectScript — trusted framework HTML, not page text.
   // codeql[js/xss-through-dom]
+
   t.innerHTML = html
   return Array.from(t.content.childNodes)
 }
