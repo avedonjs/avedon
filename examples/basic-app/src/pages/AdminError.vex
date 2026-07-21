@@ -1,0 +1,10 @@
+<script>
+  export let status
+  export let message
+</script>
+
+<template>
+  <h1>Access denied</h1>
+  <p>{status}: {message}</p>
+  <p>Try <a href="/admin?auth=1">/admin?auth=1</a> to pass the fake guard.</p>
+</template>

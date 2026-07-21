@@ -1,0 +1,13 @@
+<script>
+  let count = 0
+</script>
+
+<style scoped>
+  button { font-size: 1.1rem; }
+</style>
+
+<template>
+  <h1>Admin (CSR)</h1>
+  <p>This page renders on the client when the guard allows.</p>
+  <button on:click={() => count++}>Clicked {count}</button>
+</template>

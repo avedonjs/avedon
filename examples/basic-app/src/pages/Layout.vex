@@ -1,0 +1,29 @@
+<script lang="ts">
+  export let children
+</script>
+
+<style>
+  :global(body) {
+    font-family: Georgia, 'Times New Roman', serif;
+    margin: 0;
+    background: linear-gradient(160deg, #f7f3ea, #e8eef5);
+    min-height: 100vh;
+  }
+  .shell {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  .shell nav a { margin-right: 0.75rem; }
+</style>
+
+<template>
+  <div class="shell">
+    <nav>
+      <a href="/">Home</a>
+      <a href="/posts/1">Post</a>
+      <a href="/admin">Admin</a>
+    </nav>
+    <slot />
+  </div>
+</template>

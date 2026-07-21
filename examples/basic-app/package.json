@@ -1,0 +1,21 @@
+{
+  "name": "example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vex dev",
+    "build:app": "vex build",
+    "start": "vex start"
+  },
+  "dependencies": {
+    "@vexjs/adapter-node": "workspace:*",
+    "@vexjs/runtime": "workspace:*",
+    "@vexjs/server": "workspace:*",
+    "@vexjs/vite-plugin": "workspace:*",
+    "vex": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2"
+  }
+}

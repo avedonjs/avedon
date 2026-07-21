@@ -1,0 +1,51 @@
+<script>
+  import { signal } from '@vexjs/runtime'
+  export let data
+  const likes = signal(data.post.likes)
+
+  function onLikeClick() {
+    likes.set(likes.get() + 1)
+  }
+</script>
+
+<script server>
+  import { db } from '../lib/db'
+  import { json, notFound } from '@vexjs/server'
+
+  export async function load({ params }) {
+    const post = db.post.find(params.id)
+    if (!post) throw notFound()
+    return { data: { post } }
+  }
+
+  export const actions = {
+    async like({ params }) {
+      const post = db.post.incrementLikes(params.id)
+      if (!post) throw notFound()
+      return { data: { post }, ok: true }
+    },
+  }
+
+  export async function api_GET({ params }) {
+    const post = db.post.find(params.id)
+    if (!post) throw notFound()
+    return json({ post })
+  }
+</script>
+
+<style scoped>
+  .title { font-weight: 700; }
+  button { font-size: 1rem; margin-right: 0.5rem; }
+</style>
+
+<template>
+  <article>
+    <h1 class="title">{data.post.title}</h1>
+    <p>{data.post.body}</p>
+    <p>Likes: {likes}</p>
+    <button type="button" on:click={onLikeClick}>♥ Optimistic</button>
+    <form method="POST" action="?_action=like">
+      <button type="submit">Like (server action)</button>
+    </form>
+  </article>
+</template>

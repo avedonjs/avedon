@@ -1,0 +1,8 @@
+<script>
+  export let url
+</script>
+
+<template>
+  <h1>Not found</h1>
+  <p>No page for {url}</p>
+</template>

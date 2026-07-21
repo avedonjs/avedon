@@ -1,0 +1,18 @@
+<script>
+  export let title
+</script>
+
+<script server>
+  export async function load() {
+    return { title: 'vexjs' }
+  }
+</script>
+
+<style scoped>
+  h1 { letter-spacing: -0.02em; }
+</style>
+
+<template>
+  <h1>{title}</h1>
+  <p>SSG home — pre-rendered at build time. Use the nav for client-side routing.</p>
+</template>

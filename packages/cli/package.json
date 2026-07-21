@@ -1,0 +1,24 @@
+{
+  "name": "vex",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "vex": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@vexjs/adapter-node": "workspace:*",
+    "@vexjs/server": "workspace:*",
+    "@vexjs/vite-plugin": "workspace:*",
+    "vite": "^6.2.2"
+  },
+  "devDependencies": {
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2"
+  }
+}
