@@ -143,56 +143,36 @@ export function createRenderStream(): RenderStreamController {
   return controller
 }
 
-/** Late chunk: JSON payload + script that swaps the placeholder (live parse). */
+/** Late chunk: `<template>` payload + script that swaps the placeholder (live parse). */
 export function oooInjectScript(id: string, html: string): string {
   const safe = String(id).replace(/[^a-zA-Z0-9_-]/g, '')
-  const json = JSON.stringify(html)
+  // Avoid premature `</template>` close if SSR HTML contains that sequence.
+  const body = html.replace(/<\/template/gi, '<\\/template')
   return (
-    `<script type="application/json" id="avedon-r-${safe}">${json.replace(/</g, '\\u003c')}</script>` +
-    `<script data-avedon-stream>(function(){var id=${JSON.stringify(safe)};var b=document.getElementById("avedon-b-"+id);var j=document.getElementById("avedon-r-"+id);if(!b||!j)return;var t=document.createElement("template");t.innerHTML=JSON.parse(j.textContent||'""');b.replaceWith.apply(b,Array.from(t.content.childNodes));j.remove();var s=document.currentScript;if(s)s.remove();})();</script>`
+    `<template id="avedon-r-${safe}">${body}</template>` +
+    `<script data-avedon-stream>(function(){var id=${JSON.stringify(safe)};var b=document.getElementById("avedon-b-"+id);var t=document.getElementById("avedon-r-"+id);if(!b||!t)return;b.replaceWith.apply(b,Array.from(t.content.childNodes));t.remove();var s=document.currentScript;if(s)s.remove();})();</script>`
   )
 }
 
 /**
  * Apply OOO payloads without executing scripts (DOMParser / client nav).
  * Idempotent if live scripts already settled the DOM.
+ * Clones pre-parsed `<template>` content — no text→HTML reinterpretation.
  */
 export function settleAvedonStream(root: ParentNode = document) {
-  const payloads = root.querySelectorAll('script[type="application/json"][id^="avedon-r-"]')
-  for (const j of payloads) {
-    const id = j.id.slice('avedon-r-'.length)
+  const payloads = root.querySelectorAll('template[id^="avedon-r-"]')
+  for (const t of payloads) {
+    if (!(t instanceof HTMLTemplateElement)) continue
+    const id = t.id.slice('avedon-r-'.length)
     const b = root.querySelector(`#avedon-b-${cssEscape(id)}`)
     if (!b) {
-      j.remove()
+      t.remove()
       continue
     }
-    let html: string
-    try {
-      html = JSON.parse(j.textContent || '""')
-    } catch {
-      j.remove()
-      continue
-    }
-    if (typeof html !== 'string') {
-      j.remove()
-      continue
-    }
-    // SSR OOO payload from oooInjectScript — trusted framework HTML, not page text.
-    const nodes = htmlToNodes(html)
-    b.replaceWith(...nodes)
-    j.remove()
+    b.replaceWith(...Array.from(t.content.childNodes))
+    t.remove()
   }
   root.querySelectorAll('script[data-avedon-stream]').forEach((s) => s.remove())
-}
-
-/** Parse HTML string into nodes via `<template>` (no script execution). */
-function htmlToNodes(html: string): ChildNode[] {
-  const t = document.createElement('template')
-  // SSR OOO payload from oooInjectScript — trusted framework HTML, not page text.
-  // codeql[js/xss-through-dom]
-
-  t.innerHTML = html
-  return Array.from(t.content.childNodes)
 }
 
 function cssEscape(id: string): string {

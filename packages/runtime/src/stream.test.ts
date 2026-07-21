@@ -56,7 +56,8 @@ describe('createRenderStream', () => {
       rest += c
     }
     expect(rest).toContain('avedon-r-b1')
-    expect(rest).toContain('\\u003cp>done\\u003c/p>')
+    expect(rest).toContain('<template id="avedon-r-b1">')
+    expect(rest).toContain('<p>done</p>')
   })
 
   it('pipeChildren accepts writer function', async () => {
@@ -70,10 +71,18 @@ describe('createRenderStream', () => {
 })
 
 describe('oooInjectScript', () => {
-  it('embeds html as JSON payload with stream script', () => {
+  it('embeds html in a template payload with stream script', () => {
     const chunk = oooInjectScript('b1', '<span>ok</span>')
-    expect(chunk).toContain('id="avedon-r-b1"')
+    expect(chunk).toContain('<template id="avedon-r-b1">')
+    expect(chunk).toContain('<span>ok</span>')
     expect(chunk).toContain('data-avedon-stream')
-    expect(chunk).toContain('\\u003cspan>ok\\u003c/span>')
+    expect(chunk).toContain('t.content.childNodes')
+  })
+
+  it('escapes nested </template> so the wrapper stays intact', () => {
+    const chunk = oooInjectScript('b1', '<div></template></div>')
+    expect(chunk).toContain('<\\/template>')
+    expect(chunk.startsWith('<template id="avedon-r-b1">')).toBe(true)
+    expect(chunk).toMatch(/<\/template><script data-avedon-stream>/)
   })
 })
