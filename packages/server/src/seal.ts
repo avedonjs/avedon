@@ -59,7 +59,11 @@ export async function unsealPayload(
   if (!iv || !cipher) return null
   try {
     const key = await deriveAesKey(secret)
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher)
+    const plain = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv as Uint8Array<ArrayBuffer> },
+      key,
+      cipher as Uint8Array<ArrayBuffer>,
+    )
     const parsed = JSON.parse(new TextDecoder().decode(plain)) as {
       data?: Record<string, unknown>
       exp?: number
