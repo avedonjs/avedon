@@ -34,6 +34,7 @@ Updated: 2026-07-22
 ## Preferences
 
 - Stay on main; commit only when the user asks
+- TypeScript: stay on 5.x for now; skip 6 bump — wait for **7.1** (stable programmatic API) before major TS upgrade (2026-07-22)
 
 ## Status
 
@@ -46,8 +47,20 @@ Updated: 2026-07-22
 - **Docs language (2026-07-21):** repo docs English-only; `logo/README.md` translated from Turkish
 - **Starter home (2026-07-21):** dark-stage template + basic-app home (Syne, `#09090B`, `#06B6D4`, live `signal` demo); spec `docs/superpowers/specs/2026-07-21-starter-home-design.md`
 - **Create-app add-ons (2026-07-21):** implemented — optional Tailwind (style convert) + ORM wiring (Drizzle/Prisma/none, no schema); interactive + flags; spec `docs/superpowers/specs/2026-07-21-create-app-addons-design.md`; plan `docs/superpowers/plans/2026-07-21-create-app-addons.md`
-- **Security audit (2026-07-22):** comprehensive pass — fixed path traversal (adapter-node `resolveUnderRoot`), compiler `on*` XSS rejection, HttpError HTML escape, `{#each}` insert order, `@media` CSS scoping, scaffold shell-quoting, HMR cache prune. Deferred: nested effect leaks, signal HMR ReDoS, trusted layout `children` HTML. Reports: `bug_report_2026-07-22.md`, `bug_data_2026-07-22.json`, `bugs_2026-07-22.csv`, `bug_config_2026-07-22.yaml`.
-- **Fix round (2026-07-22):** `create-pack-smoke` → `--pack-destination`; `e2e/path-traversal-smoke.mjs` (6 vectors → 403, positive `/assets/client.js` → 200); `packageManager: pnpm@9.15.0` already present; `pnpm test:smoke` 7/7 + unit 149/149 green. Not committed yet.
+- **Security audit (2026-07-22):** comprehensive pass — fixed path traversal (adapter-node `resolveUnderRoot`), compiler `on*` XSS rejection, HttpError HTML escape, `{#each}` insert order, `@media` CSS scoping, scaffold shell-quoting, HMR cache prune. Deferred post-publish: nested effect leaks, signal HMR ReDoS. BUG-010 handled in pre-publish gate.
+- **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
+- **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
+
+## Next steps (priority, 2026-07-22)
+
+Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
+
+1. Housekeeping — audit artefacts → `docs/superpowers/audits/`; ignore `.ave/` + `*.tsbuildinfo` (security fix round already on `main` as `babdfa0`)
+2. **BUG-010 (publish gate)** — trusted layout `children` docs + client Node/Fragment slot path (public `mount`/`update` string children = XSS footgun)
+3. Branch protection on `main` (Install, Typecheck, Build, Test, Smoke tests, Analyze)
+4. `NPM_TOKEN` + first npm publish / Changesets
+5. **Post-publish:** BUG-004 nested effect leak; BUG-006 HMR signal ReDoS
+6. Later (separate plans): docs/landing · typed DX · Playwright e2e · Cloudflare/Bun adapters
 
 ## Commands
 

@@ -9,3 +9,7 @@ test-results/
 playwright-report/
 playwright/.cache/
 *.ave.d.ts
+
+# Local build / typecheck artefacts
+examples/**/.ave/
+*.tsbuildinfo
