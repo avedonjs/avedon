@@ -65,18 +65,18 @@ GitHub Actions runs on every push and pull request. Before merging to `main`, en
 | Build | CI |
 | Test | CI |
 | Smoke tests | E2E / Smoke |
-| Analyze (CodeQL) | CodeQL |
+| Analyze (javascript-typescript) | CodeQL |
 
-Optional but recommended: require CodeQL for PRs when the repository security policy allows it.
+## Release & npm
 
-## Release & npm secrets
+See **[docs/publishing.md](./docs/publishing.md)** for the first manual publish and Trusted Publisher setup.
 
-Publishing uses [Changesets](https://github.com/changesets/changesets) (`.github/workflows/release.yml`). Maintainers must configure:
+Summary:
 
-1. **`NPM_TOKEN`** — Create an npm [granular access token](https://docs.npmjs.com/creating-and-viewing-access-tokens) with publish rights for the `avedon` / `@avedon` packages. In GitHub: **Settings → Secrets and variables → Actions → New repository secret**, name `NPM_TOKEN`, paste the token value.
-2. **Provenance** — The release workflow requests `id-token: write` so `pnpm changeset publish` can attach [npm provenance](https://docs.npmjs.com/generating-provenance-statements) (no extra secret).
-
-Until `NPM_TOKEN` is set, the release workflow can still open **Version Packages** pull requests when `.changeset/*.md` files exist. Without pending changesets, Changesets treats unpublished `0.1.0` packages as needing a first publish and the job fails with `ENEEDAUTH` — that is expected until you add `NPM_TOKEN` (or complete the first npm publish). Do not treat that red Release check as a product regression.
+1. **First publish** — maintainers run `pnpm build && pnpm changeset publish` locally with OTP (GAT bypass2fa / long-lived publish tokens are deprecated).
+2. **Ongoing** — configure npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) (OIDC) per package → workflow `release.yml`, repo `avedonjs/avedon`. The Release workflow uses Node 22 + `id-token: write`.
+3. **Optional `NPM_TOKEN`** — fallback only until OIDC is verified; then remove it.
+4. If the org blocks Actions from opening PRs, open the `changeset-release/main` Version Packages PR manually with `gh` (see publishing docs).
 
 ## Security
 

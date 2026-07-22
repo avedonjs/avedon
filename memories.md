@@ -50,16 +50,17 @@ Updated: 2026-07-22
 - **Security audit (2026-07-22):** comprehensive pass — fixed path traversal (adapter-node `resolveUnderRoot`), compiler `on*` XSS rejection, HttpError HTML escape, `{#each}` insert order, `@media` CSS scoping, scaffold shell-quoting, HMR cache prune. Deferred post-publish: nested effect leaks, signal HMR ReDoS. BUG-010 handled in pre-publish gate.
 - **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
 - **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
-- **Branch protection (2026-07-22):** `main` requires Install, Typecheck, Build, Test, Smoke tests, Analyze on PR merges; direct pushes allowed (`enforce_admins` false, no required PR reviews — preserves main workflow).
+- **Branch protection (2026-07-22):** `main` requires Install, Typecheck, Build, Test, Smoke tests, `Analyze (javascript-typescript)` on PR merges; direct pushes allowed (`enforce_admins` false).
+- **npm (2026-07-22):** versions at `0.1.1` on main; first publish is **manual** (`pnpm changeset publish` + OTP). Then configure Trusted Publisher (OIDC) per package → `release.yml`. Docs: `docs/publishing.md`. Release workflow uses Node 22 + OIDC; GAT bypass2fa deprecated.
 
 ## Next steps (priority, 2026-07-22)
 
 Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 
-1. Housekeeping — audit artefacts → `docs/superpowers/audits/`; ignore `.ave/` + `*.tsbuildinfo` (security fix round already on `main` as `babdfa0`)
-2. **BUG-010 (publish gate)** — trusted layout `children` docs + client Node/Fragment slot path (public `mount`/`update` string children = XSS footgun)
-3. Branch protection on `main` (Install, Typecheck, Build, Test, Smoke tests, Analyze)
-4. `NPM_TOKEN` + first npm publish / Changesets
+1. Housekeeping — done
+2. BUG-010 — done
+3. Branch protection — done
+4. **First npm publish** — maintainer: `pnpm build && pnpm changeset publish` (OTP); then Trusted Publisher on each package (`docs/publishing.md`)
 5. **Post-publish:** BUG-004 nested effect leak; BUG-006 HMR signal ReDoS
 6. Later (separate plans): docs/landing · typed DX · Playwright e2e · Cloudflare/Bun adapters
 

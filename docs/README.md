@@ -10,6 +10,7 @@ Official documentation for **avedon**, a TypeScript-first full-stack web framewo
 | [`.ave` components](./avedon-components.md) | Writing pages and UI |
 | [Routing](./routing.md) | Declaring routes, layouts, and guards |
 | [Security](./security.md) | Trusted layout children, reporting |
+| [Publishing](./publishing.md) | First npm publish + trusted publishing (OIDC) |
 | [Middleware](./middleware.md) | Logging, CORS, rate-limit (route-agnostic) |
 | [Session & cookies](./session.md) | Sealed session cookie + `requireSession` |
 | [Rendering](./rendering.md) | Choosing `ssr`, `ssg`, or `csr` |

@@ -28,5 +28,15 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.7.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avedonjs/avedon.git",
+    "directory": "packages/create-avedon-app"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }

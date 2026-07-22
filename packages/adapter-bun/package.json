@@ -23,5 +23,15 @@
   "devDependencies": {
     "tsup": "^8.4.0",
     "typescript": "^5.8.2"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avedonjs/avedon.git",
+    "directory": "packages/adapter-bun"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   }
 }
