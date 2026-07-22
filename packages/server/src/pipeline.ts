@@ -16,7 +16,7 @@ import type {
   RouteConfig,
   AvedonComponentModule,
 } from './types.js'
-import { createRenderStream, streamToString, type RenderStreamController } from '@avedon/runtime'
+import { createRenderStream, escapeHtml, streamToString, type RenderStreamController } from '@avedon/runtime'
 import { buildRequestContext, validateSessionOptions } from './session.js'
 
 /** Wait up to this long for `load()` before flushing the HTML shell (streaming SSR default). */
@@ -107,7 +107,9 @@ async function writeLoadFailureIntoStream(
       )
       return
     }
-    ctrl.enqueueHtml(`<div data-avedon-page><p>${err.body || `HTTP ${err.status}`}</p></div>`)
+    ctrl.enqueueHtml(
+      `<div data-avedon-page><p>${escapeHtml(err.body || `HTTP ${err.status}`)}</p></div>`,
+    )
     return
   }
   throw err

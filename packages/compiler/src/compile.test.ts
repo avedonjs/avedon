@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compile, compileSsr, parse } from './index.js'
+import { compile, compileSsr, parse, scopeCss } from './index.js'
 
 describe('parse', () => {
   it('splits client, server, style, markup', () => {
@@ -146,5 +146,42 @@ describe('compile', () => {
     expect(ssr.code).toContain(secret)
     expect(ssr.code).toContain('api_GET')
     expect(ssr.code).toContain('const api =')
+  })
+
+  it('BUG-002: rejects dynamic HTML event attributes (use on:*)', () => {
+    expect(() =>
+      compile(`<img src="x" onerror={payload} />`, { filename: 'Xss.ave' }),
+    ).toThrow(/on:error/)
+    expect(() =>
+      compileSsr(`<img src="x" onerror={payload} />`, { filename: 'Xss.ave' }),
+    ).toThrow(/on:error/)
+  })
+
+  it('BUG-002: strips static HTML event attributes from SSR output', () => {
+    const { code } = compileSsr(`<img src="x" onerror="alert(1)" />`, { filename: 'StaticOn.ave' })
+    expect(code).not.toMatch(/onerror\s*=/)
+  })
+
+  it('BUG-003: client each/if insert preserves document order', () => {
+    const { code } = compile(
+      `{#each items as item}<i>{item}</i><b>x</b>{/each}`,
+      { filename: 'EachOrder.ave' },
+    )
+    expect(code).toContain('let __insertBefore')
+    expect(code).not.toMatch(
+      /insertBefore\(__frag\.firstChild,\s*\w+\.nextSibling\)/,
+    )
+  })
+})
+
+describe('scopeCss', () => {
+  it('BUG-005: scopes selectors inside @media', () => {
+    const out = scopeCss('@media (min-width: 1px) { .card { color:red } }', 'avedon-x')
+    expect(out).toContain('.card[avedon-x]')
+    expect(out).toMatch(/@media \(min-width: 1px\)/)
+  })
+
+  it('scopes top-level selectors', () => {
+    expect(scopeCss('h1 { color: red; }', 'avedon-y')).toContain('h1[avedon-y]')
   })
 })

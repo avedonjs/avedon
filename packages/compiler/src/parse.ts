@@ -190,55 +190,76 @@ function scopeSelectorList(selector: string, hash: string): string {
 
 /**
  * Scope selectors without regex (avoids ReDoS on long whitespace runs).
- * Mirrors `(^|})\s*([^@{}][^{]*)\{` replacement: `${brace} ${scoped} {`.
+ * Recurses into `@media` / `@supports` / `@container` bodies so nested
+ * selectors receive the component hash.
  */
 export function scopeCss(css: string, hash: string): string {
   if (!css.trim()) return ''
-  const src = unwrapGlobal(css)
+  return scopeCssChunk(unwrapGlobal(css), hash)
+}
+
+function readBalancedBlock(src: string, openIdx: number): { body: string; end: number } {
+  let depth = 1
+  let i = openIdx + 1
+  const bodyStart = i
+  while (i < src.length && depth > 0) {
+    const ch = src[i]!
+    if (ch === '{') depth++
+    else if (ch === '}') depth--
+    i++
+  }
+  return { body: src.slice(bodyStart, i - 1), end: i }
+}
+
+function scopeCssChunk(src: string, hash: string): string {
   let out = ''
   let i = 0
-  let atBlockBoundary = true
 
   while (i < src.length) {
-    if (!atBlockBoundary) {
-      const ch = src[i]!
-      out += ch
+    while (i < src.length && isAsciiSpace(src[i]!)) {
+      out += src[i]!
       i++
-      if (ch === '}') atBlockBoundary = true
+    }
+    if (i >= src.length) break
+
+    if (src[i] === '}') {
+      out += '}'
+      i++
       continue
     }
 
-    // At ^ or after `}`: optional whitespace, then a non-@ selector until `{`.
-    const brace = out.endsWith('}') ? '}' : ''
-    if (brace) {
-      // `}` already copied in the previous iteration; trim trailing brace from out
-      // so we can re-emit as `${brace} ${scoped} {` like the old replace.
-      out = out.slice(0, -1)
-    }
-
-    let j = i
-    while (j < src.length && isAsciiSpace(src[j]!)) j++
-
-    if (j < src.length) {
-      const first = src[j]!
-      if (first !== '@' && first !== '{' && first !== '}') {
-        const selStart = j
-        while (j < src.length && src[j] !== '{') j++
-        if (j < src.length && src[j] === '{') {
-          const selector = src.slice(selStart, j)
-          out += `${brace} ${scopeSelectorList(selector, hash)} {`
-          i = j + 1
-          atBlockBoundary = false
-          continue
-        }
+    if (src[i] === '@') {
+      const start = i
+      while (i < src.length && src[i] !== '{' && src[i] !== ';') i++
+      if (i >= src.length) {
+        out += src.slice(start)
+        break
       }
+      if (src[i] === ';') {
+        out += src.slice(start, i + 1)
+        i++
+        continue
+      }
+      out += src.slice(start, i + 1)
+      const { body, end } = readBalancedBlock(src, i)
+      out += scopeCssChunk(body, hash)
+      out += '}'
+      i = end
+      continue
     }
 
-    // No selector match — restore `}` if we peeled it, then copy one char.
-    if (brace) out += brace
-    out += src[i]!
-    i++
-    atBlockBoundary = false
+    const selStart = i
+    while (i < src.length && src[i] !== '{') i++
+    if (i >= src.length) {
+      out += src.slice(selStart)
+      break
+    }
+    const selector = src.slice(selStart, i)
+    out += `${scopeSelectorList(selector, hash)} {`
+    const { body, end } = readBalancedBlock(src, i)
+    out += body.includes('{') ? scopeCssChunk(body, hash) : body
+    out += '}'
+    i = end
   }
 
   return out

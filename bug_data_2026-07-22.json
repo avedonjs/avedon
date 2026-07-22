@@ -1,0 +1,192 @@
+{
+  "metadata": {
+    "date": "2026-07-22",
+    "analyzer": "Cursor Auto",
+    "repository": "/home/anilo/Projeler/avedon",
+    "base_commit": "b0b067860db841e8abc02bc8c18ea5c1cda62319"
+  },
+  "overview": {
+    "total_bugs_found": 10,
+    "total_bugs_fixed": 7,
+    "bugs_deferred": 3,
+    "tests_passed": "147/147"
+  },
+  "bugs": [
+    {
+      "bug_id": "BUG-001",
+      "severity": "CRITICAL",
+      "category": "SECURITY",
+      "status": "fixed",
+      "location": {
+        "files": ["packages/adapter-node/src/index.ts:97", "packages/adapter-node/src/safe-path.ts"],
+        "component": "@avedon/adapter-node",
+        "function": "nodeServerSource / resolveUnderRoot"
+      },
+      "description": {
+        "current_behavior": "GET with path traversal could read files outside clientDir via path.join reset/normalize",
+        "expected_behavior": "Only files under clientDir are served",
+        "root_cause": "path.join(clientDir, absoluteOrDotDotPath) without containment check"
+      },
+      "cwe_id": "CWE-22",
+      "priority_score": 94
+    },
+    {
+      "bug_id": "BUG-002",
+      "severity": "HIGH",
+      "category": "SECURITY",
+      "status": "fixed",
+      "location": {
+        "files": ["packages/compiler/src/codegen.ts"],
+        "component": "@avedon/compiler",
+        "function": "parseAttrs / emitSsrElement / emitClientElement"
+      },
+      "description": {
+        "current_behavior": "onerror={payload} compiled to executable HTML/JS handlers",
+        "expected_behavior": "Reject dynamic on* attrs; strip static on* from SSR; use on:* directives",
+        "root_cause": "HTML-escaping attribute values does not neutralize event-handler context"
+      },
+      "cwe_id": "CWE-79",
+      "priority_score": 88
+    },
+    {
+      "bug_id": "BUG-003",
+      "severity": "MEDIUM",
+      "category": "FUNCTIONAL",
+      "status": "fixed",
+      "location": {
+        "files": ["packages/compiler/src/codegen.ts"],
+        "component": "@avedon/compiler",
+        "function": "emitClientNodes"
+      },
+      "description": {
+        "current_behavior": "Multi-node each/if/await fragments inserted in reverse order",
+        "expected_behavior": "Preserve document order matching SSR",
+        "root_cause": "insertBefore(..., anchor.nextSibling) moves insertion point backward"
+      },
+      "priority_score": 61
+    },
+    {
+      "bug_id": "BUG-004",
+      "severity": "MEDIUM",
+      "category": "PERFORMANCE",
+      "status": "deferred",
+      "location": {
+        "files": ["packages/compiler/src/codegen.ts"],
+        "component": "@avedon/compiler",
+        "function": "emitClientNodes ({#if}/{#each})"
+      },
+      "description": {
+        "current_behavior": "Nested dynamic nodes push effects that are never disposed on re-render",
+        "expected_behavior": "Dispose nested effects when replacing a branch/list",
+        "root_cause": "Single shared __effects array without per-instance scopes"
+      },
+      "priority_score": 46
+    },
+    {
+      "bug_id": "BUG-005",
+      "severity": "MEDIUM",
+      "category": "FUNCTIONAL",
+      "status": "fixed",
+      "location": {
+        "files": ["packages/compiler/src/parse.ts"],
+        "component": "@avedon/compiler",
+        "function": "scopeCss"
+      },
+      "description": {
+        "current_behavior": "Selectors inside @media left unscoped",
+        "expected_behavior": "Recursively scope nested rule selectors",
+        "root_cause": "At-rule bodies treated as opaque until first closing brace"
+      },
+      "priority_score": 58
+    },
+    {
+      "bug_id": "BUG-006",
+      "severity": "LOW",
+      "category": "PERFORMANCE",
+      "status": "deferred",
+      "location": {
+        "files": ["packages/compiler/src/compile.ts:314"],
+        "component": "@avedon/compiler",
+        "function": "HMR signal rewrite"
+      },
+      "description": {
+        "current_behavior": "Malformed repeated signal( declarations degrade ~quadratically",
+        "expected_behavior": "Linear-time rewrite",
+        "root_cause": "Lazy [\\s\\S]*? over long unterminated inputs"
+      },
+      "cwe_id": "CWE-1333",
+      "priority_score": 28
+    },
+    {
+      "bug_id": "BUG-007",
+      "severity": "LOW",
+      "category": "CODE_QUALITY",
+      "status": "fixed",
+      "location": {
+        "files": ["packages/vite-plugin/src/index.ts"],
+        "component": "@avedon/vite-plugin",
+        "function": "prevAvedonSource Map"
+      },
+      "description": {
+        "current_behavior": "Deleted/renamed .ave sources retained forever in Map",
+        "expected_behavior": "Prune on unlink / unlinkDir",
+        "root_cause": "No watcher cleanup for cache entries"
+      },
+      "priority_score": 34
+    },
+    {
+      "bug_id": "BUG-008",
+      "severity": "LOW",
+      "category": "SECURITY",
+      "status": "fixed",
+      "location": {
+        "files": ["packages/create-avedon-app/src/index.ts"],
+        "component": "create-avedon-app",
+        "function": "formatNextSteps"
+      },
+      "description": {
+        "current_behavior": "Printed cd command could include unquoted metacharacters",
+        "expected_behavior": "Shell-single-quote the path",
+        "root_cause": "String interpolation without quoting"
+      },
+      "cwe_id": "CWE-78",
+      "priority_score": 32
+    },
+    {
+      "bug_id": "BUG-009",
+      "severity": "HIGH",
+      "category": "SECURITY",
+      "status": "fixed",
+      "location": {
+        "files": ["packages/server/src/pipeline.ts"],
+        "component": "@avedon/server",
+        "function": "stream error fallback"
+      },
+      "description": {
+        "current_behavior": "HttpError body interpolated into HTML without escaping",
+        "expected_behavior": "escapeHtml(err.body)",
+        "root_cause": "Missing HTML escape on fallback error path"
+      },
+      "cwe_id": "CWE-79",
+      "priority_score": 82
+    },
+    {
+      "bug_id": "BUG-010",
+      "severity": "MEDIUM",
+      "category": "SECURITY",
+      "status": "deferred",
+      "location": {
+        "files": ["packages/compiler/src/codegen.ts"],
+        "component": "@avedon/compiler",
+        "function": "slot / __props.children"
+      },
+      "description": {
+        "current_behavior": "mount({ children: attackerHtml }) parses HTML into the DOM",
+        "expected_behavior": "Children are framework-trusted layout HTML; public API should not accept untrusted strings",
+        "root_cause": "Layout slot contract uses HTML strings by design"
+      },
+      "cwe_id": "CWE-79",
+      "priority_score": 44
+    }
+  ]
+}

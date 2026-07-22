@@ -167,7 +167,7 @@ describe('createHandler', () => {
       if (done) break
       rest += decoder.decode(value, { stream: true })
     }
-    expect(rest).toContain('class=\\"late\\"')
+    expect(rest).toContain('class="late"')
     expect(rest).toContain('done')
     expect(rest).toContain('__AVEDON_DATA__')
   })

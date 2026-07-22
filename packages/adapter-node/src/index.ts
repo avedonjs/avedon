@@ -8,6 +8,7 @@ export type Adapter = AdapterInterface
 
 export { tryServeSsgIsr, ssgHtmlPath, writeHtmlAtomic, isRegenerating } from './ssg-isr.js'
 export type { ServeSsgIsrOptions } from './ssg-isr.js'
+export { resolveUnderRoot, ssgHtmlPathSafe } from './safe-path.js'
 
 export function nodeAdapter(options: { out?: string } = {}): AdapterInterface {
   const out = options.out ?? 'build'
@@ -48,7 +49,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHandler } from '@avedon/server';
-import { tryServeSsgIsr } from '@avedon/adapter-node';
+import { tryServeSsgIsr, resolveUnderRoot } from '@avedon/adapter-node';
 import { Readable } from 'node:stream';
 import * as serverApp from ${JSON.stringify(pathToImport(serverEntry, outDir))};
 
@@ -93,12 +94,21 @@ async function pipeResponse(res, response) {
 
 const server = createServer(async (req, res) => {
   try {
-    const url = new URL(req.url || '/', 'http://localhost');
-    const filePath = path.join(clientDir, decodeURIComponent(url.pathname));
+    // Reject unsafe static paths before WHATWG URL parsing (which can throw on %00
+    // or strip ".." segments).
+    const rawPath = (req.url || '/').split('?')[0] || '/';
+    const filePath = resolveUnderRoot(clientDir, rawPath);
+    if (filePath === null) {
+      res.statusCode = 403;
+      res.end('Forbidden');
+      return;
+    }
     if (existsSync(filePath) && !isDir(filePath) && req.method === 'GET') {
       createReadStream(filePath).pipe(res);
       return;
     }
+
+    const url = new URL(req.url || '/', 'http://localhost');
     if (
       tryServeSsgIsr({
         req,

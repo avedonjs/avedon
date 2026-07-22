@@ -413,6 +413,13 @@ function parseAttrs(attrStr: string): Attr[] {
     } else if (name.startsWith('bind:')) {
       attrs.push({ name, value, kind: 'bind' })
     } else if (kind === 'expr') {
+      // Dynamic HTML event attrs (onclick={...}) are XSS sinks; require on:click.
+      if (/^on[a-z]/i.test(name)) {
+        const ev = name.slice(2)
+        throw new Error(
+          `Dynamic event attribute "${name}={...}" is not allowed; use on:${ev.toLowerCase()}={...}`,
+        )
+      }
       attrs.push({ name, value, kind: 'expr' })
     } else {
       attrs.push({ name, value, kind: 'static' })
@@ -504,6 +511,8 @@ function emitSsrStreamElement(el: Token & { type: 'element' }, hash: string): st
   const attrParts: string[] = [`\` ${hash}\``]
   for (const a of el.attrs) {
     if (a.kind === 'event') continue
+    // Never emit raw HTML event handlers (static or dynamic).
+    if (/^on[a-z]/i.test(a.name)) continue
     if (a.kind === 'bind' && a.name === 'bind:value') {
       attrParts.push(`\` value="\` + __escape(${a.value}) + \`"\``)
       continue
@@ -537,6 +546,8 @@ function emitSsrElement(el: Token & { type: 'element' }, hash: string): string {
   const attrParts: string[] = [`\` ${hash}\``]
   for (const a of el.attrs) {
     if (a.kind === 'event') continue
+    // Never emit raw HTML event handlers (static or dynamic).
+    if (/^on[a-z]/i.test(a.name)) continue
     if (a.kind === 'bind' && a.name === 'bind:value') {
       attrParts.push(`\` value="\` + __escape(${a.value}) + \`"\``)
       continue
@@ -576,10 +587,13 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
     if (t.type === 'text') {
       lines.push(`{ const ${id} = document.createTextNode(${jsLiteral(t.value)}); ${parent}.appendChild(${id}); }`)
     } else if (t.type === 'slot') {
+      // Layout children are framework-produced HTML from the parent render.
+      // Parse via <template> (no script execution for classic <script> tags);
+      // authors must not pass untrusted strings as children.
       lines.push(`{
-        const ${id} = document.createElement('div');
+        const ${id} = document.createElement('template');
         ${id}.innerHTML = String(__props.children ?? '');
-        while (${id}.firstChild) ${parent}.appendChild(${id}.firstChild);
+        ${parent}.appendChild(${id}.content);
       }`)
     } else if (t.type === 'expr') {
       lines.push(`{
@@ -600,7 +614,11 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
           if (${t.cond}) {
             ${emitClientNodes(t.then, hash, '__frag')}
           } ${t.else ? `else { ${emitClientNodes(t.else, hash, '__frag')} }` : ''}
-          while (__frag.firstChild) { __nodes.push(__frag.firstChild); __anchor.parentNode.insertBefore(__frag.firstChild, __anchor.nextSibling); }
+          let __insertBefore = __anchor.nextSibling;
+          while (__frag.firstChild) {
+            __nodes.push(__frag.firstChild);
+            __anchor.parentNode.insertBefore(__frag.firstChild, __insertBefore);
+          }
         });
       }`)
     } else if (t.type === 'each') {
@@ -616,9 +634,10 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
           ((${t.list}) || []).forEach((${t.item}, ${idx}) => {
             ${emitClientNodes(t.body, hash, '__frag')}
           });
+          let __insertBefore = ${id}.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
-            ${id}.parentNode.insertBefore(__frag.firstChild, ${id}.nextSibling);
+            ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
         });
       }`)
@@ -632,18 +651,20 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
           __nodes = [];
           const __frag = document.createDocumentFragment();
           ${emitClientNodes(t.thenBody, hash, '__frag')}
+          let __insertBefore = ${id}.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
-            ${id}.parentNode.insertBefore(__frag.firstChild, ${id}.nextSibling);
+            ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
         }${t.catchBody ? `, (${t.catchName ?? 'error'}) => {
           for (const n of __nodes) n.remove();
           __nodes = [];
           const __frag = document.createDocumentFragment();
           ${emitClientNodes(t.catchBody!, hash, '__frag')}
+          let __insertBefore = ${id}.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
-            ${id}.parentNode.insertBefore(__frag.firstChild, ${id}.nextSibling);
+            ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
         }` : ''});
       }`)
@@ -673,6 +694,9 @@ function emitClientElement(
     } else if (a.kind === 'bind' && a.name === 'bind:value') {
       lines.push(`__effects.push(() => { ${id}.value = ${a.value} ?? ''; });`)
       lines.push(`${id}.addEventListener('input', () => { ${a.value} = ${id}.value; __invalidate(); });`)
+    } else if (/^on[a-z]/i.test(a.name)) {
+      // Ignore HTML event attributes; use on:click instead.
+      continue
     } else if (a.kind === 'expr') {
       lines.push(
         `__effects.push(() => { ${id}.setAttribute(${jsLiteral(a.name)}, (${a.value}) ?? ''); });`,

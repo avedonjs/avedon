@@ -8,14 +8,16 @@ import {
 import { createReadStream, existsSync, mkdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
+import { ssgHtmlPathSafe } from './safe-path.js'
 
 const regenLock = createPathLock()
 
 export function ssgHtmlPath(clientDir: string, pathname: string): string {
-  return path.join(
-    clientDir,
-    pathname === '/' ? 'index.html' : path.join(pathname.replace(/^\//, ''), 'index.html'),
-  )
+  const safe = ssgHtmlPathSafe(clientDir, pathname)
+  if (!safe) {
+    throw new Error(`Refusing path outside client dir: ${pathname}`)
+  }
+  return safe
 }
 
 export type ServeSsgIsrOptions = {
@@ -37,8 +39,8 @@ export function tryServeSsgIsr(opts: ServeSsgIsrOptions): boolean {
   const { req, res, clientDir, pathname, routes, appHtml, clientEntry } = opts
   if (req.method !== 'GET' && req.method !== 'HEAD') return false
 
-  const file = ssgHtmlPath(clientDir, pathname)
-  if (!existsSync(file)) return false
+  const file = ssgHtmlPathSafe(clientDir, pathname)
+  if (!file || !existsSync(file)) return false
 
   const matched = matchRoute(routes, pathname)
   const leaf = matched?.route

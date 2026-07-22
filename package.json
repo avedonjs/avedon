@@ -8,7 +8,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:smoke": "node e2e/smoke.mjs && node e2e/isr-smoke.mjs && node e2e/ttfb-smoke.mjs && node e2e/stream-redirect-smoke.mjs && node e2e/create-smoke.mjs && node e2e/create-pack-smoke.mjs",
+    "test:smoke": "node e2e/smoke.mjs && node e2e/isr-smoke.mjs && node e2e/ttfb-smoke.mjs && node e2e/stream-redirect-smoke.mjs && node e2e/create-smoke.mjs && node e2e/create-pack-smoke.mjs && node e2e/path-traversal-smoke.mjs",
     "typecheck": "turbo run typecheck && tsc -p tsconfig.typecheck.json --noEmit",
     "dev": "pnpm -F example dev"
   },

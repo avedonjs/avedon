@@ -128,6 +128,18 @@ describe('scaffoldApp', () => {
     expect(steps.toLowerCase()).toMatch(/drizzle/)
   })
 
+  it('BUG-008: shell-quotes project name in next-step commands', () => {
+    const steps = formatNextSteps({
+      dest: '/tmp/x',
+      name: `demo; touch /tmp/pwned`,
+      packageManager: 'pnpm',
+      tailwind: false,
+      orm: 'none',
+    })
+    expect(steps).toContain(`cd 'demo; touch /tmp/pwned'`)
+    expect(steps).not.toMatch(/^ {2}cd demo;/m)
+  })
+
   it('refuses existing directories', () => {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
     dirs.push(dest)

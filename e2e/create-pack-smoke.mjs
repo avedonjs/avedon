@@ -1,5 +1,6 @@
 /**
- * npm pack + isolated install smoke for create-avedon-app (pre-publish).
+ * Pack + isolated install smoke for create-avedon-app (pre-publish).
+ * Uses --pack-destination + filesystem scan (pnpm/npm JSON schema–independent).
  */
 import { execFileSync, execSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
@@ -10,16 +11,27 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const pkgDir = path.join(root, 'packages/create-avedon-app')
 const isolated = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-pack-'))
+const packDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-pack-out-'))
 
 try {
   execSync('pnpm build', { cwd: pkgDir, stdio: 'inherit' })
 
-  const packOut = execSync('npm pack --json', { cwd: pkgDir, encoding: 'utf8' })
-  const tarball = JSON.parse(packOut)[0].filename
-  const tarballPath = path.join(pkgDir, tarball)
+  execFileSync('pnpm', ['pack', '--pack-destination', packDir], {
+    cwd: pkgDir,
+    stdio: 'inherit',
+  })
 
-  console.log('--- npm pack output ---')
-  console.log(tarball)
+  const tarballs = fs.readdirSync(packDir).filter((f) => f.endsWith('.tgz'))
+  if (tarballs.length !== 1) {
+    throw new Error(
+      `expected exactly one .tgz in pack dir, found: ${JSON.stringify(tarballs)}`,
+    )
+  }
+  const tarball = tarballs[0]
+  const tarballPath = path.join(packDir, tarball)
+
+  console.log('--- pack output ---')
+  console.log(tarballPath)
 
   const listing = execFileSync('tar', ['-tzf', tarballPath], { encoding: 'utf8' })
   console.log('--- tarball listing (first 40 lines) ---')
@@ -58,4 +70,5 @@ try {
   console.log('create-pack-smoke ok')
 } finally {
   fs.rmSync(isolated, { recursive: true, force: true })
+  fs.rmSync(packDir, { recursive: true, force: true })
 }

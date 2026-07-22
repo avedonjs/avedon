@@ -28,6 +28,17 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
       isDev = config.command === 'serve'
     },
     configureServer(devServer) {
+      // Drop HMR source cache entries when `.ave` files are removed/renamed.
+      const prune = (file: string) => {
+        if (file.endsWith('.ave')) prevAvedonSource.delete(file)
+      }
+      devServer.watcher.on('unlink', prune)
+      devServer.watcher.on('unlinkDir', (dir) => {
+        for (const key of prevAvedonSource.keys()) {
+          if (key === dir || key.startsWith(dir + path.sep)) prevAvedonSource.delete(key)
+        }
+      })
+
       devServer.middlewares.use(async (req, res, next) => {
         try {
           if (!req.url) return next()

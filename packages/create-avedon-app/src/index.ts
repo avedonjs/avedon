@@ -178,8 +178,13 @@ export function formatNextSteps(result: ScaffoldResult): string {
 
   return `Created ${name}
 
-  cd ${name}
+  cd ${shellSingleQuote(name)}
   ${install}
   ${run}${extra}
 `
+}
+
+/** Quote a path for safe copy-paste into a POSIX shell. */
+function shellSingleQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\"'\"'`)}'`
 }

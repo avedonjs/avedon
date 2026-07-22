@@ -1,0 +1,11 @@
+BUG-ID,Severity,Category,File,Line,Description,Status
+BUG-001,CRITICAL,SECURITY,packages/adapter-node/src/index.ts,97,Path traversal in static file serving,Fixed
+BUG-002,HIGH,SECURITY,packages/compiler/src/codegen.ts,411,XSS via HTML on* attributes,Fixed
+BUG-003,MEDIUM,FUNCTIONAL,packages/compiler/src/codegen.ts,603,Client each/if/await reverse insert order,Fixed
+BUG-004,MEDIUM,PERFORMANCE,packages/compiler/src/codegen.ts,596,Nested dynamic effect callback leak,Deferred
+BUG-005,MEDIUM,FUNCTIONAL,packages/compiler/src/parse.ts,195,CSS selectors inside @media not scoped,Fixed
+BUG-006,LOW,PERFORMANCE,packages/compiler/src/compile.ts,314,Quadratic signal() HMR rewrite regex,Deferred
+BUG-007,LOW,CODE_QUALITY,packages/vite-plugin/src/index.ts,22,HMR source cache never pruned,Fixed
+BUG-008,LOW,SECURITY,packages/create-avedon-app/src/index.ts,181,Unquoted project name in next-step shell,Fixed
+BUG-009,HIGH,SECURITY,packages/server/src/pipeline.ts,110,Unescaped HttpError body in HTML fallback,Fixed
+BUG-010,MEDIUM,SECURITY,packages/compiler/src/codegen.ts,579,Trusted layout children HTML string XSS if misused,Deferred

@@ -1,0 +1,38 @@
+# Machine-friendly bug triage for CI / issue import
+date: "2026-07-22"
+repository: avedon
+base_commit: b0b067860db841e8abc02bc8c18ea5c1cda62319
+
+policy:
+  branch: main
+  create_fix_branches: false
+
+thresholds:
+  fail_ci_on_severity: [CRITICAL, HIGH]
+  require_tests_for_fixes: true
+
+fixed:
+  - BUG-001
+  - BUG-002
+  - BUG-003
+  - BUG-005
+  - BUG-007
+  - BUG-008
+  - BUG-009
+
+deferred:
+  - id: BUG-004
+    reason: Requires effect-scoping redesign in client codegen
+  - id: BUG-006
+    reason: Dev-only; replace with linear scanner in follow-up
+  - id: BUG-010
+    reason: Layout children HTML is intentional trusted contract
+
+verification:
+  commands:
+    - pnpm build
+    - pnpm test
+    - pnpm typecheck
+  recommended_before_release:
+    - pnpm test:smoke
+    - pnpm test:e2e

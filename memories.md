@@ -1,6 +1,6 @@
 # memories.md
 
-Updated: 2026-07-21
+Updated: 2026-07-22
 
 ## Project
 
@@ -46,6 +46,8 @@ Updated: 2026-07-21
 - **Docs language (2026-07-21):** repo docs English-only; `logo/README.md` translated from Turkish
 - **Starter home (2026-07-21):** dark-stage template + basic-app home (Syne, `#09090B`, `#06B6D4`, live `signal` demo); spec `docs/superpowers/specs/2026-07-21-starter-home-design.md`
 - **Create-app add-ons (2026-07-21):** implemented — optional Tailwind (style convert) + ORM wiring (Drizzle/Prisma/none, no schema); interactive + flags; spec `docs/superpowers/specs/2026-07-21-create-app-addons-design.md`; plan `docs/superpowers/plans/2026-07-21-create-app-addons.md`
+- **Security audit (2026-07-22):** comprehensive pass — fixed path traversal (adapter-node `resolveUnderRoot`), compiler `on*` XSS rejection, HttpError HTML escape, `{#each}` insert order, `@media` CSS scoping, scaffold shell-quoting, HMR cache prune. Deferred: nested effect leaks, signal HMR ReDoS, trusted layout `children` HTML. Reports: `bug_report_2026-07-22.md`, `bug_data_2026-07-22.json`, `bugs_2026-07-22.csv`, `bug_config_2026-07-22.yaml`.
+- **Fix round (2026-07-22):** `create-pack-smoke` → `--pack-destination`; `e2e/path-traversal-smoke.mjs` (6 vectors → 403, positive `/assets/client.js` → 200); `packageManager: pnpm@9.15.0` already present; `pnpm test:smoke` 7/7 + unit 149/149 green. Not committed yet.
 
 ## Commands
 
