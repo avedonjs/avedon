@@ -37,7 +37,6 @@
     "directory": "packages/server"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   }
 }

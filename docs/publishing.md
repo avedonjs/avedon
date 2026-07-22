@@ -10,8 +10,9 @@ pnpm install
 pnpm build
 # pnpm 9 delegates publish to npm and passes --git-checks; npm 12 rejects that flag.
 # Use npm 11 for the publish CLI (OIDC-capable, tolerates the forwarded flag).
+# Do not enable provenance locally — it only works from GitHub Actions / GitLab OIDC.
 npm install -g npm@11
-pnpm changeset publish
+NPM_CONFIG_PROVENANCE=false pnpm changeset publish
 ```
 
 When prompted, enter your npm OTP. If the CLI accepts a flag:

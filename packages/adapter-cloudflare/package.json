@@ -31,7 +31,6 @@
     "directory": "packages/adapter-cloudflare"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   }
 }

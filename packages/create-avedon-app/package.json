@@ -36,7 +36,6 @@
     "directory": "packages/create-avedon-app"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   }
 }
