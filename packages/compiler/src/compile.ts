@@ -1,5 +1,5 @@
 import { compileMarkup } from './codegen.js'
-import { inferLoadDataType } from './load-types.js'
+import { extractActionKeys, extractLoadParamsType, inferLoadDataType } from './load-types.js'
 import { hashStyle, parse, scopeCss } from './parse.js'
 import ts from 'typescript'
 
@@ -164,6 +164,14 @@ export default { ${[...new Set(defaultParts)].join(', ')} };
 function generateDts(filename: string, clientScript: string, serverScript = ''): string {
   const props = extractExportLets(clientScript)
   const dataType = inferLoadDataType(serverScript)
+  const hasLoad = /\bexport\s+(?:async\s+)?function\s+load\b|\bexport\s+(?:const|let|var)\s+load\b/.test(
+    serverScript,
+  )
+  const hasActions = /\bexport\s+(?:const|let|var)\s+actions\b/.test(serverScript)
+  const paramsType = extractLoadParamsType(serverScript) ?? 'Record<string, string>'
+  const loadContext = `import('@avedon/shared').LoadContext<${paramsType}>`
+  const actionHandler = `import('@avedon/shared').ActionHandler<${paramsType}>`
+
   const propLines: string[] = []
   for (const p of props) {
     if (p === 'data') {
@@ -175,18 +183,50 @@ function generateDts(filename: string, clientScript: string, serverScript = ''):
   if (dataType !== undefined && !props.includes('data')) {
     propLines.unshift(`  data?: ${dataType}`)
   }
+  const propsBody = propLines.length ? propLines.join('\n') : '  [key: string]: unknown'
   const mod = filename.replace(/\\/g, '/')
-  const loadSig =
-    dataType !== undefined
-      ? `load?: (event: unknown) => Promise<{ data: ${dataType} } | void> | { data: ${dataType} } | void`
-      : undefined
+
+  let loadSig: string
+  if (dataType !== undefined) {
+    loadSig = `load?: (event: ${loadContext}) => Promise<{ data: ${dataType} } | void> | { data: ${dataType} } | void`
+  } else if (hasLoad) {
+    loadSig = `load?: (event: ${loadContext}) => import('@avedon/shared').LoadResult | Promise<import('@avedon/shared').LoadResult>`
+  } else {
+    loadSig = `load?: (event: ${loadContext}) => import('@avedon/shared').LoadResult | Promise<import('@avedon/shared').LoadResult>`
+  }
+
+  let actionsSig: string
+  if (hasActions) {
+    const keys = extractActionKeys(serverScript)
+    if (keys.length) {
+      actionsSig = `actions?: { ${keys.map((k) => `${k}?: ${actionHandler}`).join('; ')} }`
+    } else {
+      actionsSig = `actions?: Record<string, ${actionHandler}>`
+    }
+  } else {
+    actionsSig = `actions?: Record<string, ${actionHandler}>`
+  }
+
   const auxTypes = dataType ? collectAuxTypeAliases(serverScript, dataType) : ''
+  // Keep aux aliases inside the ambient module so sibling `.ave.d.ts` files stay
+  // script-like (no top-level `export`) and `import './X.ave'` still resolves.
+  const auxInside = auxTypes
+    ? auxTypes
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => `  ${line}`)
+        .join('\n') + '\n'
+    : ''
   return `declare module '*${mod}' {
-  export function render(props?: Record<string, unknown>): string
-  export function renderInto(ctrl: import('@avedon/runtime').RenderStreamController, props?: Record<string, unknown>): Promise<void>
-  export function renderToStream(props?: Record<string, unknown>): ReadableStream<Uint8Array>
-  export function mount(target: Element, props?: Record<string, unknown>): { destroy(): void; update(props: Record<string, unknown>): void }
-  export function hydrate(target: Element, props?: Record<string, unknown>): { destroy(): void; update(props: Record<string, unknown>): void }
+${auxInside}  export interface Props {
+${propsBody}
+  }
+  export function render(props?: Props): string
+  export function renderInto(ctrl: import('@avedon/runtime').RenderStreamController, props?: Props): Promise<void>
+  export function renderToStream(props?: Props): ReadableStream<Uint8Array>
+  export function mount(target: Element, props?: Props): { destroy(): void; update(props: Props): void }
+  export function hydrate(target: Element, props?: Props): { destroy(): void; update(props: Props): void }
   export const css: string
   export const cssHash: string
   const __default: {
@@ -197,15 +237,11 @@ function generateDts(filename: string, clientScript: string, serverScript = ''):
     hydrate?: typeof hydrate
     css: string
     cssHash: string
-    ${loadSig ? loadSig : 'load?: (event: unknown) => unknown'}
-    actions?: Record<string, unknown>
-    api?: Record<string, unknown>
+    ${loadSig}
+    ${actionsSig}
+    api?: Record<string, import('@avedon/shared').ApiHandler<${paramsType}>>
   }
   export default __default
-}
-
-${auxTypes}export interface Props {
-${propLines.length ? propLines.join('\n') : '  [key: string]: unknown'}
 }
 `
 }

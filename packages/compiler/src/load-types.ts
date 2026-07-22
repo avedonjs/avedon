@@ -22,6 +22,100 @@ export function inferLoadDataType(serverScript: string): string | undefined {
   return undefined
 }
 
+/**
+ * Extract Params type string for dts from `load` parameter annotation.
+ * Supports:
+ * - `LoadEvent<'/posts/:id'>` → `import('@avedon/shared').ExtractParams<'/posts/:id'>`
+ * - `LoadContext<{ id: string }>` → `{ id: string }`
+ * Returns `undefined` when no usable annotation (caller uses `Record<string, string>`).
+ */
+export function extractLoadParamsType(serverScript: string): string | undefined {
+  if (!serverScript.trim() || !HAS_LOAD_RE.test(serverScript)) return undefined
+
+  // load({ ... }: Type) or load(event: Type) or load(_: Type)
+  const header =
+    /export\s+(?:async\s+)?function\s+load\s*\(([^)]*)\)/.exec(serverScript) ||
+    /export\s+const\s+load\s*=\s*async\s*\(([^)]*)\)/.exec(serverScript)
+  if (!header) return undefined
+  const params = header[1]
+  const typed = /:\s*([\s\S]+)$/.exec(params.trim())
+  if (!typed) return undefined
+  return normalizeEventParamsType(typed[1].trim())
+}
+
+/** Action names from `export const actions = { foo, async bar() {}, ... }`. */
+export function extractActionKeys(serverScript: string): string[] {
+  const m = /export\s+(?:const|let|var)\s+actions\s*=\s*\{/.exec(serverScript)
+  if (!m) return []
+  const start = m.index + m[0].length
+  let depth = 1
+  let i = start
+  for (; i < serverScript.length; i++) {
+    const c = serverScript[i]
+    if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) break
+    }
+  }
+  const body = serverScript.slice(start, i)
+  const keys: string[] = []
+  // Only top-level keys inside the actions object (depth === 0 relative to body).
+  let d = 0
+  let j = 0
+  while (j < body.length) {
+    const c = body[j]
+    if (c === '{') {
+      d++
+      j++
+      continue
+    }
+    if (c === '}') {
+      d--
+      j++
+      continue
+    }
+    if (c === '(') {
+      // skip paren groups (params) at any depth
+      let pd = 1
+      j++
+      while (j < body.length && pd > 0) {
+        if (body[j] === '(') pd++
+        else if (body[j] === ')') pd--
+        j++
+      }
+      continue
+    }
+    if (d === 0) {
+      const rest = body.slice(j)
+      const km = /^(?:async\s+)?([A-Za-z_$][\w$]*)\s*[\(:]/.exec(rest)
+      if (km) {
+        keys.push(km[1])
+        j += km[0].length
+        continue
+      }
+    }
+    j++
+  }
+  return [...new Set(keys)]
+}
+
+function normalizeEventParamsType(eventType: string): string | undefined {
+  const t = eventType.replace(/\s+/g, ' ').trim()
+  // LoadEvent<'/posts/:id'>
+  const loadEventPath = /(?:LoadEvent)\s*<\s*(['"])(\/[^'"]*|[^'"]+)\1\s*>/.exec(t)
+  if (loadEventPath) {
+    const path = loadEventPath[2]
+    return `import('@avedon/shared').ExtractParams<'${path}'>`
+  }
+  // LoadContext<{ id: string }>
+  const loadCtx = /(?:LoadContext)\s*<\s*(\{[\s\S]*\})\s*>/.exec(t)
+  if (loadCtx) {
+    return loadCtx[1].replace(/\s+/g, ' ').trim()
+  }
+  return undefined
+}
+
 /** Parse `load(...): Promise<{ data: T }>` / `load(...): { data: T }` annotations. */
 function extractDataTypeFromAnnotation(serverScript: string): string | undefined {
   const header =
@@ -35,17 +129,14 @@ function extractDataTypeFromAnnotation(serverScript: string): string | undefined
   const promise = /^Promise\s*</.exec(unwrapped)
   if (promise) {
     const inner = takeTypeExpr(unwrapped.slice(unwrapped.indexOf('<') + 1))
-    // strip trailing `>` already handled by takeTypeExpr stopping at depth 0 `>`
     unwrapped = inner
   }
   return extractDataField(unwrapped)
 }
 
 function extractDataField(returnType: string): string | undefined {
-  // `{ data: T }` or `{ data: T; ... }`
   const m = /^\{\s*data\s*:\s*([\s\S]+)\}$/.exec(returnType.trim())
   if (!m) {
-    // Might be `{ data: T; ok?: boolean }` — find data: with balanced braces
     const dataIdx = returnType.search(/\bdata\s*:/)
     if (dataIdx < 0) return undefined
     const after = returnType.slice(dataIdx).replace(/^\s*data\s*:\s*/, '')
@@ -137,10 +228,8 @@ function stubImports(script: string): string {
     (_full, clause: string) => {
       const c = clause.trim()
       if (c.startsWith('type ')) {
-        // type-only import — drop; types must be local or we lose them
         return ''
       }
-      // import { a, b as c } from '...'
       const named = /^\{\s*([^}]+)\s*\}$/.exec(c)
       if (named) {
         for (const part of named[1].split(',')) {
@@ -153,12 +242,10 @@ function stubImports(script: string): string {
         }
         return ''
       }
-      // import Default from '...'
       if (/^[A-Za-z_$][\w$]*$/.test(c)) {
         stubs.push(`declare const ${c}: any;`)
         return ''
       }
-      // import * as ns
       const star = /^\*\s+as\s+([A-Za-z_$][\w$]*)$/.exec(c)
       if (star) {
         stubs.push(`declare const ${star[1]}: any;`)

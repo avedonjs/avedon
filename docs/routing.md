@@ -11,6 +11,8 @@ Two styles are supported; neither is deprecated.
 | **`route(path, config)`** (recommended for new code) | Path is a separate argument, so TypeScript can type `guard` / load contexts as `ExtractParams<path>` (e.g. `params.id: string`). |
 | **Object literal `{ path, … }`** | Still fully supported at runtime. Convenient for static routes; **param inference on inline `guard` callbacks is limited** (TS cannot contextual-type the callback from `path` inside the same object). |
 
+Page modules type their own `load` / `actions` via `LoadEvent<'/posts/:id'>` (or `LoadContext<{ … }>`) in `<script server>` — see [Typing load, params, and actions](./avedon-components.md#typing-load-params-and-actions). Keep that path string aligned with `route('/posts/:id', …)`.
+
 ```ts
 import { defineRoutes, route } from '@avedon/server'
 import Layout from './pages/Layout.ave'

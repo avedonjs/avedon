@@ -1,4 +1,4 @@
-import { defineRoutes } from '@avedon/server'
+import { defineRoutes, route, requireSession } from '@avedon/server'
 import Layout from './pages/Layout.ave'
 import Home from './pages/Home.ave'
 import Post from './pages/Post.ave'
@@ -18,7 +18,6 @@ import StreamErrorLab from './pages/StreamErrorLab.ave'
 import Login from './pages/Login.ave'
 import RouteNotFound from './pages/errors/RouteNotFound.ave'
 import RouteError from './pages/errors/RouteError.ave'
-import { requireSession } from '@avedon/server'
 
 const routes = defineRoutes([
   {
@@ -35,12 +34,11 @@ const routes = defineRoutes([
     revalidate: 60,
     getStaticPaths: () => ['/docs/intro', '/docs/api'],
   },
-  {
-    path: '/posts/:id',
+  route('/posts/:id', {
     layout: Layout,
     component: Post,
     render: 'ssr',
-  },
+  }),
   {
     path: '/stream',
     layout: Layout,

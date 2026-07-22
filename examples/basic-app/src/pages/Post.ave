@@ -16,10 +16,10 @@
     post: { id: string; title: string; body: string; likes: number }
   }
 
+  /** Params typed via LoadEvent path; keep in sync with route('/posts/:id', …) in routes.ts */
   export async function load({
     params,
   }: LoadEvent<'/posts/:id'>): Promise<{ data: PostPageData }> {
-    // params.id is typed as string via LoadEvent<'/posts/:id'>
     const post = db.post.find(params.id)
     if (!post) throw notFound()
     return { data: { post } }

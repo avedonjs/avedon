@@ -63,7 +63,8 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 3. Branch protection — done
 4. First npm publish **0.1.1** — done; remaining: Trusted Publisher on each package (`docs/publishing.md`)
 5. Post-publish BUG-004 / BUG-006 — done
-6. Later (separate plans): docs/landing · typed DX · Playwright e2e · Cloudflare/Bun adapters · Trusted Publisher OIDC per package
+6. **Typed DX v1** — `generateDts` uses `Props`, `LoadContext`/`ExtractParams` from `LoadEvent` annotations, `ActionHandler` / `ApiHandler`; docs + `route('/posts/:id')` in basic-app
+7. Later: docs/landing · Playwright e2e · Cloudflare/Bun adapters · Trusted Publisher OIDC
 
 ## Commands
 

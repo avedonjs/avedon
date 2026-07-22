@@ -87,6 +87,35 @@ From `@avedon/server`: `json`, `notFound`, `redirect`, `error`, and related pipe
 - Use `signal`, `computed`, and `effect` for reactivity
 - Never import server-only modules into the client script
 
+## Typing load, params, and actions
+
+Generated `*.ave.d.ts` files type `Props` (including inferred `data` from `load`), `mount` / `render` props, and server handlers.
+
+**Params:** annotate `load` with `LoadEvent<'/posts/:id'>` (path pattern) or `LoadContext<{ id: string }>`. The compiler mirrors that into the module’s `load` / `actions` signatures. There is no automatic link from `routes.ts` paths to the page module yet — keep the path string in sync with `route('/posts/:id', …)`.
+
+```avedon
+<script server>
+  import { type LoadEvent, notFound } from '@avedon/server'
+
+  export async function load({
+    params,
+  }: LoadEvent<'/posts/:id'>): Promise<{ data: { id: string } }> {
+    if (!params.id) throw notFound()
+    return { data: { id: params.id } }
+  }
+
+  export const actions = {
+    async save({ params, formData }: LoadEvent<'/posts/:id'>) {
+      return { ok: true }
+    },
+  }
+</script>
+```
+
+**Guards in `routes.ts`:** prefer `route('/posts/:id', { guard: (e) => … })` so `e.params` is typed from the path (see [Routing](./routing.md)).
+
+**`data`:** return `{ data: T }` from `load` (or annotate the return type); `export let data` / `Props.data` pick up `T`.
+
 ## Template
 
 ```avedon
