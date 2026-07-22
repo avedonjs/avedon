@@ -109,6 +109,16 @@ describe('compile', () => {
     expect(code).toContain('__pipeChildren')
   })
 
+  it('client slot accepts Node children without stringifying via innerHTML only', () => {
+    const { code } = compile(
+      `<script>export let children</script><template><div class="wrap"><slot /></div></template>`,
+      { filename: 'Layout.ave' },
+    )
+    expect(code).toContain('instanceof Node')
+    expect(code).toContain("createElement('template')")
+    expect(code).toMatch(/trusted framework|trusted HTML|framework-produced/i)
+  })
+
   it('parses <template> and scoped style', () => {
     const p = parse(`
 <script>let x = 1</script>

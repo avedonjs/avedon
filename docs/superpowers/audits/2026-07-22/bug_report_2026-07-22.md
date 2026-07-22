@@ -51,12 +51,12 @@
 | BUG-009 | `packages/server/src/pipeline.ts` | SECURITY | HIGH | Fallback error HTML used raw `err.body` | Fixed | existing pipeline suite |
 | BUG-004 | `packages/compiler/src/codegen.ts` | PERFORMANCE | MEDIUM | Nested `{#if}`/`{#each}` effect callbacks leak | Deferred | — |
 | BUG-006 | `packages/compiler/src/compile.ts` | PERFORMANCE | LOW | Quadratic `signal(...)` HMR rewrite regex | Deferred | — |
-| BUG-010 | `packages/compiler/src/codegen.ts` | SECURITY | MEDIUM | Slot `children` HTML string is trusted (layout contract) | Deferred | — |
+| BUG-010 | `packages/compiler/src/codegen.ts` | SECURITY | MEDIUM | Slot `children` HTML string is trusted (layout contract) | Publish-gate: threat model documented; client Node path + trusted-string contract (no sanitizer). | `compile.test.ts` |
 
 ## Remaining risk / next steps
 
 1. **BUG-004:** Scope `__effects` per dynamic block instance and dispose on replace.  
-2. **BUG-010:** Treat layout `children` as trusted framework HTML; add sanitizer or DocumentFragment API if public `mount` must accept untrusted strings.  
+2. **BUG-010:** Publish-gate closed — documented trusted contract + client `Node`/`DocumentFragment` append; string `children` remains trusted HTML (see `docs/security.md`).  
 3. **BUG-006:** Replace lazy `[\s\S]*?` signal rewrite with a linear scanner.  
 4. Keep CodeQL required on PRs; re-run after shipping these fixes.  
 5. Consider e2e coverage for adapter-node path traversal against a built `server.js`.

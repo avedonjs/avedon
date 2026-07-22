@@ -587,13 +587,18 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
     if (t.type === 'text') {
       lines.push(`{ const ${id} = document.createTextNode(${jsLiteral(t.value)}); ${parent}.appendChild(${id}); }`)
     } else if (t.type === 'slot') {
-      // Layout children are framework-produced HTML from the parent render.
-      // Parse via <template> (no script execution for classic <script> tags);
-      // authors must not pass untrusted strings as children.
+      // Layout `children` is a trusted framework contract (SSR pipeline HTML or Node).
+      // Public mount/update must not pass untrusted strings — see docs/security.md.
       lines.push(`{
-        const ${id} = document.createElement('template');
-        ${id}.innerHTML = String(__props.children ?? '');
-        ${parent}.appendChild(${id}.content);
+        // trusted framework HTML or Node — see docs/security.md
+        const __ch = __props.children;
+        if (__ch instanceof Node) {
+          ${parent}.appendChild(__ch);
+        } else if (__ch != null && __ch !== '') {
+          const ${id} = document.createElement('template');
+          ${id}.innerHTML = String(__ch);
+          ${parent}.appendChild(${id}.content);
+        }
       }`)
     } else if (t.type === 'expr') {
       lines.push(`{

@@ -63,7 +63,7 @@ Evidence from current code:
 - Consumes: existing audit files already on `main` from `babdfa0`
 - Produces: audits under `docs/superpowers/audits/2026-07-22/`; gitignore rules that keep build caches out of git
 
-- [ ] **Step 1: Create audit archive directory and move files**
+- [x] **Step 1: Create audit archive directory and move files**
 
 ```bash
 mkdir -p docs/superpowers/audits/2026-07-22
@@ -72,7 +72,7 @@ git mv bug_report_2026-07-22.md bug_data_2026-07-22.json bug_config_2026-07-22.y
 
 Expected: four files under `docs/superpowers/audits/2026-07-22/`; no `bug_*` at repo root.
 
-- [ ] **Step 2: Append ignore rules to `.gitignore`**
+- [x] **Step 2: Append ignore rules to `.gitignore`**
 
 If `.gitignore` lacks these patterns, append:
 
@@ -82,7 +82,7 @@ examples/**/.ave/
 *.tsbuildinfo
 ```
 
-- [ ] **Step 3: Update `memories.md` Status**
+- [x] **Step 3: Update `memories.md` Status**
 
 Replace the stale “Not committed yet” fix-round bullet with:
 
@@ -93,7 +93,7 @@ Replace the stale “Not committed yet” fix-round bullet with:
 
 Keep the Next steps section aligned with: housekeeping → BUG-010 → branch protection → publish → 3b.
 
-- [ ] **Step 4: Verify working tree hygiene**
+- [x] **Step 4: Verify working tree hygiene**
 
 ```bash
 git status --short
@@ -101,7 +101,7 @@ git status --short
 
 Expected: only intentional paths (moved audits, `.gitignore`, `memories.md`, this plan). No `examples/basic-app/.ave/` staged.
 
-- [ ] **Step 5: Commit (when maintainer asks)**
+- [x] **Step 5: Commit (when maintainer asks)**
 
 ```bash
 git add docs/superpowers/audits/2026-07-22 .gitignore memories.md docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md

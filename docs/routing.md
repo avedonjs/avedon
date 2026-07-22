@@ -97,6 +97,8 @@ For cross-cutting concerns (logging, CORS, rate limits) that are not route-speci
 
 Layouts are `.ave` components that wrap child pages. Share chrome (nav, shell) via `layout` instead of duplicating markup in every page.
 
+Layout `children` / `<slot />` are a **trusted HTML** contract — see [Security](./security.md).
+
 ## Errors and not-found
 
 Apps can provide global and per-route error / not-found `.ave` modules (see `examples/basic-app/src/error.ave` and `not-found.ave`). Prefer throwing helpers such as `notFound()` or `error(status)` from `@avedon/server` inside `load` or actions:
