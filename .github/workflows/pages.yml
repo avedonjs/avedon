@@ -39,6 +39,10 @@ jobs:
       - name: Build packages
         run: pnpm build
 
+      # Bins are skipped at first install when package dist/ is missing; relink after build.
+      - name: Relink workspace bins
+        run: pnpm install --frozen-lockfile
+
       - name: Build www
         run: pnpm -F www build
 
