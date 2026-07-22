@@ -310,15 +310,38 @@ function clientMountBody(clientScript: string, clientBuild: string, hmr = false)
 /**
  * `const likes = signal(init)` → `const likes = signal(init, "likes")` so HMR can restore by name.
  * Only rewrites when the second argument is not already present.
+ * Linear scan (no nested `[\s\S]*?`) to avoid ReDoS on large client scripts.
  */
 function injectSignalHmrKeys(script: string): string {
-  return script.replace(
-    /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*signal\s*\(([\s\S]*?)\)\s*;?/g,
-    (full, kind, name, args) => {
-      if (hasTopLevelComma(args)) return full
-      return `${kind} ${name} = signal(${args.trim()}, ${JSON.stringify(name)});`
-    },
-  )
+  const re = /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*signal\s*\(/g
+  let out = ''
+  let last = 0
+  let m: RegExpExecArray | null
+  while ((m = re.exec(script))) {
+    const startArgs = m.index + m[0].length
+    let depth = 1
+    let i = startArgs
+    for (; i < script.length; i++) {
+      const c = script[i]
+      if (c === '(') depth++
+      else if (c === ')') {
+        depth--
+        if (depth === 0) break
+      }
+    }
+    if (depth !== 0) break
+    const args = script.slice(startArgs, i)
+    out += script.slice(last, m.index)
+    if (hasTopLevelComma(args)) {
+      out += script.slice(m.index, i + 1)
+    } else {
+      out += `${m[1]} ${m[2]} = signal(${args.trim()}, ${JSON.stringify(m[2])})`
+    }
+    last = i + 1
+    re.lastIndex = last
+  }
+  out += script.slice(last)
+  return out
 }
 
 function hasTopLevelComma(args: string): boolean {

@@ -119,6 +119,19 @@ describe('compile', () => {
     expect(code).toMatch(/trusted framework|trusted HTML|framework-produced/i)
   })
 
+  it('nested if/each effects dispose previous nodes effect runners', () => {
+    const { code } = compile(
+      `<script>import { signal } from '@avedon/runtime'
+const on = signal(true)
+const items = signal([1,2])
+</script>
+<template>{#if on}{#each items as n}<span>{n}</span>{/each}{/if}</template>`,
+      { filename: 'Nested.ave' },
+    )
+    expect(code).toContain('__blockEffects')
+    expect(code).toMatch(/const __effects = __blockEffects/)
+  })
+
   it('parses <template> and scoped style', () => {
     const p = parse(`
 <script>let x = 1</script>

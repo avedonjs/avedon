@@ -47,7 +47,8 @@ Updated: 2026-07-22
 - **Docs language (2026-07-21):** repo docs English-only; `logo/README.md` translated from Turkish
 - **Starter home (2026-07-21):** dark-stage template + basic-app home (Syne, `#09090B`, `#06B6D4`, live `signal` demo); spec `docs/superpowers/specs/2026-07-21-starter-home-design.md`
 - **Create-app add-ons (2026-07-21):** implemented — optional Tailwind (style convert) + ORM wiring (Drizzle/Prisma/none, no schema); interactive + flags; spec `docs/superpowers/specs/2026-07-21-create-app-addons-design.md`; plan `docs/superpowers/plans/2026-07-21-create-app-addons.md`
-- **Security audit (2026-07-22):** comprehensive pass — fixed path traversal (adapter-node `resolveUnderRoot`), compiler `on*` XSS rejection, HttpError HTML escape, `{#each}` insert order, `@media` CSS scoping, scaffold shell-quoting, HMR cache prune. Deferred post-publish: nested effect leaks, signal HMR ReDoS. BUG-010 handled in pre-publish gate.
+- **Security audit (2026-07-22):** comprehensive pass — fixed path traversal, `on*` XSS, HttpError escape, `{#each}` order, `@media` CSS, scaffold quoting, HMR prune; BUG-010 trusted children + Node slots; BUG-004 block effects; BUG-006 HMR signal scan. Artefacts: `docs/superpowers/audits/2026-07-22/`.
+- **npm (2026-07-22):** **0.1.1 published** — unscoped `avedon` / `create-avedon-app` on personal account, `@avedon/*` on org (accepted). Trusted Publisher OIDC still optional follow-up.
 - **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
 - **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 - **Branch protection (2026-07-22):** `main` requires Install, Typecheck, Build, Test, Smoke tests, `Analyze (javascript-typescript)` on PR merges; direct pushes allowed (`enforce_admins` false).
@@ -61,8 +62,8 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 2. BUG-010 — done
 3. Branch protection — done
 4. First npm publish **0.1.1** — done; remaining: Trusted Publisher on each package (`docs/publishing.md`)
-5. **Post-publish:** BUG-004 nested effect leak; BUG-006 HMR signal ReDoS
-6. Later (separate plans): docs/landing · typed DX · Playwright e2e · Cloudflare/Bun adapters
+5. Post-publish BUG-004 / BUG-006 — done
+6. Later (separate plans): docs/landing · typed DX · Playwright e2e · Cloudflare/Bun adapters · Trusted Publisher OIDC per package
 
 ## Commands
 

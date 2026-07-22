@@ -34,4 +34,16 @@ describe('HMR signal key injection', () => {
     expect(code).not.toContain('__hmrBeginSignalBag')
     expect(code).not.toContain(', "likes")')
   })
+
+  it('injects hmr keys with nested parentheses in signal init', () => {
+    const { code } = compile(
+      `<script>
+  import { signal } from '@avedon/runtime'
+  const likes = signal(Math.max(0, data.post.likes))
+</script>
+<template><p>{likes}</p></template>`,
+      { filename: 'Sig.ave', hmr: true },
+    )
+    expect(code).toContain('signal(Math.max(0, data.post.likes), "likes")')
+  })
 })

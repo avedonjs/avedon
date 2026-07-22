@@ -579,7 +579,12 @@ function emitClient(tokens: Token[], hash: string): string {
   return `const __root = document.createDocumentFragment();\n${emitClientNodes(tokens, hash, '__root')}\ntarget.appendChild(__root);\n`
 }
 
-function emitClientNodes(tokens: Token[], hash: string, parent: string): string {
+function emitClientNodes(
+  tokens: Token[],
+  hash: string,
+  parent: string,
+  effectsVar = '__effects',
+): string {
   const lines: string[] = []
   let n = 0
   for (const t of tokens) {
@@ -604,7 +609,7 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
       lines.push(`{
         const ${id} = document.createTextNode('');
         ${parent}.appendChild(${id});
-        __effects.push(() => { ${id}.data = String(${t.value} ?? ''); });
+        ${effectsVar}.push(() => { ${id}.data = String(${t.value} ?? ''); });
       }`)
     } else if (t.type === 'if') {
       lines.push(`{
@@ -612,18 +617,24 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
         ${parent}.appendChild(${id});
         let __anchor = ${id};
         let __nodes = [];
-        __effects.push(() => {
+        let __blockEffects = [];
+        ${effectsVar}.push(() => {
           for (const n of __nodes) n.remove();
           __nodes = [];
+          __blockEffects = [];
           const __frag = document.createDocumentFragment();
-          if (${t.cond}) {
-            ${emitClientNodes(t.then, hash, '__frag')}
-          } ${t.else ? `else { ${emitClientNodes(t.else, hash, '__frag')} }` : ''}
+          {
+            const __effects = __blockEffects;
+            if (${t.cond}) {
+              ${emitClientNodes(t.then, hash, '__frag', '__effects')}
+            } ${t.else ? `else { ${emitClientNodes(t.else, hash, '__frag', '__effects')} }` : ''}
+          }
           let __insertBefore = __anchor.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
             __anchor.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
+          for (const fn of __blockEffects) fn();
         });
       }`)
     } else if (t.type === 'each') {
@@ -632,18 +643,24 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
         const ${id} = document.createComment('each');
         ${parent}.appendChild(${id});
         let __nodes = [];
-        __effects.push(() => {
+        let __blockEffects = [];
+        ${effectsVar}.push(() => {
           for (const n of __nodes) n.remove();
           __nodes = [];
+          __blockEffects = [];
           const __frag = document.createDocumentFragment();
-          ((${t.list}) || []).forEach((${t.item}, ${idx}) => {
-            ${emitClientNodes(t.body, hash, '__frag')}
-          });
+          {
+            const __effects = __blockEffects;
+            ((${t.list}) || []).forEach((${t.item}, ${idx}) => {
+              ${emitClientNodes(t.body, hash, '__frag', '__effects')}
+            });
+          }
           let __insertBefore = ${id}.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
+          for (const fn of __blockEffects) fn();
         });
       }`)
     } else if (t.type === 'await') {
@@ -651,30 +668,41 @@ function emitClientNodes(tokens: Token[], hash: string, parent: string): string 
         const ${id} = document.createComment('await');
         ${parent}.appendChild(${id});
         let __nodes = [];
+        let __blockEffects = [];
         Promise.resolve(${t.promise}).then((${t.thenName}) => {
           for (const n of __nodes) n.remove();
           __nodes = [];
+          __blockEffects = [];
           const __frag = document.createDocumentFragment();
-          ${emitClientNodes(t.thenBody, hash, '__frag')}
+          {
+            const __effects = __blockEffects;
+            ${emitClientNodes(t.thenBody, hash, '__frag', '__effects')}
+          }
           let __insertBefore = ${id}.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
+          for (const fn of __blockEffects) fn();
         }${t.catchBody ? `, (${t.catchName ?? 'error'}) => {
           for (const n of __nodes) n.remove();
           __nodes = [];
+          __blockEffects = [];
           const __frag = document.createDocumentFragment();
-          ${emitClientNodes(t.catchBody!, hash, '__frag')}
+          {
+            const __effects = __blockEffects;
+            ${emitClientNodes(t.catchBody!, hash, '__frag', '__effects')}
+          }
           let __insertBefore = ${id}.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
+          for (const fn of __blockEffects) fn();
         }` : ''});
       }`)
     } else if (t.type === 'element') {
-      lines.push(emitClientElement(t, hash, parent, id))
+      lines.push(emitClientElement(t, hash, parent, id, effectsVar))
     }
   }
   return lines.join('\n')
@@ -685,6 +713,7 @@ function emitClientElement(
   hash: string,
   parent: string,
   id: string,
+  effectsVar = '__effects',
 ): string {
   const lines = [
     `const ${id} = document.createElement(${jsLiteral(el.tag)});`,
@@ -697,14 +726,14 @@ function emitClientElement(
         `${id}.addEventListener(${jsLiteral(ev)}, function(event){ const __handler = (${a.value}); if (typeof __handler === 'function') __handler.call(this, event); __invalidate(); });`,
       )
     } else if (a.kind === 'bind' && a.name === 'bind:value') {
-      lines.push(`__effects.push(() => { ${id}.value = ${a.value} ?? ''; });`)
+      lines.push(`${effectsVar}.push(() => { ${id}.value = ${a.value} ?? ''; });`)
       lines.push(`${id}.addEventListener('input', () => { ${a.value} = ${id}.value; __invalidate(); });`)
     } else if (/^on[a-z]/i.test(a.name)) {
       // Ignore HTML event attributes; use on:click instead.
       continue
     } else if (a.kind === 'expr') {
       lines.push(
-        `__effects.push(() => { ${id}.setAttribute(${jsLiteral(a.name)}, (${a.value}) ?? ''); });`,
+        `${effectsVar}.push(() => { ${id}.setAttribute(${jsLiteral(a.name)}, (${a.value}) ?? ''); });`,
       )
     } else if (a.value == null) {
       lines.push(`${id}.setAttribute(${jsLiteral(a.name)}, '');`)
@@ -713,7 +742,7 @@ function emitClientElement(
     }
   }
   if (!el.selfClosing && !VOID.has(el.tag.toLowerCase())) {
-    lines.push(emitClientNodes(el.children, hash, id))
+    lines.push(emitClientNodes(el.children, hash, id, effectsVar))
   }
   lines.push(`${parent}.appendChild(${id});`)
   return `{ ${lines.join('\n')} }`
