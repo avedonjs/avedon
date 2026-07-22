@@ -178,6 +178,24 @@ export async function generateDocs({ docsDir, outPath, manifestPath }) {
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
   fs.writeFileSync(outPath, JSON.stringify({ groups, docs }, null, 2) + '\n', 'utf8')
+
+  // Keep public sitemap in sync with the manifest (copied into build/client).
+  const publicDir = path.resolve(path.dirname(outPath), '../public')
+  if (fs.existsSync(publicDir)) {
+    const origin = process.env.AVEDON_DOCS_ORIGIN || 'https://avedon.pages.dev'
+    const urls = [`${origin}/`, `${origin}/docs/`, ...slugs.map((s) => `${origin}/docs/${s}/`)]
+    const body = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...urls.map((loc) => `  <url><loc>${loc}</loc></url>`),
+      '</urlset>',
+      '',
+    ].join('\n')
+    fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), body, 'utf8')
+    const robots = `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`
+    fs.writeFileSync(path.join(publicDir, 'robots.txt'), robots, 'utf8')
+  }
+
   return outPath
 }
 

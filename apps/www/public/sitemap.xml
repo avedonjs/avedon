@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://avedon.pages.dev/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/introduction/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/quick-start/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/project-structure/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/cli/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/tutorial/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/components/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/routing/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/loading-data/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/rendering/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/reactivity/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/middleware/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/session/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/security/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/configuration/</loc></url>
+  <url><loc>https://avedon.pages.dev/docs/deployment/</loc></url>
+</urlset>

@@ -3,7 +3,7 @@ import { createHighlighter } from 'shiki'
 /** @type {import('shiki').Highlighter | null} */
 let highlighterPromise = null
 
-const THEME = 'github-dark'
+const THEME = 'github-dark-high-contrast'
 
 const LANG_ALIAS = {
   avedon: 'svelte',
@@ -124,7 +124,8 @@ function mergeShikiPres(htmlParts, lang) {
 
   for (const html of htmlParts) {
     const open = html.match(/^<pre([^>]*)>/i)?.[0]
-    if (open && !preOpen) preOpen = open.replace(/\sclass="[^"]*"/, ' class="shiki github-dark"')
+    if (open && !preOpen)
+      preOpen = open.replace(/\sclass="[^"]*"/, ' class="shiki github-dark-high-contrast"')
     const codeMatch = html.match(/<code[^>]*>([\s\S]*)<\/code>/i)
     if (codeMatch) lines.push(codeMatch[1])
   }
@@ -133,7 +134,7 @@ function mergeShikiPres(htmlParts, lang) {
   const inner = lines.join('')
   const openTag =
     preOpen ||
-    `<pre class="shiki github-dark" style="background-color:#0d1117;color:#e6edf3" tabindex="0">`
+    `<pre class="shiki github-dark-high-contrast" style="background-color:#0a0c10;color:#f0f3f6" tabindex="0">`
   return `${openTag}<code class="language-${lang}">${inner}</code></pre>`
 }
 

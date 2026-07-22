@@ -68,6 +68,7 @@ test('highlightCode maps avedon alias and typescript', async () => {
   const highlighter = await getHighlighter()
   const ts = highlightCode(highlighter, 'const x: number = 1', 'ts')
   assert.match(ts, /class="shiki/)
+  assert.match(ts, /github-dark-high-contrast/)
   const ave = highlightCode(highlighter, '<script>\nconst n = 1\n</script>', 'avedon')
   assert.match(ave, /language-avedon/)
 })

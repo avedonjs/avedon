@@ -207,7 +207,11 @@
     font-size: 0.95rem;
     padding: 0.65rem 1.1rem;
     border-radius: 0.35rem;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    text-decoration: none;
   }
 
   .cta-primary {
@@ -297,7 +301,7 @@
       </div>
     </div>
     <div class="ctas">
-      <a class="cta-primary" href="/docs/quick-start">Get started</a>
+      <a class="cta-primary" href="/docs/quick-start/">Get started</a>
       <a class="cta-secondary" href="https://github.com/avedonjs/avedon" rel="noopener noreferrer" target="_blank">GitHub</a>
     </div>
   </main>

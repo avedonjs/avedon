@@ -44,13 +44,18 @@
   .side nav {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.15rem;
   }
 
   .side a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.35rem 0.25rem;
     color: var(--muted);
     font-size: 0.95rem;
     font-weight: 500;
+    text-decoration: none;
   }
 
   .side a:hover {
@@ -86,6 +91,8 @@
     color: var(--fg);
     font-weight: 700;
     font-size: 1.05rem;
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
   }
 
   .hub-list p {
@@ -117,7 +124,7 @@
           <p class="group-title">{g.title}</p>
           <nav aria-label={g.title}>
             {#each g.docs as d}
-              <a href={'/docs/' + d.slug}>{d.title}</a>
+              <a href={'/docs/' + d.slug + '/'}>{d.title}</a>
             {/each}
           </nav>
         </div>
@@ -131,7 +138,7 @@
           <ul class="hub-list">
             {#each g.docs as d}
               <li>
-                <a href={'/docs/' + d.slug}>{d.title}</a>
+                <a href={'/docs/' + d.slug + '/'}>{d.title}</a>
                 <p>{d.blurb}</p>
               </li>
             {/each}
