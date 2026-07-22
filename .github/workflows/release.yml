@@ -32,8 +32,10 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
-      - name: Ensure npm supports trusted publishing
-        run: npm install -g npm@latest
+      # Trusted publishing needs npm ≥11.5.1. Do NOT use npm@latest (12+):
+      # pnpm 9 forwards --git-checks to npm publish; npm 12 throws EUNKNOWNCONFIG.
+      - name: Install npm 11 for publish (OIDC + git-checks compat)
+        run: npm install -g npm@11
 
       - run: pnpm install --frozen-lockfile
 

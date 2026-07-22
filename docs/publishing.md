@@ -8,6 +8,9 @@ Packages are at **0.1.1** and not yet on the registry. Do this from a machine wh
 git checkout main && git pull
 pnpm install
 pnpm build
+# pnpm 9 delegates publish to npm and passes --git-checks; npm 12 rejects that flag.
+# Use npm 11 for the publish CLI (OIDC-capable, tolerates the forwarded flag).
+npm install -g npm@11
 pnpm changeset publish
 ```
 
