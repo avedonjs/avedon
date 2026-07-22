@@ -6,4 +6,12 @@ export type DocEntry = {
   html: string
   headings: DocHeading[]
 }
-export type DocsFile = { docs: DocEntry[] }
+export type DocGroup = {
+  id: string
+  title: string
+  slugs: string[]
+}
+export type DocsFile = {
+  groups: DocGroup[]
+  docs: DocEntry[]
+}

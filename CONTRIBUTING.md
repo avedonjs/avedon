@@ -35,6 +35,23 @@ pnpm -F example dev
 
 Open http://localhost:5173.
 
+## Monorepo packages
+
+| Package | Responsibility |
+|---------|----------------|
+| `@avedon/shared` | Shared types and the adapter interface |
+| `@avedon/compiler` | Parse `.ave`, emit client/server modules, scoped CSS |
+| `@avedon/runtime` | `signal` / `computed` / `effect`, hydration, client router, form enhance |
+| `@avedon/server` | Route match, guards, middleware, `load` / `actions` / `api_*`, SSR |
+| `@avedon/vite-plugin` | Vite transform, HMR, and dev middleware for `.ave` |
+| `@avedon/adapter-node` | Production Node HTTP + static assets |
+| `@avedon/adapter-bun` | Interface stub |
+| `@avedon/adapter-cloudflare` | Interface stub |
+| `avedon` | CLI (`create`, `dev`, `build`, `start`) |
+| `create-avedon-app` | App scaffold |
+
+Reference app: [`examples/basic-app`](./examples/basic-app) (workspace name `example`). Public end-user docs live under [`docs/`](./docs/) and [https://avedon.pages.dev](https://avedon.pages.dev) — see [`docs/manifest.json`](./docs/manifest.json).
+
 ## Pull requests
 
 1. Target the `main` branch.

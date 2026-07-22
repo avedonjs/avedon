@@ -1,0 +1,24 @@
+{
+  "groups": [
+    {
+      "id": "getting-started",
+      "title": "Getting started",
+      "slugs": ["introduction", "quick-start", "project-structure", "cli"]
+    },
+    {
+      "id": "tutorial",
+      "title": "Tutorial",
+      "slugs": ["tutorial"]
+    },
+    {
+      "id": "concepts",
+      "title": "Concepts",
+      "slugs": ["components", "routing", "loading-data", "rendering", "reactivity"]
+    },
+    {
+      "id": "guides",
+      "title": "Guides",
+      "slugs": ["middleware", "session", "security", "configuration", "deployment"]
+    }
+  ]
+}

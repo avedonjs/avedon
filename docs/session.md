@@ -1,17 +1,20 @@
-# Cookies and sessions
+# Session and cookies
 
-avedon provides **cookie helpers** on every server `LoadEvent` and optional **sealed session cookies** (Web Crypto AES-GCM, no extra npm crypto deps).
+avedon provides cookie helpers on every server `LoadEvent` and optional **sealed session cookies** (Web Crypto AES-GCM).
 
 ## Enable session
 
+In `src/server-entry.ts` (or wherever you export the server app), configure session and ensure the adapter/dev server reads it:
+
 ```ts
-// server-entry.ts
 export const session = {
   secret: process.env.SESSION_SECRET!, // at least 32 characters
 }
 ```
 
-Pass `session` into `createHandler` (the Node adapter and Vite dev server read `serverApp.session` from `server-entry.ts`).
+Pass `session` into `createHandler` when you wire the server yourself. The Node adapter and Vite dev server read `serverApp.session` from `server-entry.ts` when exported.
+
+Set `SESSION_SECRET` in your environment before running production — see [Configuration](./configuration.md).
 
 ## Cookies
 
@@ -56,20 +59,22 @@ route('/admin', {
 })
 ```
 
-Without `redirectTo`, failed checks return **403** (same as `guard: () => false`).
+Without `redirectTo`, failed checks return **403**.
 
 On the **client**, guards run without `cookies` / `session`; `requireSession` allows navigation (httpOnly cookies are not readable in JS). Enforcement happens on the server for document loads and form actions.
 
 ## Security defaults
 
-Session cookies default to `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` on HTTPS.
-
-Form `actions` still use [CSRF](./middleware.md) Origin/Referer checks.
+Session cookies default to `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` on HTTPS. Form `actions` still use [CSRF](./middleware.md) Origin/Referer checks.
 
 ## Limits
 
-- Sealed cookie payload must stay under **4096** bytes.
-- No server-side session store in v1 (no Redis/DB session ids).
-- Login and user verification are app code — the framework only seals the payload you store in the cookie.
+- Sealed cookie payload must stay under **4096** bytes
+- No server-side session store in v1 (no Redis/DB session ids)
+- Login and user verification are app code — the framework only seals the payload you store
 
-See also [Routing — Guards](./routing.md#guards).
+## See also
+
+- [Routing — Guards](./routing.md)
+- [Security](./security.md)
+- [Configuration](./configuration.md)

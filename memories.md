@@ -66,9 +66,11 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 5. Post-publish BUG-004 / BUG-006 — done
 6. **Typed DX v1** — done (2026-07-22): `generateDts` Props / LoadEvent params / ActionHandler; docs + basic-app `route('/posts/:id')`
 7. **Docs site** — done (2026-07-22): `apps/www` SSG + MD pipeline + `{@html}`; live on Cloudflare Pages **https://avedon.pages.dev** (`pages:deploy` + `.github/workflows/pages.yml`; needs `CLOUDFLARE_*` secrets for CI)
+7b. **End-user docs IA** — done (2026-07-22): `docs/manifest.json` grouped nav; app-dev IA (`quick-start`, tutorial, concepts, guides); old `guide`/`packages`/`avedon-components` removed + CF `_redirects`; spec `docs/superpowers/specs/2026-07-22-end-user-docs-design.md`
+7c. **Docs syntax highlighting** — done (2026-07-23): Shiki at generate-time; `ts`/`js`/`bash`/…; `.ave` via section split (script→TS, style→CSS, template→Svelte) in `apps/www/scripts/highlight.mjs`
 8. Parallel remaining: Playwright e2e expansion
 9. Later: Cloudflare/Bun adapters · Trusted Publisher OIDC
-10. Housekeeping: commit www + compiler TS-strip + pages workflow; add GitHub `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` secrets
+10. Housekeeping: www live + Pages CI green; remaining optional custom domain
 
 ## Commands
 

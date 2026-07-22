@@ -1,13 +1,13 @@
 <script lang="ts">
-  export let docs
+  export let groups
 </script>
 
 <script server>
-  import { listDocs } from '../lib/docs'
+  import { listNavGroups } from '../lib/docs'
 
   export async function load() {
     return {
-      docs: listDocs().map(({ slug, title, blurb }) => ({ slug, title, blurb })),
+      groups: listNavGroups(true),
     }
   }
 </script>
@@ -28,17 +28,23 @@
     padding-right: 1rem;
   }
 
-  .side summary {
-    cursor: pointer;
+  .side .group {
+    margin-bottom: 1.25rem;
+  }
+
+  .side .group-title {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-size: 0.72rem;
     font-weight: 700;
-    margin-bottom: 0.75rem;
-    list-style: none;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .side nav {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .side a {
@@ -57,19 +63,29 @@
     letter-spacing: -0.03em;
   }
 
+  .hub-section {
+    margin-bottom: 2rem;
+  }
+
+  .hub-section h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+  }
+
   .hub-list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
   .hub-list a {
     color: var(--fg);
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
   }
 
   .hub-list p {
@@ -96,25 +112,32 @@
 <template>
   <div class="docs-shell">
     <aside class="side">
-      <details open>
-        <summary>Docs</summary>
-        <nav aria-label="Documentation">
-          {#each docs as d}
-            <a href={'/docs/' + d.slug}>{d.title}</a>
-          {/each}
-        </nav>
-      </details>
+      {#each groups as g}
+        <div class="group">
+          <p class="group-title">{g.title}</p>
+          <nav aria-label={g.title}>
+            {#each g.docs as d}
+              <a href={'/docs/' + d.slug}>{d.title}</a>
+            {/each}
+          </nav>
+        </div>
+      {/each}
     </aside>
     <section class="hub">
       <h1>Docs</h1>
-      <ul class="hub-list">
-        {#each docs as d}
-          <li>
-            <a href={'/docs/' + d.slug}>{d.title}</a>
-            <p>{d.blurb}</p>
-          </li>
-        {/each}
-      </ul>
+      {#each groups as g}
+        <div class="hub-section">
+          <h2>{g.title}</h2>
+          <ul class="hub-list">
+            {#each g.docs as d}
+              <li>
+                <a href={'/docs/' + d.slug}>{d.title}</a>
+                <p>{d.blurb}</p>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/each}
     </section>
   </div>
 </template>

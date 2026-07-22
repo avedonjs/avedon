@@ -3,13 +3,13 @@
   <img src="logo/logo-horizontal-light.png" alt="Avedon" width="280">
 </picture>
 
-> **Not released yet.** Active development — APIs, CLI behavior, and package versions may change before the first npm release.
-
 TypeScript-first full-stack web framework for building applications with colocated UI, styles, and server logic.
 
 # avedon
 
 avedon gives you a single component format (`.ave`), explicit routing, hybrid rendering, and a Vite-based toolchain aimed at clear boundaries between client and server code.
+
+**Docs:** [https://avedon.pages.dev](https://avedon.pages.dev) · **npm:** `avedon`, `create-avedon-app`, `@avedon/*`
 
 ## Features
 
@@ -23,45 +23,41 @@ avedon gives you a single component format (`.ave`), explicit routing, hybrid re
 ## Requirements
 
 - Node.js >= 20
-- pnpm >= 9
+- pnpm, npm, or yarn
 
 ## Quick start
 
-Clone this repository and run the example app:
-
 ```bash
+pnpm create avedon-app my-app
+cd my-app
 pnpm install
-pnpm build
-pnpm -F example dev
+pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
-
-| Route | Behavior |
-|-------|----------|
-| `/` | SSG home page |
-| `/posts/:id` | SSR page with server action and JSON API |
-| `/admin` | CSR page protected by a guard |
-
-Production-style build of the example:
+Open [http://localhost:5173](http://localhost:5173). Then:
 
 ```bash
-pnpm -F example build:app
-pnpm -F example start
+pnpm build
+pnpm start
 ```
+
+Full walkthrough: [docs/quick-start.md](./docs/quick-start.md) or [https://avedon.pages.dev/docs/quick-start](https://avedon.pages.dev/docs/quick-start).
 
 ## Documentation
 
 | Guide | Description |
 |-------|-------------|
 | [Documentation index](./docs/README.md) | Map of all docs |
-| [Getting started](./docs/guide.md) | Setup, CLI, and first app flow |
-| [`.ave` components](./docs/avedon-components.md) | File format, scripts, styles, template |
+| [Introduction](./docs/introduction.md) | What avedon is |
+| [Quick start](./docs/quick-start.md) | Create and run an app |
+| [Tutorial](./docs/tutorial.md) | Small end-to-end example |
+| [Components](./docs/components.md) | `.ave` format |
 | [Routing](./docs/routing.md) | `defineRoutes`, `route()`, layouts, guards |
+| [Loading data](./docs/loading-data.md) | `load`, `actions`, `api_*` |
+| [Rendering](./docs/rendering.md) | `ssr` / `ssg` / `csr` |
 | [Middleware](./docs/middleware.md) | `sequence`, CORS, logging, rate-limit |
-| [Rendering](./docs/rendering.md) | `ssr` / `ssg` / `csr` and when to use each |
-| [Packages](./docs/packages.md) | Monorepo package roles |
-| [Design spec](./docs/superpowers/specs/2026-07-20-avedon-design.md) | Architecture decisions |
+| [Session](./docs/session.md) | Cookies and sealed session |
+| [Deployment](./docs/deployment.md) | Node production |
 
 ## Packages
 
@@ -107,7 +103,7 @@ Minimal `.ave` page with server `load` and client reactivity:
 </template>
 ```
 
-Routes are declared explicitly. Prefer `route()` when you want typed `params` in guards; plain objects still work:
+Routes are declared explicitly. Prefer `route()` when you want typed `params` in guards:
 
 ```ts
 import { defineRoutes, route } from '@avedon/server'
@@ -119,12 +115,12 @@ export default defineRoutes([
   route('/posts/:id', {
     component: Post,
     render: 'ssr',
-    guard: (e) => e.params.id.length > 0, // params.id: string
+    guard: (e) => e.params.id.length > 0,
   }),
 ])
 ```
 
-See [`docs/routing.md`](./docs/routing.md) and [`examples/basic-app`](./examples/basic-app).
+See [docs/routing.md](./docs/routing.md). Contributors working on the framework itself: [CONTRIBUTING.md](./CONTRIBUTING.md) and [`examples/basic-app`](./examples/basic-app).
 
 ## Roadmap
 

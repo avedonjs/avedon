@@ -1,13 +1,20 @@
-/** Keep in sync with `scripts/generate-docs.mjs` SLUGS. */
+/** Keep in sync with `docs/manifest.json` groups[].slugs (flattened). */
 export const DOC_SLUGS = [
-  'guide',
-  'avedon-components',
+  'introduction',
+  'quick-start',
+  'project-structure',
+  'cli',
+  'tutorial',
+  'components',
   'routing',
+  'loading-data',
   'rendering',
+  'reactivity',
   'middleware',
   'session',
   'security',
-  'packages',
+  'configuration',
+  'deployment',
 ] as const
 
 export function docStaticPaths(): string[] {

@@ -1,20 +1,46 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { marked } from 'marked'
+import { Marked } from 'marked'
+import { getHighlighter, highlightCode } from './highlight.mjs'
 
-export const SLUGS = [
-  'guide',
-  'avedon-components',
-  'routing',
-  'rendering',
-  'middleware',
-  'session',
-  'security',
-  'packages',
-]
+/**
+ * @typedef {{ id: string, title: string, slugs: string[] }} ManifestGroup
+ * @typedef {{ groups: ManifestGroup[] }} Manifest
+ */
 
-const SLUG_SET = new Set(SLUGS)
+/**
+ * @param {string} manifestPath
+ * @returns {Manifest}
+ */
+export function loadManifest(manifestPath) {
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`Missing docs manifest at ${manifestPath}`)
+  }
+  const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+  if (!data?.groups || !Array.isArray(data.groups)) {
+    throw new Error('docs/manifest.json must contain a groups array')
+  }
+  return data
+}
+
+/**
+ * @param {Manifest} manifest
+ * @returns {string[]}
+ */
+export function flattenSlugs(manifest) {
+  /** @type {string[]} */
+  const slugs = []
+  for (const group of manifest.groups) {
+    for (const slug of group.slugs) {
+      if (slugs.includes(slug)) {
+        throw new Error(`Duplicate slug in manifest: ${slug}`)
+      }
+      slugs.push(slug)
+    }
+  }
+  return slugs
+}
 
 /**
  * @param {string} text
@@ -99,13 +125,38 @@ function ensureHeadingIds(html) {
 }
 
 /**
- * @param {{ docsDir: string, outPath: string }} opts
+ * @param {import('shiki').Highlighter} highlighter
  */
-export async function generateDocs({ docsDir, outPath }) {
+function createMarked(highlighter) {
+  const renderer = {
+    /**
+     * @param {{ text: string, lang?: string }} token
+     */
+    code({ text, lang }) {
+      return highlightCode(highlighter, text, lang)
+    },
+  }
+  const md = new Marked()
+  md.use({ renderer })
+  return md
+}
+
+/**
+ * @param {{ docsDir: string, outPath: string, manifestPath?: string }} opts
+ */
+export async function generateDocs({ docsDir, outPath, manifestPath }) {
+  const resolvedManifest =
+    manifestPath ?? path.join(docsDir, 'manifest.json')
+  const manifest = loadManifest(resolvedManifest)
+  const slugs = flattenSlugs(manifest)
+  const known = new Set(slugs)
+  const highlighter = await getHighlighter()
+  const md = createMarked(highlighter)
+
   /** @type {{ slug: string, title: string, blurb: string, html: string, headings: { id: string, text: string, level: 2 | 3 }[] }[]} */
   const docs = []
 
-  for (const slug of SLUGS) {
+  for (const slug of slugs) {
     const file = path.join(docsDir, `${slug}.md`)
     if (!fs.existsSync(file)) {
       throw new Error(`Missing docs/${slug}.md`)
@@ -113,14 +164,20 @@ export async function generateDocs({ docsDir, outPath }) {
     const raw = fs.readFileSync(file, 'utf8')
     const title = extractTitle(raw) ?? slug
     const blurb = extractBlurb(raw, title)
-    const md = rewriteMdLinks(raw, SLUG_SET)
-    let html = ensureHeadingIds(await marked.parse(md))
+    const rewritten = rewriteMdLinks(raw, known)
+    let html = ensureHeadingIds(await md.parse(rewritten))
     const headings = extractHeadings(html)
     docs.push({ slug, title, blurb, html, headings })
   }
 
+  const groups = manifest.groups.map((g) => ({
+    id: g.id,
+    title: g.title,
+    slugs: [...g.slugs],
+  }))
+
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
-  fs.writeFileSync(outPath, JSON.stringify({ docs }, null, 2) + '\n', 'utf8')
+  fs.writeFileSync(outPath, JSON.stringify({ groups, docs }, null, 2) + '\n', 'utf8')
   return outPath
 }
 
