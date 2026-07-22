@@ -51,7 +51,7 @@ Updated: 2026-07-22
 - **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
 - **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 - **Branch protection (2026-07-22):** `main` requires Install, Typecheck, Build, Test, Smoke tests, `Analyze (javascript-typescript)` on PR merges; direct pushes allowed (`enforce_admins` false).
-- **npm (2026-07-22):** versions at `0.1.1` on main; first publish is **manual** (`pnpm changeset publish` + OTP). Then configure Trusted Publisher (OIDC) per package → `release.yml`. Docs: `docs/publishing.md`. Release workflow uses Node 22 + OIDC; GAT bypass2fa deprecated.
+- **npm (2026-07-22):** **0.1.1 published** — all packages on registry (`avedon`, `create-avedon-app`, `@avedon/*`). First publish was manual OTP. Next: Trusted Publisher (OIDC) per package → `release.yml` (`docs/publishing.md`); then optional remove `NPM_TOKEN`.
 
 ## Next steps (priority, 2026-07-22)
 
@@ -60,7 +60,7 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 1. Housekeeping — done
 2. BUG-010 — done
 3. Branch protection — done
-4. **First npm publish** — maintainer: `pnpm build && pnpm changeset publish` (OTP); then Trusted Publisher on each package (`docs/publishing.md`)
+4. First npm publish **0.1.1** — done; remaining: Trusted Publisher on each package (`docs/publishing.md`)
 5. **Post-publish:** BUG-004 nested effect leak; BUG-006 HMR signal ReDoS
 6. Later (separate plans): docs/landing · typed DX · Playwright e2e · Cloudflare/Bun adapters
 
