@@ -12,4 +12,6 @@ playwright/.cache/
 
 # Local build / typecheck artefacts
 examples/**/.ave/
+apps/**/.ave/
+apps/www/.generated/
 *.tsbuildinfo

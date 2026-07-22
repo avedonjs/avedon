@@ -2,6 +2,8 @@
 
 Official documentation for **avedon**, a TypeScript-first full-stack web framework.
 
+The public site lives in [`apps/www`](../apps/www) (landing + these guides, SSG → Cloudflare Pages): **[https://avedon.pages.dev](https://avedon.pages.dev)**.
+
 ## Guides
 
 | Document | Audience |

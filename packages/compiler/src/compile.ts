@@ -303,11 +303,12 @@ function collectAuxTypeAliases(serverScript: string, dataType: string): string {
 
 function ssrRenderBody(clientScript: string, ssrExpr: string): string {
   const lines: string[] = []
-  const exported = extractExportLets(clientScript)
+  const script = stripTypeScript(clientScript)
+  const exported = extractExportLets(script)
   for (const p of exported) {
     lines.push(`  let ${p} = __props.${p};`)
   }
-  const body = stripExportLets(clientScript, exported)
+  const body = stripExportLets(script, exported)
   if (body.trim()) lines.push(indent(body, 2))
   lines.push(`  return ${ssrExpr};`)
   return lines.join('\n')
@@ -315,11 +316,12 @@ function ssrRenderBody(clientScript: string, ssrExpr: string): string {
 
 function ssrStreamBody(clientScript: string, ssrStream: string): string {
   const lines: string[] = []
-  const exported = extractExportLets(clientScript)
+  const script = stripTypeScript(clientScript)
+  const exported = extractExportLets(script)
   for (const p of exported) {
     lines.push(`  let ${p} = __props.${p};`)
   }
-  const body = stripExportLets(clientScript, exported)
+  const body = stripExportLets(script, exported)
   if (body.trim()) lines.push(indent(body, 2))
   lines.push(`  const __enqueue = (html) => __ctrl.enqueueHtml(html);`)
   lines.push(
@@ -332,11 +334,12 @@ function ssrStreamBody(clientScript: string, ssrStream: string): string {
 
 function clientMountBody(clientScript: string, clientBuild: string, hmr = false): string {
   const lines: string[] = []
-  const exported = extractExportLets(clientScript)
+  const script = stripTypeScript(clientScript)
+  const exported = extractExportLets(script)
   for (const p of exported) {
     lines.push(`  let ${p} = __props.${p};`)
   }
-  const body = stripExportLets(clientScript, exported)
+  const body = stripExportLets(script, exported)
   const prepared = hmr ? injectSignalHmrKeys(body) : body
   if (prepared.trim()) lines.push(indent(prepared, 2))
   lines.push(indent(clientBuild, 2))
@@ -391,7 +394,7 @@ function hasTopLevelComma(args: string): boolean {
   return false
 }
 
-/** Strip TypeScript syntax from server scripts embedded in SSR JS output. */
+/** Strip TypeScript syntax from scripts embedded in JS compile output (client + server). */
 function stripTypeScript(source: string): string {
   if (!source.trim()) return source
   return ts.transpileModule(source, {

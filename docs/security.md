@@ -17,6 +17,12 @@ Client codegen inserts string `children` via a `<template>` element's `innerHTML
 
 Normal client boot only remounts the leaf page into `[data-avedon-page]`; it does not remount layouts with string `children`. The footgun is the public per-component `mount` / `update` API.
 
+## `{@html}` (trusted HTML)
+
+`{@html expression}` inserts an HTML string without escaping (SSR) / via a `<template>` element's `innerHTML` (client).
+
+**Only** use for trusted content (for example build-time markdown you control). Never pass request bodies, query strings, or unsanitized CMS HTML into `{@html}`.
+
 ## Reporting vulnerabilities
 
 Do not report vulnerabilities in public issues. See [SECURITY.md](../SECURITY.md).

@@ -1,0 +1,120 @@
+<script lang="ts">
+  export let docs
+</script>
+
+<script server>
+  import { listDocs } from '../lib/docs'
+
+  export async function load() {
+    return {
+      docs: listDocs().map(({ slug, title, blurb }) => ({ slug, title, blurb })),
+    }
+  }
+</script>
+
+<style scoped>
+  .docs-shell {
+    display: grid;
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+    gap: 2rem;
+    width: min(100%, 72rem);
+    margin: 0 auto;
+    padding: 1.5rem clamp(1rem, 3vw, 2rem) 3rem;
+    box-sizing: border-box;
+  }
+
+  .side {
+    border-right: 1px solid var(--line);
+    padding-right: 1rem;
+  }
+
+  .side summary {
+    cursor: pointer;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    list-style: none;
+  }
+
+  .side nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .side a {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .side a:hover {
+    color: var(--fg);
+  }
+
+  .hub h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    letter-spacing: -0.03em;
+  }
+
+  .hub-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .hub-list a {
+    color: var(--fg);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .hub-list p {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+    line-height: 1.45;
+    max-width: 40rem;
+  }
+
+  @media (max-width: 720px) {
+    .docs-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .side {
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding-right: 0;
+      padding-bottom: 1rem;
+    }
+  }
+</style>
+
+<template>
+  <div class="docs-shell">
+    <aside class="side">
+      <details open>
+        <summary>Docs</summary>
+        <nav aria-label="Documentation">
+          {#each docs as d}
+            <a href={'/docs/' + d.slug}>{d.title}</a>
+          {/each}
+        </nav>
+      </details>
+    </aside>
+    <section class="hub">
+      <h1>Docs</h1>
+      <ul class="hub-list">
+        {#each docs as d}
+          <li>
+            <a href={'/docs/' + d.slug}>{d.title}</a>
+            <p>{d.blurb}</p>
+          </li>
+        {/each}
+      </ul>
+    </section>
+  </div>
+</template>

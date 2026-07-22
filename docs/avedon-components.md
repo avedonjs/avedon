@@ -130,6 +130,7 @@ Generated `*.ave.d.ts` files type `Props` (including inferred `data` from `load`
 Supported patterns in v1 include:
 
 - Text and expressions: `{expr}`
+- Trusted HTML: `{@html htmlString}` — unescaped; see [security](./security.md)
 - Events: `on:click={handler}` or `on:click={() => …}`
 - Control flow: `{#if}` / `{:else}` / `{/if}`, `{#each}` / `{/each}`, `{#await}` / …
 - Bindings: `bind:value={name}`

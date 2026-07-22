@@ -119,6 +119,36 @@ describe('compile', () => {
     expect(code).toMatch(/trusted framework|trusted HTML|framework-produced/i)
   })
 
+  it('emits unescaped html for {@html} on SSR and client', () => {
+    const src = `<script>export let body</script><template><div class="prose">{@html body}</div></template>`
+    const client = compile(src, { filename: 'Html.ave' })
+    expect(client.code).toMatch(/innerHTML/)
+    expect(client.code).toMatch(/\bbody\b/)
+    expect(client.code).not.toMatch(/__escape\(body\)/)
+    const ssr = compileSsr(src, { filename: 'Html.ave' })
+    expect(ssr.code).toMatch(/\(body\)/)
+    expect(ssr.code).not.toMatch(/__escape\(body\)/)
+  })
+
+  it('strips TypeScript from client script in client and SSR bundles', () => {
+    const src = `
+<script lang="ts">
+  function greet(name: string): string {
+    return name
+  }
+</script>
+<template><p>{greet('hi')}</p></template>
+`
+    const client = compile(src, { filename: 'TsClient.ave' })
+    expect(client.code).not.toMatch(/name:\s*string/)
+    expect(client.code).not.toMatch(/\):\s*string/)
+    expect(client.code).toMatch(/function greet\s*\(\s*name\s*\)/)
+
+    const ssr = compileSsr(src, { filename: 'TsClient.ave' })
+    expect(ssr.code).not.toMatch(/name:\s*string/)
+    expect(ssr.code).toMatch(/function greet\s*\(\s*name\s*\)/)
+  })
+
   it('nested if/each effects dispose previous nodes effect runners', () => {
     const { code } = compile(
       `<script>import { signal } from '@avedon/runtime'

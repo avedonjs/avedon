@@ -1,0 +1,233 @@
+<script lang="ts">
+  export let html
+  export let headings
+  export let docs
+  export let slug
+  export let title
+</script>
+
+<script server>
+  import { notFound } from '@avedon/server'
+  import { getDoc, listDocs } from '../lib/docs'
+
+  export async function load({ params }) {
+    const entry = getDoc(params.slug)
+    if (!entry) throw notFound()
+    return {
+      title: entry.title,
+      html: entry.html,
+      headings: entry.headings,
+      docs: listDocs().map((d) => ({ slug: d.slug, title: d.title })),
+      slug: entry.slug,
+    }
+  }
+</script>
+
+<style unscoped>
+  .docs-shell {
+    display: grid;
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(10rem, 14rem);
+    gap: 2rem;
+    width: min(100%, 80rem);
+    margin: 0 auto;
+    padding: 1.5rem clamp(1rem, 3vw, 2rem) 3rem;
+    box-sizing: border-box;
+  }
+
+  .docs-shell .side {
+    border-right: 1px solid var(--line);
+    padding-right: 1rem;
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+  }
+
+  .docs-shell .side summary {
+    cursor: pointer;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    list-style: none;
+  }
+
+  .docs-shell .side nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .docs-shell .side a {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .docs-shell .side a:hover,
+  .docs-shell .side a.active {
+    color: var(--fg);
+  }
+
+  .docs-shell .side a.active {
+    color: var(--accent);
+  }
+
+  .docs-shell .prose {
+    max-width: 42rem;
+    line-height: 1.6;
+    font-size: 1.02rem;
+  }
+
+  .docs-shell .prose h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+
+  .docs-shell .prose h2 {
+    margin: 2rem 0 0.75rem;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+  }
+
+  .docs-shell .prose h3 {
+    margin: 1.5rem 0 0.5rem;
+    font-size: 1.1rem;
+  }
+
+  .docs-shell .prose p,
+  .docs-shell .prose ul,
+  .docs-shell .prose ol {
+    margin: 0 0 1rem;
+  }
+
+  .docs-shell .prose li {
+    margin-bottom: 0.35rem;
+  }
+
+  .docs-shell .prose a {
+    color: var(--accent);
+  }
+
+  .docs-shell .prose pre {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.1rem;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 0.35rem;
+    background: #111113;
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .docs-shell .prose code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  .docs-shell .prose :not(pre) > code {
+    padding: 0.1em 0.35em;
+    border-radius: 0.25rem;
+    background: rgba(250, 250, 250, 0.06);
+  }
+
+  .docs-shell .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .docs-shell .prose th,
+  .docs-shell .prose td {
+    border: 1px solid var(--line);
+    padding: 0.5rem 0.65rem;
+    text-align: left;
+  }
+
+  .docs-shell .toc {
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+    font-size: 0.85rem;
+  }
+
+  .docs-shell .toc > p {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+  }
+
+  .docs-shell .toc nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .docs-shell .toc a {
+    color: var(--muted);
+  }
+
+  .docs-shell .toc a:hover {
+    color: var(--fg);
+  }
+
+  .docs-shell .toc .h3 {
+    padding-left: 0.75rem;
+  }
+
+  @media (max-width: 960px) {
+    .docs-shell {
+      grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr);
+    }
+
+    .docs-shell .toc {
+      display: none;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .docs-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .docs-shell .side {
+      position: static;
+      max-height: none;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding-right: 0;
+      padding-bottom: 1rem;
+    }
+  }
+</style>
+
+<template>
+  <div class="docs-shell">
+    <aside class="side">
+      <details open>
+        <summary>Docs</summary>
+        <nav aria-label="Documentation">
+          {#each docs as d}
+            <a href={'/docs/' + d.slug} class={d.slug === slug ? 'active' : ''}>{d.title}</a>
+          {/each}
+        </nav>
+      </details>
+    </aside>
+    <article class="prose">{@html html}</article>
+    <aside class="toc">
+      {#if headings.length}
+        <p>On this page</p>
+        <nav aria-label="On this page">
+          {#each headings as h}
+            <a href={'#' + h.id} class={h.level === 3 ? 'h3' : ''}>{h.text}</a>
+          {/each}
+        </nav>
+      {/if}
+    </aside>
+  </div>
+</template>

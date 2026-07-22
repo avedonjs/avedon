@@ -1,0 +1,28 @@
+{
+  "name": "www",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node ./scripts/generate-docs.mjs",
+    "predev": "pnpm run generate",
+    "dev": "avedon dev",
+    "prebuild": "pnpm run generate",
+    "build": "avedon build",
+    "pages:deploy": "wrangler pages deploy ./build/client --project-name=avedon --branch=main --commit-dirty=true",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:generate": "node --test ./scripts/generate-docs.test.mjs"
+  },
+  "dependencies": {
+    "@avedon/adapter-node": "workspace:*",
+    "@avedon/runtime": "workspace:*",
+    "@avedon/server": "workspace:*",
+    "@avedon/vite-plugin": "workspace:*",
+    "avedon": "workspace:*",
+    "marked": "^15.0.12"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2",
+    "wrangler": "^4.113.0"
+  }
+}

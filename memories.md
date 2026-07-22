@@ -48,6 +48,7 @@ Updated: 2026-07-22
 - **Starter home (2026-07-21):** dark-stage template + basic-app home (Syne, `#09090B`, `#06B6D4`, live `signal` demo); spec `docs/superpowers/specs/2026-07-21-starter-home-design.md`
 - **Create-app add-ons (2026-07-21):** implemented — optional Tailwind (style convert) + ORM wiring (Drizzle/Prisma/none, no schema); interactive + flags; spec `docs/superpowers/specs/2026-07-21-create-app-addons-design.md`; plan `docs/superpowers/plans/2026-07-21-create-app-addons.md`
 - **Security audit (2026-07-22):** comprehensive pass — fixed path traversal, `on*` XSS, HttpError escape, `{#each}` order, `@media` CSS, scaffold quoting, HMR prune; BUG-010 trusted children + Node slots; BUG-004 block effects; BUG-006 HMR signal scan. Artefacts: `docs/superpowers/audits/2026-07-22/`.
+- **Compiler (2026-07-22):** client `<script lang="ts">` now runs through `stripTypeScript` (was server-only) — type annotations no longer break Vite/esbuild JS parse.
 - **npm (2026-07-22):** **0.1.1 published** — unscoped `avedon` / `create-avedon-app` on personal account, `@avedon/*` on org (accepted). Trusted Publisher OIDC still optional follow-up.
 - **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
 - **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
@@ -63,8 +64,11 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 3. Branch protection — done
 4. First npm publish **0.1.1** — done; remaining: Trusted Publisher on each package (`docs/publishing.md`)
 5. Post-publish BUG-004 / BUG-006 — done
-6. **Typed DX v1** — `generateDts` uses `Props`, `LoadContext`/`ExtractParams` from `LoadEvent` annotations, `ActionHandler` / `ApiHandler`; docs + `route('/posts/:id')` in basic-app
-7. Later: docs/landing · Playwright e2e · Cloudflare/Bun adapters · Trusted Publisher OIDC
+6. **Typed DX v1** — done (2026-07-22): `generateDts` Props / LoadEvent params / ActionHandler; docs + basic-app `route('/posts/:id')`
+7. **Docs site** — done (2026-07-22): `apps/www` SSG + MD pipeline + `{@html}`; live on Cloudflare Pages **https://avedon.pages.dev** (`pages:deploy` + `.github/workflows/pages.yml`; needs `CLOUDFLARE_*` secrets for CI)
+8. Parallel remaining: Playwright e2e expansion
+9. Later: Cloudflare/Bun adapters · Trusted Publisher OIDC
+10. Housekeeping: commit www + compiler TS-strip + pages workflow; add GitHub `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` secrets
 
 ## Commands
 

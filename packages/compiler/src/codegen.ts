@@ -44,6 +44,7 @@ export function compileMarkup(markup: string, hash: string): CompiledTemplate {
 type Token =
   | { type: 'text'; value: string }
   | { type: 'expr'; value: string }
+  | { type: 'html'; value: string }
   | { type: 'slot' }
   | { type: 'if'; cond: string; then: Token[]; else?: Token[] }
   | { type: 'each'; list: string; item: string; index?: string; body: Token[] }
@@ -138,6 +139,15 @@ function tokenize(input: string): Token[] {
         thenBody = tokenize(thenBlock.body.raw)
       }
       tokens.push({ type: 'await', promise, thenName, thenBody, catchName, catchBody })
+      continue
+    }
+
+    if (startsWith('{@html ')) {
+      i += '{@html '.length
+      const end = input.indexOf('}', i)
+      if (end === -1) throw new Error('Unclosed {@html}')
+      tokens.push({ type: 'html', value: input.slice(i, end).trim() })
+      i = end + 1
       continue
     }
 
@@ -435,6 +445,8 @@ function emitSsr(tokens: Token[], hash: string): string {
       parts.push('`' + escapeForTemplateLiteral(t.value) + '`')
     } else if (t.type === 'slot') {
       parts.push(`(__props.children ?? '')`)
+    } else if (t.type === 'html') {
+      parts.push(`(${t.value})`)
     } else if (t.type === 'expr') {
       parts.push(`__escape(${t.value})`)
     } else if (t.type === 'if') {
@@ -463,6 +475,8 @@ function emitSsrStream(tokens: Token[], hash: string): string {
       lines.push(`__enqueue(\`${escapeForTemplateLiteral(t.value)}\`);`)
     } else if (t.type === 'slot') {
       lines.push(`await __pipeChildren(__props.children);`)
+    } else if (t.type === 'html') {
+      lines.push(`__enqueue(${t.value});`)
     } else if (t.type === 'expr') {
       lines.push(`__enqueue(__escape(${t.value}));`)
     } else if (t.type === 'if') {
@@ -604,6 +618,13 @@ function emitClientNodes(
           ${id}.innerHTML = String(__ch);
           ${parent}.appendChild(${id}.content);
         }
+      }`)
+    } else if (t.type === 'html') {
+      lines.push(`{
+        // trusted HTML — {@html}; see docs/security.md
+        const ${id} = document.createElement('template');
+        ${id}.innerHTML = String(${t.value} ?? '');
+        ${parent}.appendChild(${id}.content);
       }`)
     } else if (t.type === 'expr') {
       lines.push(`{
