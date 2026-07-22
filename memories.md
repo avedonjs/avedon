@@ -50,6 +50,7 @@ Updated: 2026-07-22
 - **Security audit (2026-07-22):** comprehensive pass — fixed path traversal (adapter-node `resolveUnderRoot`), compiler `on*` XSS rejection, HttpError HTML escape, `{#each}` insert order, `@media` CSS scoping, scaffold shell-quoting, HMR cache prune. Deferred post-publish: nested effect leaks, signal HMR ReDoS. BUG-010 handled in pre-publish gate.
 - **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
 - **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
+- **Branch protection (2026-07-22):** `main` requires Install, Typecheck, Build, Test, Smoke tests, Analyze on PR merges; direct pushes allowed (`enforce_admins` false, no required PR reviews — preserves main workflow).
 
 ## Next steps (priority, 2026-07-22)
 
