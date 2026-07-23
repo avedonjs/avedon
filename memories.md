@@ -74,7 +74,8 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 9. **Trusted Publisher OIDC** — done (2026-07-23): all 10 packages → `release.yml` / `avedonjs/avedon`; optional later: prove publish via OIDC then remove `NPM_TOKEN`
 9b. **@avedon/adapter-cloudflare** — done (2026-07-23): Workers + Assets; SSG; no ISR; `e2e/cloudflare-adapt-smoke.mjs`; spec/plan under `docs/superpowers/{specs,plans}/2026-07-23-adapter-cloudflare*`
 9c. **@avedon/adapter-bun** — done (2026-07-23): Bun.serve + safe static + SSG/ISR SWR; `e2e/bun-adapt-smoke.mjs`; spec/plan under `docs/superpowers/{specs,plans}/2026-07-23-adapter-bun*`
-10. **Next:** optional custom domain for www; `create-avedon-app --adapter`; prove OIDC publish then remove `NPM_TOKEN`
+10. **Security / CI gate (2026-07-23):** Dependabot (esbuild/sharp overrides) + CodeQL www generate/highlight; www typecheck + create-smoke frozen lockfile — needed before Version Packages merge
+11. **Next:** merge https://github.com/avedonjs/avedon/pull/2 → OIDC publish; optional custom domain; `create-avedon-app --adapter`; remove `NPM_TOKEN` after proven OIDC
 
 ## Commands
 

@@ -43,7 +43,7 @@ if (!pkg.dependencies.avedon?.startsWith('file:')) {
   throw new Error('Expected file: avedon dep when AVEDON_MONOREPO_ROOT is set')
 }
 
-await run('pnpm', ['install'], { cwd: root })
+await run('pnpm', ['install', '--no-frozen-lockfile'], { cwd: root })
 
 const dev = spawn('pnpm', ['exec', 'avedon', 'dev'], {
   cwd: appDir,

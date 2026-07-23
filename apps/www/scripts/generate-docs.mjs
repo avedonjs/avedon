@@ -54,6 +54,22 @@ function slugify(text) {
 }
 
 /**
+ * Plain text from heading inner HTML (TOC / slugify). Strip complete tags, then
+ * any leftover `<>` so incomplete sequences like `<script` cannot survive
+ * (CodeQL js/incomplete-multi-character-sanitization).
+ * @param {string} html
+ */
+function plainTextFromHtml(html) {
+  let out = html
+  let prev
+  do {
+    prev = out
+    out = out.replace(/<[^>]*>/g, '')
+  } while (out !== prev)
+  return out.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+/**
  * @param {string} md
  * @param {Set<string>} known
  */
@@ -103,7 +119,7 @@ function extractHeadings(html) {
   while ((m = re.exec(html))) {
     const level = Number(m[1])
     const attrs = m[2] ?? ''
-    const inner = m[3].replace(/<[^>]+>/g, '').trim()
+    const inner = plainTextFromHtml(m[3])
     const idMatch = attrs.match(/\sid=["']([^"']+)["']/i)
     const id = idMatch?.[1] ?? slugify(inner)
     headings.push({ id, text: inner, level: /** @type {2 | 3} */ (level) })
@@ -118,7 +134,7 @@ function extractHeadings(html) {
 function ensureHeadingIds(html) {
   return html.replace(/<h([23])(\s[^>]*)?>([\s\S]*?)<\/h\1>/gi, (full, level, attrs = '', inner) => {
     if (/\sid=["']/i.test(attrs)) return full
-    const text = inner.replace(/<[^>]+>/g, '').trim()
+    const text = plainTextFromHtml(inner)
     const id = slugify(text)
     return `<h${level}${attrs} id="${id}">${inner}</h${level}>`
   })

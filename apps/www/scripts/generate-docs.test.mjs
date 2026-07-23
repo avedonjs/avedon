@@ -64,6 +64,17 @@ test('highlightAve colors script body as TypeScript and template as Svelte', asy
   assert.match(html, /export|async|function|load/)
 })
 
+test('highlightAve matches script end tags with whitespace before >', async () => {
+  const highlighter = await getHighlighter()
+  const src = `<script>
+  const n = 1
+</script >
+`
+  const html = highlightAve(highlighter, src)
+  assert.match(html, /language-avedon/)
+  assert.match(html, /const/)
+})
+
 test('highlightCode maps avedon alias and typescript', async () => {
   const highlighter = await getHighlighter()
   const ts = highlightCode(highlighter, 'const x: number = 1', 'ts')

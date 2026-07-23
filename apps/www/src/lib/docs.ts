@@ -1,9 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { DocEntry, DocGroup, DocsFile } from './doc-types'
+import type { DocEntry, DocGroup, DocsFile } from './doc-types.js'
 
-export type { DocEntry, DocGroup, DocHeading, DocsFile } from './doc-types'
+export type { DocEntry, DocGroup, DocHeading, DocsFile } from './doc-types.js'
 
 const generated = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

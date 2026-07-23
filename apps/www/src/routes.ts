@@ -3,7 +3,7 @@ import Layout from './pages/Layout.ave'
 import Home from './pages/Home.ave'
 import DocsIndex from './pages/DocsIndex.ave'
 import Doc from './pages/Doc.ave'
-import { docStaticPaths } from './lib/doc-paths'
+import { docStaticPaths } from './lib/doc-paths.js'
 
 export const routes = defineRoutes([
   {

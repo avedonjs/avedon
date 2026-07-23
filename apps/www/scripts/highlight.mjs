@@ -58,8 +58,10 @@ function resolveLang(lang) {
  * @param {string} code
  */
 export function highlightAve(highlighter, code) {
+  // Match end tags with optional junk/whitespace before `>` (HTML parsers accept
+  // `</script >` / `</script\nfoo>`); keeps CodeQL js/bad-tag-filter quiet.
   const re =
-    /(<script\b[^>]*>)([\s\S]*?)(<\/script>)|(<style\b[^>]*>)([\s\S]*?)(<\/style>)|(<template\b[^>]*>)([\s\S]*?)(<\/template>)/gi
+    /(<script\b[^>]*>)([\s\S]*?)(<\/script\b[^>]*>)|(<style\b[^>]*>)([\s\S]*?)(<\/style\b[^>]*>)|(<template\b[^>]*>)([\s\S]*?)(<\/template\b[^>]*>)/gi
 
   /** @type {{ html: string }[]} */
   const parts = []
