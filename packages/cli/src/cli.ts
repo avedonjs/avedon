@@ -143,7 +143,11 @@ async function cmdBuild() {
     getServerEntry: () => serverEntryPath,
     getSsgPages: () => ssgPages,
     getManifest: () => ({
-      routes: flattenRoutes(routes).map((r) => ({ path: r.path, render: r.render ?? 'ssr' })),
+      routes: flattenRoutes(routes).map((r) => ({
+        path: r.path,
+        render: r.render ?? 'ssr',
+        revalidate: r.revalidate,
+      })),
     }),
     writeClient(dest) {
       copyDir(path.join(outDir, 'client'), dest)

@@ -4,7 +4,7 @@ App-level configuration lives in `avedon.config.ts` at the project root (created
 
 ## Adapter
 
-Default scaffold:
+Default scaffold (Node):
 
 ```ts
 import { nodeAdapter } from '@avedon/adapter-node'
@@ -14,7 +14,17 @@ export default {
 }
 ```
 
-`out` is the adapter output directory used by `avedon build` / `avedon start`.
+Cloudflare Workers:
+
+```ts
+import { cloudflareAdapter } from '@avedon/adapter-cloudflare'
+
+export default {
+  adapter: cloudflareAdapter({ out: 'build', name: 'my-avedon-app' }),
+}
+```
+
+`out` is the adapter output directory used by `avedon build` (and by `avedon start` for the Node adapter).
 
 ## Environment variables
 

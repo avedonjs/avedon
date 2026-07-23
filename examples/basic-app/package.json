@@ -8,6 +8,7 @@
     "start": "avedon start"
   },
   "dependencies": {
+    "@avedon/adapter-cloudflare": "workspace:*",
     "@avedon/adapter-node": "workspace:*",
     "@avedon/runtime": "workspace:*",
     "@avedon/server": "workspace:*",
