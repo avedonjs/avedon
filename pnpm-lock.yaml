@@ -66,6 +66,9 @@ importers:
 
   examples/basic-app:
     dependencies:
+      '@avedon/adapter-bun':
+        specifier: workspace:*
+        version: link:../../packages/adapter-bun
       '@avedon/adapter-cloudflare':
         specifier: workspace:*
         version: link:../../packages/adapter-cloudflare
@@ -94,6 +97,9 @@ importers:
 
   packages/adapter-bun:
     dependencies:
+      '@avedon/server':
+        specifier: workspace:*
+        version: link:../server
       '@avedon/shared':
         specifier: workspace:*
         version: link:../shared
@@ -104,6 +110,9 @@ importers:
       typescript:
         specifier: ^5.8.2
         version: 5.9.3
+      vitest:
+        specifier: ^3.0.9
+        version: 3.2.7(@types/node@22.20.1)
 
   packages/adapter-cloudflare:
     dependencies:

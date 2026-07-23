@@ -1,6 +1,6 @@
 # Deployment
 
-Production targets **Node** (`@avedon/adapter-node`) or **Cloudflare Workers** (`@avedon/adapter-cloudflare`).
+Production targets **Node** (`@avedon/adapter-node`), **Cloudflare Workers** (`@avedon/adapter-cloudflare`), or **Bun** (`@avedon/adapter-bun`).
 
 ## Node
 
@@ -67,7 +67,36 @@ If your `server-entry` exports `session` without a `secret`, the generated Worke
 
 ## Bun
 
-`@avedon/adapter-bun` remains a stub.
+Use `@avedon/adapter-bun` for a `Bun.serve` production server with Node-parity static files, SSG, and ISR (stale-while-revalidate).
+
+### Config
+
+```ts
+import { bunAdapter } from '@avedon/adapter-bun'
+
+export default {
+  adapter: bunAdapter({ out: 'build' }),
+}
+```
+
+### Build and run
+
+```bash
+pnpm build
+bun run build/server.js
+```
+
+Requires [Bun](https://bun.sh/). Set `PORT` to change the listen port (default `3000`). `avedon start` remains Node-oriented (`build/server.js` via Node); use `bun` explicitly for this adapter.
+
+### Sessions
+
+Provide `SESSION_SECRET` in the environment (same rules as Node).
+
+### Behavior
+
+- Static assets under `build/client` with path-traversal guards
+- SSG HTML on disk; `revalidate` uses SWR background regeneration
+- Other requests go through `createHandler` (SSR streaming, actions, APIs)
 
 ## See also
 

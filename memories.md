@@ -53,7 +53,7 @@ Updated: 2026-07-22
 - **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
 - **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 - **Branch protection (2026-07-22/23):** `main` requires Install, Typecheck, Build, Test, Smoke tests, Playwright tests, `Analyze (javascript-typescript)` on PR merges; direct pushes allowed (`enforce_admins` false).
-- **Adapters:** `@avedon/adapter-node` production-ready; **`@avedon/adapter-cloudflare` Workers+Assets (2026-07-23)**; `@avedon/adapter-bun` stub
+- **Adapters:** `@avedon/adapter-node` production-ready; **`@avedon/adapter-cloudflare` Workers+Assets (2026-07-23)**; **`@avedon/adapter-bun` Bun.serve + ISR (2026-07-23)**
 - **Push (2026-07-23):** Playwright expansion on `origin/main` (`d1e81dd` + publishing docs).
 
 ## Next steps (priority, 2026-07-22)
@@ -73,8 +73,8 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 8. **Playwright e2e expansion** — done (2026-07-23): CI job `Playwright tests` + branch protection; `e2e/browser-gaps.spec.ts`; `e2e/www.spec.ts` + `playwright.www.config.ts`; enhance() follows action redirect URL; CSR marker typo fix; stale smoke/hmr assertions updated; spec/plan under `docs/superpowers/{specs,plans}/2026-07-23-playwright-e2e-expansion*`
 9. **Trusted Publisher OIDC** — done (2026-07-23): all 10 packages → `release.yml` / `avedonjs/avedon`; optional later: prove publish via OIDC then remove `NPM_TOKEN`
 9b. **@avedon/adapter-cloudflare** — done (2026-07-23): Workers + Assets; SSG; no ISR; `e2e/cloudflare-adapt-smoke.mjs`; spec/plan under `docs/superpowers/{specs,plans}/2026-07-23-adapter-cloudflare*`
-9c. **Next: @avedon/adapter-bun**
-10. Housekeeping: optional custom domain for www
+9c. **@avedon/adapter-bun** — done (2026-07-23): Bun.serve + safe static + SSG/ISR SWR; `e2e/bun-adapt-smoke.mjs`; spec/plan under `docs/superpowers/{specs,plans}/2026-07-23-adapter-bun*`
+10. **Next:** optional custom domain for www; `create-avedon-app --adapter`; prove OIDC publish then remove `NPM_TOKEN`
 
 ## Commands
 

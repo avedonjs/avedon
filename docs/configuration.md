@@ -24,6 +24,16 @@ export default {
 }
 ```
 
+Bun:
+
+```ts
+import { bunAdapter } from '@avedon/adapter-bun'
+
+export default {
+  adapter: bunAdapter({ out: 'build' }),
+}
+```
+
 `out` is the adapter output directory used by `avedon build` (and by `avedon start` for the Node adapter).
 
 ## Environment variables
