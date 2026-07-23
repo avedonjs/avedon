@@ -96,9 +96,8 @@ See **[docs/publishing.md](./docs/publishing.md)** for the first manual publish 
 Summary:
 
 1. **First publish** — maintainers run `pnpm build && pnpm changeset publish` locally with OTP (GAT bypass2fa / long-lived publish tokens are deprecated).
-2. **Ongoing** — configure npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) (OIDC) per package → workflow `release.yml`, repo `avedonjs/avedon`. The Release workflow uses Node 22 + `id-token: write`.
-3. **Optional `NPM_TOKEN`** — fallback only until OIDC is verified; then remove it.
-4. If the org blocks Actions from opening PRs, open the `changeset-release/main` Version Packages PR manually with `gh` (see publishing docs).
+2. **Ongoing** — npm [Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) (OIDC) per package → workflow `release.yml`, repo `avedonjs/avedon`. No `NPM_TOKEN` in Actions (`id-token: write` + Node 22 + npm 11).
+3. If the org blocks Actions from opening PRs, open the `changeset-release/main` Version Packages PR manually with `gh` (see publishing docs).
 
 ## Security
 

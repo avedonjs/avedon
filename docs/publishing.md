@@ -2,7 +2,7 @@
 
 ## Registry status
 
-Packages are at **0.1.1** on npm (`avedon`, `create-avedon-app`, `@avedon/*`). First publish was manual with OTP. Ongoing releases use Changesets + `.github/workflows/release.yml`.
+Packages are on npm (`avedon`, `create-avedon-app`, `@avedon/*`). Ongoing releases use Changesets + `.github/workflows/release.yml` with **npm Trusted Publisher (OIDC)** — no long-lived `NPM_TOKEN` in GitHub Actions.
 
 Publishable packages:
 
@@ -19,13 +19,20 @@ npm view @avedon/compiler version
 npm view create-avedon-app version
 ```
 
-## Trusted Publisher (OIDC) — required for Actions publish
+## Trusted Publisher (OIDC)
 
-Long-lived publish tokens / GAT `bypass2fa` are being deprecated ([npm changelog 2026-07-08](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)). Prefer [trusted publishing](https://docs.npmjs.com/trusted-publishers/).
+Long-lived publish tokens / GAT `bypass2fa` are deprecated ([npm changelog 2026-07-08](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)). This repo publishes with [trusted publishing](https://docs.npmjs.com/trusted-publishers/).
 
-`release.yml` already has `id-token: write`, Node 22, and npm 11 for OIDC.
+`release.yml` has:
 
-### Configure via CLI (preferred)
+- `permissions.id-token: write`
+- Node 22 + npm 11 (≥11.5.1)
+- **no** `NPM_TOKEN` / `NODE_AUTH_TOKEN` (if set, `changesets/action` writes an auth `.npmrc` and OIDC is skipped)
+- no `setup-node` `registry-url` (that also injects an auth `.npmrc`)
+
+On publish, the action logs `No NPM_TOKEN found, but OIDC is available - using npm trusted publishing`. Provenance attestations are generated automatically for public packages from this public repo.
+
+### Configure / verify trusted publishers
 
 Requires npm ≥ 11.5.1 and an owner login (`npm login`):
 
@@ -55,42 +62,31 @@ npm trust list avedon
 npm trust list @avedon/compiler
 ```
 
-### Configure via website (alternative)
-
-For **each** package on npmjs.com → package → **Access** (not account settings) → **Trusted Publisher** → GitHub Actions:
+Website alternative: each package on npmjs.com → **Access** → **Trusted Publisher** → GitHub Actions:
 
 | Field | Value |
 |-------|--------|
 | Organization or user | `avedonjs` |
 | Repository | `avedon` |
-| Workflow filename | `release.yml` (filename only, not `.github/workflows/…`) |
+| Workflow filename | `release.yml` (filename only) |
 | Environment name | _(leave blank)_ |
-| Allowed actions | `npm publish` (and optionally `npm stage publish`) |
+| Allowed actions | `npm publish` |
 
-Direct Access URLs (scoped packages use the full name in the path):
+### Hardening (optional)
 
-- https://www.npmjs.com/package/avedon/access
-- https://www.npmjs.com/package/create-avedon-app/access
-- https://www.npmjs.com/package/@avedon/compiler/access
-- (same pattern for `runtime`, `server`, `shared`, `vite-plugin`, `adapter-node`, `adapter-bun`, `adapter-cloudflare`)
+After OIDC publish is proven:
 
-### After OIDC works
+1. Package **Publishing access** → require 2FA and **disallow tokens**.
+2. Keep GitHub Actions free of any npm write token secrets.
 
-1. Confirm a Release run can publish without relying on a classic token (empty changeset → Version PR only is fine; a real version bump is the real proof).
-2. Optional: set package **Publishing access** to require 2FA and disallow tokens.
-3. Delete the GitHub Actions secret `NPM_TOKEN` (and remove `NPM_TOKEN` / `NODE_AUTH_TOKEN` from `release.yml` once confident).
-
-Until Trusted Publisher is configured on every package, keep `NPM_TOKEN` as a fallback.
-
-## Manual publish (emergency / first-time machine)
+## Manual publish (emergency)
 
 ```bash
 git checkout main && git pull
 pnpm install
 pnpm build
 # pnpm 9 delegates publish to npm and passes --git-checks; npm 12 rejects that flag.
-# Use npm 11 for the publish CLI (OIDC-capable, tolerates the forwarded flag).
-# Do not enable provenance locally — it only works from GitHub Actions / GitLab OIDC.
+# Use npm 11 for the publish CLI. Do not enable provenance locally — OIDC only.
 npm install -g npm@11
 NPM_CONFIG_PROVENANCE=false pnpm changeset publish
 ```

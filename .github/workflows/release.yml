@@ -11,6 +11,8 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  # Required for npm Trusted Publisher (OIDC). Do not set NPM_TOKEN —
+  # changesets/action skips OIDC when NPM_TOKEN is present.
   id-token: write
 
 jobs:
@@ -26,11 +28,11 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       # Trusted publishing (OIDC) needs Node ≥22.14 and npm ≥11.5.1
+      # No registry-url: setup-node would write an auth .npmrc that blocks OIDC.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://registry.npmjs.org
 
       # Trusted publishing needs npm ≥11.5.1. Do NOT use npm@latest (12+):
       # pnpm 9 forwards --git-checks to npm publish; npm 12 throws EUNKNOWNCONFIG.
@@ -42,8 +44,6 @@ jobs:
       - name: Build packages
         run: pnpm build
 
-      # Prefer OIDC trusted publishing. Optional NPM_TOKEN is a fallback only
-      # (GAT bypass2fa is deprecated — see npm changelog 2026-07-08).
       - name: Create Release Pull Request or publish to npm
         uses: changesets/action@v1
         with:
@@ -53,6 +53,5 @@ jobs:
           title: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Provenance is automatic with trusted publishing; keep explicit for clarity.
           NPM_CONFIG_PROVENANCE: true
