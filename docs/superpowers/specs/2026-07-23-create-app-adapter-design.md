@@ -36,8 +36,8 @@ CLI (create-avedon-app | avedon create)
   → resolveCreateOptions(argv)   // prompts and/or flags
   → scaffoldApp(dest, options)
        1. copy base template
-       2. monorepo file: link (include adapter-cloudflare / adapter-bun)
-       3. applyAdapter(dest, adapter, { name })
+       2. applyAdapter(dest, adapter, { name })
+       3. monorepo file: link (include adapter-cloudflare / adapter-bun; runs after apply so new deps exist)
        4. applyOrm() if options.orm !== 'none'
        5. applyTailwind() if options.tailwind
        6. formatNextSteps(result)
