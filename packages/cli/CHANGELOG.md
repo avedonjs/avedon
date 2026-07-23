@@ -1,5 +1,11 @@
 # avedon
 
+## 0.1.3
+
+### Patch Changes
+
+- 6e8bfb1: Release via npm Trusted Publisher (OIDC) only — no `NPM_TOKEN` fallback in CI.
+
 ## 0.1.2
 
 ### Patch Changes
