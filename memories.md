@@ -52,8 +52,9 @@ Updated: 2026-07-22
 - **npm (2026-07-22):** **0.1.1 published** — unscoped `avedon` / `create-avedon-app` on personal account, `@avedon/*` on org (accepted). Trusted Publisher OIDC still optional follow-up.
 - **Fix round (2026-07-22):** committed as `babdfa0` (path traversal, pack smoke, audit remediations). Audit artefacts relocated under `docs/superpowers/audits/2026-07-22/`.
 - **Pre-publish gate plan:** `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
-- **Branch protection (2026-07-22):** `main` requires Install, Typecheck, Build, Test, Smoke tests, `Analyze (javascript-typescript)` on PR merges; direct pushes allowed (`enforce_admins` false).
-- **npm (2026-07-22):** **0.1.1 published** — all packages on registry (`avedon`, `create-avedon-app`, `@avedon/*`). First publish was manual OTP. Next: Trusted Publisher (OIDC) per package → `release.yml` (`docs/publishing.md`); then optional remove `NPM_TOKEN`.
+- **Branch protection (2026-07-22/23):** `main` requires Install, Typecheck, Build, Test, Smoke tests, Playwright tests, `Analyze (javascript-typescript)` on PR merges; direct pushes allowed (`enforce_admins` false).
+- **npm (2026-07-22/23):** **0.1.1 published**. **Trusted Publisher OIDC done (2026-07-23):** all 10 publishable packages trust `avedonjs/avedon` + `release.yml` (`npm trust list` shows `createPackage|createStagedPackage`). Keep GitHub `NPM_TOKEN` until a real Changesets publish proves OIDC; then optional remove token from secrets + `release.yml`.
+- **Push (2026-07-23):** Playwright expansion commit `d1e81dd` on `origin/main`.
 
 ## Next steps (priority, 2026-07-22)
 
@@ -70,7 +71,8 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 7c. **Docs syntax highlighting** — done (2026-07-23): Shiki at generate-time; `ts`/`js`/`bash`/…; `.ave` via section split (script→TS, style→CSS, template→Svelte) in `apps/www/scripts/highlight.mjs`
 7d. **www Lighthouse a11y/SEO** — done (2026-07-23): robots+sitemap, meta description, single `<main>` landmark, contrast/touch/underlines, high-contrast Shiki; local+live a11y/SEO **100** (Lighthouse)
 8. **Playwright e2e expansion** — done (2026-07-23): CI job `Playwright tests` + branch protection; `e2e/browser-gaps.spec.ts`; `e2e/www.spec.ts` + `playwright.www.config.ts`; enhance() follows action redirect URL; CSR marker typo fix; stale smoke/hmr assertions updated; spec/plan under `docs/superpowers/{specs,plans}/2026-07-23-playwright-e2e-expansion*`
-9. Later: Cloudflare/Bun adapters · Trusted Publisher OIDC
+9. **Trusted Publisher OIDC** — done (2026-07-23): all 10 packages → `release.yml` / `avedonjs/avedon`; optional later: prove publish via OIDC then remove `NPM_TOKEN`
+9b. **Next: Cloudflare/Bun adapters**
 10. Housekeeping: optional custom domain for www
 
 ## Commands
