@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: 'e2e',
+  testIgnore: ['**/www.spec.ts'],
   timeout: 60_000,
   // HMR specs mutate Post.ave on disk — must not run parallel with other app tests.
   fullyParallel: false,

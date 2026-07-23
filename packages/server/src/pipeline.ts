@@ -342,7 +342,7 @@ async function renderPage(
       if (loaded instanceof Response) return loaded
       if (loaded) data = { ...data, ...loaded }
     }
-    const body = `<div data-avedon-csr"></div>`
+    const body = `<div data-avedon-csr></div>`
     for (let i = matched.chain.length - 1; i >= 0; i--) {
       const r = matched.chain[i]
       if (!r.layout) continue

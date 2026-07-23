@@ -339,12 +339,15 @@ export function enhance(form: HTMLFormElement): () => void {
       method,
       body: new FormData(form),
       headers: { accept: 'text/html' },
+      credentials: 'same-origin',
     })
     const html = await res.text()
+    // After action redirects, fetch follows to the final URL — boot that path, not the form action.
+    const finalUrl = new URL(res.url)
     abandonHandler?.()
     applyDocument(html)
-    history.pushState({}, '', url.pathname + url.search)
-    await bootHandler?.(url.pathname)
+    history.pushState({}, '', finalUrl.pathname + finalUrl.search + finalUrl.hash)
+    await bootHandler?.(finalUrl.pathname)
   }
   form.addEventListener('submit', onSubmit)
   return () => form.removeEventListener('submit', onSubmit)

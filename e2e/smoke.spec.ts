@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test('home ssg/ssr renders brand', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('h1')).toContainText('avedon')
+  await expect(page.locator('.brand')).toContainText('avedon')
 })
 
 test('post ssr + client like button', async ({ page }) => {
@@ -15,12 +15,17 @@ test('post ssr + client like button', async ({ page }) => {
 })
 
 test('client nav does not full-reload', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/posts/1')
+  await expect(page.locator('h1')).toHaveText('Hello avedon')
   await page.evaluate(() => {
     ;(window as unknown as { __navMarker: number }).__navMarker = 1
+    const a = document.createElement('a')
+    a.href = '/docs/intro'
+    a.textContent = 'docs-intro'
+    document.body.appendChild(a)
   })
-  await page.click('a[href="/posts/1"]')
-  await expect(page.locator('h1')).toHaveText('Hello avedon')
+  await page.click('a[href="/docs/intro"]')
+  await expect(page.getByText('Welcome to the docs')).toBeVisible()
   const marker = await page.evaluate(
     () => (window as unknown as { __navMarker?: number }).__navMarker,
   )

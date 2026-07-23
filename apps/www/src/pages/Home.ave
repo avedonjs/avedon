@@ -279,7 +279,7 @@
 </style>
 
 <template>
-  <main class="stage" data-www-stage>
+  <div class="stage" data-www-stage>
     <div class="stage-glow" aria-hidden="true"></div>
     <div class="stage-grid" aria-hidden="true"></div>
     <p class="brand">avedon</p>
@@ -304,5 +304,5 @@
       <a class="cta-primary" href="/docs/quick-start/">Get started</a>
       <a class="cta-secondary" href="https://github.com/avedonjs/avedon" rel="noopener noreferrer" target="_blank">GitHub</a>
     </div>
-  </main>
+  </div>
 </template>

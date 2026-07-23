@@ -65,8 +65,8 @@ test('server script edit still triggers full reload', async ({ page }) => {
     })
 
     const serverEdited = original.replace(
-      '// params.id is typed as string via LoadEvent<\'/posts/:id\'>',
-      '// params.id is typed as string via LoadEvent<\'/posts/:id\'> /* hmr-server */',
+      "/** Params typed via LoadEvent path; keep in sync with route('/posts/:id', …) in routes.ts */",
+      "/** Params typed via LoadEvent path; keep in sync with route('/posts/:id', …) in routes.ts */ /* hmr-server */",
     )
     expect(serverEdited).not.toBe(original)
     fs.writeFileSync(postAvedon, serverEdited)

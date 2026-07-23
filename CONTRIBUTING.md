@@ -21,11 +21,15 @@ pnpm test
 pnpm test:smoke
 ```
 
-If you touch end-to-end behavior, also run:
+`pnpm test:smoke` is Node fetch/curl coverage (ISR, streaming, create, path traversal).
+
+If you touch client routing, HMR, forms/session UI, or `apps/www` static output, also run:
 
 ```bash
 pnpm test:e2e
 ```
+
+`pnpm test:e2e` is Playwright (Chromium): `examples/basic-app` + `apps/www` static smoke.
 
 ## Local development
 
@@ -82,6 +86,7 @@ GitHub Actions runs on every push and pull request. Before merging to `main`, en
 | Build | CI |
 | Test | CI |
 | Smoke tests | E2E / Smoke |
+| Playwright tests | E2E / Smoke |
 | Analyze (javascript-typescript) | CodeQL |
 
 ## Release & npm
