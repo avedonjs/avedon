@@ -76,8 +76,9 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 9c. **@avedon/adapter-bun** — done (2026-07-23): Bun.serve + safe static + SSG/ISR SWR; `e2e/bun-adapt-smoke.mjs`; spec/plan under `docs/superpowers/{specs,plans}/2026-07-23-adapter-bun*`
 10. **Security / CI gate (2026-07-23):** Dependabot + CodeQL closed (esbuild/sharp overrides, www HTML helpers, `*.ave` shim, create-smoke)
 11. **Release 0.2 adapters (2026-07-23):** Version Packages PR #2 merged; npm published `@avedon/adapter-{cloudflare,bun}@0.2.0`, `avedon`/`@avedon/runtime`/`@avedon/server` `@0.1.2` (and related patches). Release run: https://github.com/avedonjs/avedon/actions/runs/30040463331
-12. **OIDC-only publish (2026-07-23):** `NPM_TOKEN` removed; proof publish `avedon@0.1.3` via Trusted Publisher ([run](https://github.com/avedonjs/avedon/actions/runs/30042224695) — log: “No NPM_TOKEN found, but OIDC is available”; provenance SLSA present)
-13. **Next:** `create-avedon-app --adapter`; optional custom domain for www; optional www → `@avedon/adapter-cloudflare`
+12. **OIDC-only publish (2026-07-23):** `NPM_TOKEN` removed; proof publish `avedon@0.1.3` via Trusted Publisher
+12b. **create-avedon-app --adapter (2026-07-23):** implemented — `node`/`cloudflare`/`bun` via prompt + `--adapter=`; `applyAdapter`; docs; plan `docs/superpowers/plans/2026-07-23-create-app-adapter.md`
+13. **Next:** optional custom domain for www; optional www → `@avedon/adapter-cloudflare`; changeset/release for create-avedon-app adapter feature
 
 ## Commands
 

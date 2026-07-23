@@ -2,6 +2,8 @@
 
 Production targets **Node** (`@avedon/adapter-node`), **Cloudflare Workers** (`@avedon/adapter-cloudflare`), or **Bun** (`@avedon/adapter-bun`).
 
+Scaffold with `pnpm create avedon-app my-app --adapter=cloudflare` (or `bun`) to wire the matching adapter at create time — see [CLI](./cli.md).
+
 ## Node
 
 ### Build and run

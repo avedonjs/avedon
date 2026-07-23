@@ -1,7 +1,7 @@
 # Create-app adapter choice
 
 Updated: 2026-07-23  
-**Status:** Approved design  
+**Status:** Implemented (2026-07-23)  
 **Scope:** `packages/create-avedon-app` (+ thin `avedon create` argv passthrough)
 
 ## Goal

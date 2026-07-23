@@ -2,10 +2,17 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { ScaffoldOptions, ScaffoldResult } from './types.js'
+import { applyAdapter } from './apply-adapter.js'
 import { applyOrm } from './apply-orm.js'
 import { applyTailwind } from './apply-tailwind.js'
 
-export type { OrmChoice, ScaffoldOptions, ScaffoldResult, CreateOptions } from './types.js'
+export type {
+  AdapterChoice,
+  OrmChoice,
+  ScaffoldOptions,
+  ScaffoldResult,
+  CreateOptions,
+} from './types.js'
 export { parseCreateArgs, resolveCreateOptions } from './options.js'
 export type { ParsedCreateArgs } from './options.js'
 
@@ -28,6 +35,8 @@ function templateRoot(): string {
 const LOCAL_PKG_DIRS: Record<string, string> = {
   avedon: 'cli',
   '@avedon/adapter-node': 'adapter-node',
+  '@avedon/adapter-cloudflare': 'adapter-cloudflare',
+  '@avedon/adapter-bun': 'adapter-bun',
   '@avedon/runtime': 'runtime',
   '@avedon/server': 'server',
   '@avedon/vite-plugin': 'vite-plugin',
@@ -91,13 +100,14 @@ function copyDir(src: string, dest: string, name: string) {
 function normalizeOptions(
   destInput: string,
   options?: ScaffoldOptions | string,
-): Required<Pick<ScaffoldOptions, 'name' | 'tailwind' | 'orm'>> {
+): Required<Pick<ScaffoldOptions, 'name' | 'adapter' | 'tailwind' | 'orm'>> {
   if (typeof options === 'string') {
-    return { name: path.basename(options), tailwind: false, orm: 'none' }
+    return { name: path.basename(options), adapter: 'node', tailwind: false, orm: 'none' }
   }
   const rawName = options?.name ?? path.resolve(destInput)
   return {
     name: path.basename(rawName),
+    adapter: options?.adapter ?? 'node',
     tailwind: options?.tailwind ?? false,
     orm: options?.orm ?? 'none',
   }
@@ -119,6 +129,9 @@ export function scaffoldApp(
   }
   copyDir(tmpl, dest, opts.name)
 
+  // Apply adapter before monorepo link so new adapter deps get file: rewrites.
+  applyAdapter(dest, opts.adapter, { name: opts.name })
+
   const monorepoRoot =
     process.env.AVEDON_MONOREPO_ROOT?.trim() ||
     findAvedonMonorepoRoot(process.cwd()) ||
@@ -139,13 +152,14 @@ export function scaffoldApp(
     dest,
     name: opts.name,
     packageManager: detectPackageManager(),
+    adapter: opts.adapter,
     tailwind: opts.tailwind,
     orm: opts.orm,
   }
 }
 
 export function formatNextSteps(result: ScaffoldResult): string {
-  const { name, packageManager, tailwind, orm } = result
+  const { name, packageManager, adapter, tailwind, orm } = result
   const install =
     packageManager === 'pnpm'
       ? 'pnpm install'
@@ -174,6 +188,15 @@ export function formatNextSteps(result: ScaffoldResult): string {
     } else {
       extra += '\n  Then run db:generate after you add Prisma models'
     }
+  }
+  if (adapter === 'cloudflare') {
+    extra += '\n  Production: pnpm build && pnpm start  (cd build && wrangler deploy)'
+    extra += '\n  Set SESSION_SECRET: wrangler secret put SESSION_SECRET'
+    extra += '\n  Note: ISR / revalidate is not supported on Workers'
+  }
+  if (adapter === 'bun') {
+    extra += '\n  Production: pnpm build && bun run build/server.js'
+    extra += '\n  Requires Bun; set PORT to change listen port (default 3000)'
   }
 
   return `Created ${name}

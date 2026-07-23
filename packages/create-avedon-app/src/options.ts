@@ -1,18 +1,21 @@
 import * as p from '@clack/prompts'
-import type { CreateOptions, OrmChoice } from './types.js'
+import type { AdapterChoice, CreateOptions, OrmChoice } from './types.js'
 
 export type ParsedCreateArgs = {
   name?: string
   yes: boolean
+  adapter?: AdapterChoice
   tailwind?: boolean
   orm?: OrmChoice
 }
 
 const ORMS = new Set<OrmChoice>(['none', 'drizzle', 'prisma'])
+const ADAPTERS = new Set<AdapterChoice>(['node', 'cloudflare', 'bun'])
 
 export function parseCreateArgs(argv: string[]): ParsedCreateArgs {
   let name: string | undefined
   let yes = false
+  let adapter: AdapterChoice | undefined
   let tailwind: boolean | undefined
   let orm: OrmChoice | undefined
 
@@ -27,6 +30,14 @@ export function parseCreateArgs(argv: string[]): ParsedCreateArgs {
     }
     if (arg === '--no-tailwind') {
       tailwind = false
+      continue
+    }
+    if (arg.startsWith('--adapter=')) {
+      const value = arg.slice('--adapter='.length) as AdapterChoice
+      if (!ADAPTERS.has(value)) {
+        throw new Error(`Invalid --adapter=${value} (expected node|cloudflare|bun)`)
+      }
+      adapter = value
       continue
     }
     if (arg.startsWith('--orm=')) {
@@ -46,7 +57,7 @@ export function parseCreateArgs(argv: string[]): ParsedCreateArgs {
     name = arg
   }
 
-  return { name, yes, tailwind, orm }
+  return { name, yes, adapter, tailwind, orm }
 }
 
 export async function resolveCreateOptions(
@@ -60,6 +71,7 @@ export async function resolveCreateOptions(
   if (forceDefaults) {
     return {
       name: parsed.name ?? 'my-avedon-app',
+      adapter: parsed.adapter ?? 'node',
       tailwind: parsed.tailwind ?? false,
       orm: parsed.orm ?? 'none',
     }
@@ -74,6 +86,21 @@ export async function resolveCreateOptions(
     })
     if (p.isCancel(answered)) process.exit(0)
     name = String(answered).trim() || 'my-avedon-app'
+  }
+
+  let adapter = parsed.adapter
+  if (adapter === undefined) {
+    const answered = await p.select({
+      message: 'Production adapter?',
+      options: [
+        { value: 'node' as const, label: 'Node' },
+        { value: 'cloudflare' as const, label: 'Cloudflare Workers' },
+        { value: 'bun' as const, label: 'Bun' },
+      ],
+      initialValue: 'node' as const,
+    })
+    if (p.isCancel(answered)) process.exit(0)
+    adapter = answered as AdapterChoice
   }
 
   let tailwind = parsed.tailwind
@@ -101,5 +128,5 @@ export async function resolveCreateOptions(
     orm = answered as OrmChoice
   }
 
-  return { name, tailwind, orm }
+  return { name, adapter, tailwind, orm }
 }

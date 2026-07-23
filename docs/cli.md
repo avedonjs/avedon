@@ -17,17 +17,19 @@ In a scaffolded app these map to `pnpm dev`, `pnpm build`, and `pnpm start`.
 
 ```bash
 avedon create my-app --yes
+avedon create my-app --adapter=cloudflare
 avedon create my-app --tailwind --orm=drizzle
 avedon create my-app --no-tailwind --orm=none
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--yes` / `-y` | Non-interactive; defaults to no Tailwind and `orm=none` |
+| `--yes` / `-y` | Non-interactive; defaults to Node adapter, no Tailwind, `orm=none` |
+| `--adapter=node\|cloudflare\|bun` | Production adapter (default `node`) |
 | `--tailwind` / `--no-tailwind` | Enable or disable Tailwind v4 conversion of starter styles |
 | `--orm=none\|drizzle\|prisma` | Add ORM dependencies and empty config (no models) |
 
-Interactive mode (TTY) prompts for name (if missing), Tailwind, and ORM unless flags are set.
+Interactive mode (TTY) prompts for name (if missing), adapter, Tailwind, and ORM unless flags are set.
 
 ## Package managers
 

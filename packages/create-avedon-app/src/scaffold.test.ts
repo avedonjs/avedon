@@ -45,7 +45,65 @@ describe('scaffoldApp', () => {
     const result = scaffoldApp(app)
     expect(result.tailwind).toBe(false)
     expect(result.orm).toBe('none')
+    expect(result.adapter).toBe('node')
     expect(result.name).toBe('defaults-app')
+  })
+
+  it('returns adapter node by default', () => {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
+    dirs.push(dest)
+    const app = path.join(dest, 'defaults-adapter')
+    const result = scaffoldApp(app)
+    expect(result.adapter).toBe('node')
+    const cfg = fs.readFileSync(path.join(app, 'avedon.config.ts'), 'utf8')
+    expect(cfg).toContain('@avedon/adapter-node')
+  })
+
+  it('scaffolds cloudflare adapter config deps and scripts', () => {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
+    dirs.push(dest)
+    const app = path.join(dest, 'cf-app')
+    scaffoldApp(app, { name: 'cf-app', adapter: 'cloudflare' })
+    const cfg = fs.readFileSync(path.join(app, 'avedon.config.ts'), 'utf8')
+    expect(cfg).toContain("from '@avedon/adapter-cloudflare'")
+    expect(cfg).toContain('cloudflareAdapter')
+    expect(cfg).toContain('name: "cf-app"')
+    const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
+    expect(pkg.dependencies['@avedon/adapter-cloudflare']).toBeTruthy()
+    expect(pkg.dependencies['@avedon/adapter-node']).toBeUndefined()
+    expect(pkg.devDependencies.wrangler).toBeTruthy()
+    expect(pkg.scripts.start).toBe('cd build && wrangler deploy')
+    expect(pkg.scripts.deploy).toBe('cd build && wrangler deploy')
+  })
+
+  it('scaffolds bun adapter config deps and scripts', () => {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
+    dirs.push(dest)
+    const app = path.join(dest, 'bun-app')
+    scaffoldApp(app, { name: 'bun-app', adapter: 'bun' })
+    const cfg = fs.readFileSync(path.join(app, 'avedon.config.ts'), 'utf8')
+    expect(cfg).toContain("from '@avedon/adapter-bun'")
+    expect(cfg).toContain('bunAdapter')
+    const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
+    expect(pkg.dependencies['@avedon/adapter-bun']).toBeTruthy()
+    expect(pkg.dependencies['@avedon/adapter-node']).toBeUndefined()
+    expect(pkg.scripts.start).toBe('bun run build/server.js')
+    expect(pkg.scripts.preview).toBe('bun run build/server.js')
+  })
+
+  it('links file: cloudflare adapter when monorepo root is set', () => {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
+    dirs.push(dest)
+    const app = path.join(dest, 'cf-linked')
+    const repoRoot = path.resolve(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../..'))
+    process.env.AVEDON_MONOREPO_ROOT = repoRoot
+    try {
+      scaffoldApp(app, { name: 'cf-linked', adapter: 'cloudflare' })
+      const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
+      expect(pkg.dependencies['@avedon/adapter-cloudflare']).toMatch(/^file:/)
+    } finally {
+      delete process.env.AVEDON_MONOREPO_ROOT
+    }
   })
 
   it('accepts legacy string name as second argument', () => {
@@ -133,11 +191,37 @@ describe('scaffoldApp', () => {
       dest: '/tmp/x',
       name: `demo; touch /tmp/pwned`,
       packageManager: 'pnpm',
+      adapter: 'node',
       tailwind: false,
       orm: 'none',
     })
     expect(steps).toContain(`cd 'demo; touch /tmp/pwned'`)
     expect(steps).not.toMatch(/^ {2}cd demo;/m)
+  })
+
+  it('mentions cloudflare deploy next steps', () => {
+    const steps = formatNextSteps({
+      dest: '/tmp/x',
+      name: 'cf-app',
+      packageManager: 'pnpm',
+      adapter: 'cloudflare',
+      tailwind: false,
+      orm: 'none',
+    })
+    expect(steps).toMatch(/wrangler|deploy/i)
+    expect(steps).toMatch(/SESSION_SECRET/)
+  })
+
+  it('mentions bun run next steps', () => {
+    const steps = formatNextSteps({
+      dest: '/tmp/x',
+      name: 'bun-app',
+      packageManager: 'pnpm',
+      adapter: 'bun',
+      tailwind: false,
+      orm: 'none',
+    })
+    expect(steps).toMatch(/bun run build\/server\.js/)
   })
 
   it('refuses existing directories', () => {
