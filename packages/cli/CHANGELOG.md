@@ -1,5 +1,15 @@
 # avedon
 
+## 0.1.4
+
+### Patch Changes
+
+- 5ba9db4: Add reusable `.ave` component composition (PascalCase tags, props, default slots, fail-closed unsupported syntax) and per-page document head from `load` (`head: { title, description, html }` with streaming `awaitHead`).
+- Updated dependencies [5ba9db4]
+  - @avedon/server@0.2.0
+  - @avedon/vite-plugin@0.1.3
+  - @avedon/adapter-node@0.1.3
+
 ## 0.1.3
 
 ### Patch Changes
