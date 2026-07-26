@@ -321,13 +321,13 @@ function componentPropsObject(
   for (const a of t.attrs) {
     if (a.kind === 'event') {
       const key = 'on' + a.name.slice(3) // on:click → onclick
-      entries.push(`${JSON.stringify(key)}: (${a.value})`)
+      entries.push(`${jsLiteral(key)}: (${a.value})`)
     } else if (a.kind === 'expr') {
-      entries.push(`${JSON.stringify(a.name)}: (${a.value})`)
+      entries.push(`${jsLiteral(a.name)}: (${a.value})`)
     } else if (a.value == null) {
-      entries.push(`${JSON.stringify(a.name)}: true`)
+      entries.push(`${jsLiteral(a.name)}: true`)
     } else {
-      entries.push(`${JSON.stringify(a.name)}: ${JSON.stringify(a.value)}`)
+      entries.push(`${jsLiteral(a.name)}: ${jsLiteral(a.value)}`)
     }
   }
   if (childrenExpr != null) entries.push(`children: (${childrenExpr})`)
@@ -875,14 +875,14 @@ function emitClientNodes(
         if (a.kind === 'event') {
           const key = 'on' + a.name.slice(3)
           staticEntries.push(
-            `${JSON.stringify(key)}: (...__a) => { const __h = (${a.value}); const __r = typeof __h === 'function' ? __h(...__a) : undefined; __invalidate(); return __r; }`,
+            `${jsLiteral(key)}: (...__a) => { const __h = (${a.value}); const __r = typeof __h === 'function' ? __h(...__a) : undefined; __invalidate(); return __r; }`,
           )
         } else if (a.kind === 'expr') {
-          dynamicEntries.push(`${JSON.stringify(a.name)}: (${a.value})`)
+          dynamicEntries.push(`${jsLiteral(a.name)}: (${a.value})`)
         } else if (a.value == null) {
-          staticEntries.push(`${JSON.stringify(a.name)}: true`)
+          staticEntries.push(`${jsLiteral(a.name)}: true`)
         } else {
-          staticEntries.push(`${JSON.stringify(a.name)}: ${JSON.stringify(a.value)}`)
+          staticEntries.push(`${jsLiteral(a.name)}: ${jsLiteral(a.value)}`)
         }
       }
       if (hasChildren) staticEntries.push(`children: ${childrenVar}`)

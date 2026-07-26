@@ -40,6 +40,23 @@ describe('shell head', () => {
     expect(out).not.toContain('content="old"')
   })
 
+  it('replaces a title regardless of tag case', () => {
+    const app =
+      '<!doctype html><html><HEAD><TITLE>base</TITLE>%avedon.head%</HEAD><body><div id="app">'
+    const out = renderShellPrefix(app, { head: { title: 'Post 1' } })
+    expect(out).toContain('<title>Post 1</title>')
+    expect(out).not.toContain('base')
+  })
+
+  it('replaces a description meta with leading attributes and single quotes', () => {
+    const app =
+      `<!doctype html><html><head><meta charset="utf-8" /><meta data-x name='description' content='old' />%avedon.head%</head><body><div id="app">`
+    const out = renderShellPrefix(app, { head: { description: 'new' } })
+    expect(out).toContain('content="new"')
+    expect(out).not.toContain("content='old'")
+    expect(out).toContain('<meta charset="utf-8" />')
+  })
+
   it('appends raw head html verbatim', () => {
     const out = renderShellPrefix(withTitle, {
       head: { html: '<meta property="og:type" content="article" />' },

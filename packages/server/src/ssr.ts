@@ -64,6 +64,39 @@ export function renderShellPrefix(
   return html + appOpen
 }
 
+/**
+ * Replace the first `<title>…</title>` (case-insensitive) via linear scanning.
+ * Avoids backtracking regexes (ReDoS-safe) on the app.html template.
+ */
+function replaceTitle(html: string, replacement: string): string | null {
+  const lower = html.toLowerCase()
+  const open = lower.indexOf('<title>')
+  if (open < 0) return null
+  const close = lower.indexOf('</title>', open + 7)
+  if (close < 0) return null
+  return html.slice(0, open) + replacement + html.slice(close + '</title>'.length)
+}
+
+/**
+ * Replace the first `<meta name="description" …>` tag via linear scanning.
+ * Avoids backtracking regexes (ReDoS-safe) on the app.html template.
+ */
+function replaceDescriptionMeta(html: string, replacement: string): string | null {
+  const lower = html.toLowerCase()
+  let from = 0
+  for (;;) {
+    const tagStart = lower.indexOf('<meta', from)
+    if (tagStart < 0) return null
+    const tagEnd = html.indexOf('>', tagStart)
+    if (tagEnd < 0) return null
+    const tag = lower.slice(tagStart, tagEnd)
+    if (/\bname\s*=\s*["']description["']/.test(tag)) {
+      return html.slice(0, tagStart) + replacement + html.slice(tagEnd + 1)
+    }
+    from = tagEnd + 1
+  }
+}
+
 /** Replace title / description in the template when present; return leftovers to append. */
 function applyHead(appHtml: string, head: HeadMeta): { html: string; extra: string[] } {
   let html = appHtml
@@ -71,21 +104,16 @@ function applyHead(appHtml: string, head: HeadMeta): { html: string; extra: stri
 
   if (head.title != null) {
     const tag = `<title>${escapeHtml(head.title)}</title>`
-    if (/<title>[\s\S]*?<\/title>/i.test(html)) {
-      html = html.replace(/<title>[\s\S]*?<\/title>/i, tag)
-    } else {
-      extra.push(tag)
-    }
+    const replaced = replaceTitle(html, tag)
+    if (replaced != null) html = replaced
+    else extra.push(tag)
   }
 
   if (head.description != null) {
     const tag = `<meta name="description" content="${escapeHtml(head.description)}" />`
-    const re = /<meta\s+name=["']description["'][^>]*>/i
-    if (re.test(html)) {
-      html = html.replace(re, tag)
-    } else {
-      extra.push(tag)
-    }
+    const replaced = replaceDescriptionMeta(html, tag)
+    if (replaced != null) html = replaced
+    else extra.push(tag)
   }
 
   if (head.html) extra.push(head.html)
