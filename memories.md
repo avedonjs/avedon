@@ -90,7 +90,7 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 13. **Component composition — done (2026-07-26):** spec + plan under `docs/superpowers/{specs,plans}/2026-07-26-component-composition*`; compiler (detect/SSR/stream/client/fail-closed/`asUiComponent`), basic-app `Counter.ave` + `e2e/component-composition.spec.ts`, `docs/components.md` updated. Verified: 199 unit, typecheck, smoke, 19 Playwright — all green. **Uncommitted.**
 14. **Per-page `<head>` — done (2026-07-26):** spec + plan under `docs/superpowers/{specs,plans}/2026-07-26-page-head*`. `load` returns `head: { title, description, html }`; `title`/`description` escaped, `html` trusted. `HeadMeta` in `@avedon/shared`; `renderShellPrefix` replaces-or-appends title/description in `app.html`. **Streaming SSR needs `awaitHead: true`** (route opt-in) — head is only known after `load`, and always waiting would break the ttfb-smoke budget (41ms vs 800ms load). Without the flag the head is ignored: dev throws (`createHandler({ dev: true })` from the Vite middleware), prod warns — deterministic, never depends on load speed. SSG/CSR/`bufferHtml` work with no flag. `route()` helper also gained the previously missing `bufferHtml`. Client nav needed no change (`applyDocument` already syncs `<title>`). Verified: 212 unit, typecheck, all smoke (ttfb + stream-redirect unchanged), 21 Playwright — green. **Uncommitted.**
 14b. **www dogfoods component composition (2026-07-26):** extracted `apps/www/src/components/` — `SiteHeader` (Layout), `DocsSidebar` (Doc+DocsIndex, `slug` active-state), `Toc`+`Pager` (Doc), `DocHub` (DocsIndex). Scoped CSS per component aggregates into each page's `css` export; verified in built HTML (`.side[avedon-…]` matches element hash). Clean build/typecheck/www-e2e green. Note: re-running `avedon build` over an existing `build/` dir prints a benign vite dep-scan "server restarted/outdated" warning; clean build is silent.
-15. **Next:** domain/launch housekeeping in progress (2026-07-26): stale stub docs fixed; composition+head changeset added; absolute OG + `AVEDON_DOCS_ORIGIN`; `.generated-test` gitignored. Remaining: merge Version Packages PR after push; custom domain cutover when purchased.
+15. **Domain launch prep (2026-07-26):** stale stub docs fixed; absolute OG + `AVEDON_DOCS_ORIGIN`; `.generated-test` gitignored; composition+head published — `avedon@0.1.4`, `@avedon/{compiler,server,shared}@0.2.0`. Custom domain cutover: set repo Variable `AVEDON_DOCS_ORIGIN`, regenerate/redeploy, bind domain in CF Pages.
 
 ## Domain öncesi gap listesi (2026-07-26)
 
@@ -103,8 +103,8 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 - `asUiComponent` auto-wire yok (manuel/opsiyonel)
 
 **Önemli açıklar (launch güvenilirliği):**
-- ~~Composition + head npm changeset~~ **changeset eklendi** — Version Packages PR / publish bekliyor
-- ~~Sitemap/robots / OG absolute~~ **hazır** (`AVEDON_DOCS_ORIGIN`, default pages.dev)
+- ~~Composition + head npm changeset~~ **yayınlandı** (`avedon@0.1.4`, compiler/server/shared `0.2.0`)
+- ~~Sitemap/robots / OG absolute~~ **hazır** (`AVEDON_DOCS_ORIGIN`, default pages.dev; Pages Variable `AVEDON_DOCS_ORIGIN`)
 - CF adapter: ISR yok (dokümante)
 - `.ave` language service / LSP yok
 
