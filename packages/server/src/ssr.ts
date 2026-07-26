@@ -1,11 +1,12 @@
 import { escapeHtml } from '@avedon/runtime'
+import type { HeadMeta } from '@avedon/shared'
 import type { AvedonComponentModule } from './types.js'
 
 export function renderShell(
   appHtml: string,
   options: {
     body: string
-    head?: string
+    head?: HeadMeta
     css?: string
     props?: Record<string, unknown>
     clientEntry?: string
@@ -24,16 +25,20 @@ export function renderShell(
 /** HTML through opening `<div id="app">` (body not closed). */
 export function renderShellPrefix(
   appHtml: string,
-  options: { head?: string; css?: string } = {},
+  options: { head?: HeadMeta; css?: string } = {},
 ): string {
-  const head = [
-    options.head ?? '',
-    options.css ? `<style data-avedon-css>${options.css}</style>` : '',
-  ]
-    .filter(Boolean)
-    .join('\n')
-
   let html = appHtml
+  const extra: string[] = []
+
+  if (options.head) {
+    const applied = applyHead(html, options.head)
+    html = applied.html
+    extra.push(...applied.extra)
+  }
+  if (options.css) extra.push(`<style data-avedon-css>${options.css}</style>`)
+
+  const head = extra.filter(Boolean).join('\n')
+
   if (!html.includes('%avedon.head%')) {
     html = html.replace('</head>', `${head}\n</head>`)
   } else {
@@ -57,6 +62,34 @@ export function renderShellPrefix(
     return html.slice(0, bodyClose) + appOpen
   }
   return html + appOpen
+}
+
+/** Replace title / description in the template when present; return leftovers to append. */
+function applyHead(appHtml: string, head: HeadMeta): { html: string; extra: string[] } {
+  let html = appHtml
+  const extra: string[] = []
+
+  if (head.title != null) {
+    const tag = `<title>${escapeHtml(head.title)}</title>`
+    if (/<title>[\s\S]*?<\/title>/i.test(html)) {
+      html = html.replace(/<title>[\s\S]*?<\/title>/i, tag)
+    } else {
+      extra.push(tag)
+    }
+  }
+
+  if (head.description != null) {
+    const tag = `<meta name="description" content="${escapeHtml(head.description)}" />`
+    const re = /<meta\s+name=["']description["'][^>]*>/i
+    if (re.test(html)) {
+      html = html.replace(re, tag)
+    } else {
+      extra.push(tag)
+    }
+  }
+
+  if (head.html) extra.push(head.html)
+  return { html, extra }
 }
 
 /** Close `#app`, hydration payload, client entry, and document end (simple templates). */

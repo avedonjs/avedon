@@ -29,9 +29,20 @@ Use for request-dependent data, fresh pages, and slow `{#await}` regions where e
 
 When set on an SSR route, avedon waits for `load()` and the full HTML body, then sends one complete document. Use when:
 
-- **`<head>` depends on `load`** — title/meta must be correct in the first HTML snapshot
 - **`load()` often redirects or errors** — you need real HTTP `302` / `404` / `403` without post-shell fallback
 - Streaming buys little on a fast route
+
+If only the `<head>` depends on `load`, prefer `awaitHead: true` — it keeps the body streaming.
+
+### `awaitHead: true`
+
+Streaming flushes the shell before `load()` settles, so a [`head` returned by `load`](./loading-data.md#page-head) would arrive after `<head>` is already on the wire. Set `awaitHead: true` on the route to wait for `load()` before flushing the shell; the body still streams and `{#await}` boundaries still work.
+
+```ts
+route('/posts/:id', { component: Post, awaitHead: true })
+```
+
+`ssg`, `csr`, and `bufferHtml` routes already await `load()`, so they need no flag. A streaming route that returns `head` without `awaitHead` throws in dev and warns in production, and its `head` is ignored — the behaviour does not silently depend on how fast `load()` happens to be.
 
 ### Redirects and errors in `load()`
 

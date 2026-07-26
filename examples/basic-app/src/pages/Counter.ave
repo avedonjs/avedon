@@ -1,0 +1,37 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+  export let start
+  const count = signal(Number(start ?? 0))
+</script>
+
+<style scoped>
+  .counter {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .counter button {
+    font: inherit;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.3rem;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+  }
+
+  .counter output {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--accent);
+  }
+</style>
+
+<template>
+  <span class="counter" data-testid="counter">
+    <button type="button" on:click={() => count.set(count.get() + 1)}>+</button>
+    <output>{count}</output>
+  </span>
+</template>

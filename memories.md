@@ -1,6 +1,6 @@
 # memories.md
 
-Updated: 2026-07-22
+Updated: 2026-07-26
 
 ## Project
 
@@ -56,6 +56,15 @@ Updated: 2026-07-22
 - **Adapters:** `@avedon/adapter-node` production-ready; **`@avedon/adapter-cloudflare` Workers+Assets (2026-07-23)**; **`@avedon/adapter-bun` Bun.serve + ISR (2026-07-23)**
 - **Push (2026-07-23):** Playwright expansion on `origin/main` (`d1e81dd` + publishing docs).
 
+## Bilinen Sorunlar (2026-07-26 gap analizi)
+
+Build + 183 unit test yeşil, ama derleyicide **sessiz** (hata vermeyen) boşluklar var:
+
+- ~~BLOCKER — Alt bileşen kompozisyonu~~ **ÇÖZÜLDÜ (2026-07-26):** PascalCase + default import → `Comp.render`/`mount`; props, `on:` → `on*` prop, default slot; child CSS parent `css` export'una eklenir. İmport yoksa derleme hatası.
+- ~~`{@const}` geçersiz JS / `bind:checked` sessiz / named slot / spread~~ **ÇÖZÜLDÜ (2026-07-26):** hepsi artık net derleme hatası (`validateTokens`/`validateAttrs`); `bind:value` inputlarda çalışmaya devam ediyor. `asUiComponent` compile opsiyonu `<script server>`'ı reddediyor (plugin auto-wire ertelendi).
+- ~~Sayfa başına `<head>`/title/meta API'si yok~~ **ÇÖZÜLDÜ (2026-07-26):** `load` artık `head: { title, description, html }` döndürebiliyor; www'nin 17 sayfası da benzersiz title/description üretiyor.
+- Post-v1 sayılabilir eksikler: keyed `{#each}` (net hata fırlatıyor — kabul edilebilir), `{#key}`, `transition:`, `use:`, `class:` / `style:` direktifleri.
+
 ## Next steps (priority, 2026-07-22)
 
 Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
@@ -78,7 +87,9 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 11. **Release 0.2 adapters (2026-07-23):** Version Packages PR #2 merged; npm published `@avedon/adapter-{cloudflare,bun}@0.2.0`, `avedon`/`@avedon/runtime`/`@avedon/server` `@0.1.2` (and related patches). Release run: https://github.com/avedonjs/avedon/actions/runs/30040463331
 12. **OIDC-only publish (2026-07-23):** `NPM_TOKEN` removed; proof publish `avedon@0.1.3` via Trusted Publisher
 12b. **create-avedon-app --adapter (2026-07-23):** implemented — `node`/`cloudflare`/`bun` via prompt + `--adapter=`; `applyAdapter`; docs; plan `docs/superpowers/plans/2026-07-23-create-app-adapter.md`
-13. **Next:** optional custom domain for www; optional www → `@avedon/adapter-cloudflare`; changeset/release for create-avedon-app adapter feature
+13. **Component composition — done (2026-07-26):** spec + plan under `docs/superpowers/{specs,plans}/2026-07-26-component-composition*`; compiler (detect/SSR/stream/client/fail-closed/`asUiComponent`), basic-app `Counter.ave` + `e2e/component-composition.spec.ts`, `docs/components.md` updated. Verified: 199 unit, typecheck, smoke, 19 Playwright — all green. **Uncommitted.**
+14. **Per-page `<head>` — done (2026-07-26):** spec + plan under `docs/superpowers/{specs,plans}/2026-07-26-page-head*`. `load` returns `head: { title, description, html }`; `title`/`description` escaped, `html` trusted. `HeadMeta` in `@avedon/shared`; `renderShellPrefix` replaces-or-appends title/description in `app.html`. **Streaming SSR needs `awaitHead: true`** (route opt-in) — head is only known after `load`, and always waiting would break the ttfb-smoke budget (41ms vs 800ms load). Without the flag the head is ignored: dev throws (`createHandler({ dev: true })` from the Vite middleware), prod warns — deterministic, never depends on load speed. SSG/CSR/`bufferHtml` work with no flag. `route()` helper also gained the previously missing `bufferHtml`. Client nav needed no change (`applyDocument` already syncs `<title>`). Verified: 212 unit, typecheck, all smoke (ttfb + stream-redirect unchanged), 21 Playwright — green. **Uncommitted.**
+15. **Next:** domain/launch. Optional: `asUiComponent` plugin auto-wire; www → `@avedon/adapter-cloudflare`; changesets for component composition + head features; `apps/www/.generated-test/` untracked artefact should be gitignored or removed.
 
 ## Commands
 

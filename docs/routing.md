@@ -66,6 +66,8 @@ route('/users/:userId', {
 | `render` | `'ssr'` \| `'ssg'` \| `'csr'` — see [Rendering](./rendering.md) |
 | `getStaticPaths` | For `ssg` routes with params: `() => string[]` of full paths (alias: `entries`) |
 | `revalidate` | Optional ISR interval in seconds for `ssg` |
+| `bufferHtml` | Send one complete document instead of streaming ([Rendering](./rendering.md)) |
+| `awaitHead` | Wait for `load()` before flushing the streaming shell so its `head` applies |
 | `guard` | Optional activation check (`canActivate` is an alias) |
 | `error` | Optional error UI for that route |
 | `notFound` | Optional 404 UI for that route |

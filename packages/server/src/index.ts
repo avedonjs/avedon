@@ -38,6 +38,7 @@ export type {
   LoadEvent,
   LoadContext,
   LoadResult,
+  HeadMeta,
   ActionHandler,
   ApiHandler,
   GuardFn,

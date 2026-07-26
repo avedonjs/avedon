@@ -10,7 +10,7 @@
 
 <script server>
   import { db } from '../lib/db'
-  import { json, notFound, type LoadEvent } from '@avedon/server'
+  import { json, notFound, type HeadMeta, type LoadEvent } from '@avedon/server'
 
   export type PostPageData = {
     post: { id: string; title: string; body: string; likes: number }
@@ -19,10 +19,16 @@
   /** Params typed via LoadEvent path; keep in sync with route('/posts/:id', …) in routes.ts */
   export async function load({
     params,
-  }: LoadEvent<'/posts/:id'>): Promise<{ data: PostPageData }> {
+  }: LoadEvent<'/posts/:id'>): Promise<{ data: PostPageData; head: HeadMeta }> {
     const post = db.post.find(params.id)
     if (!post) throw notFound()
-    return { data: { post } }
+    return {
+      data: { post },
+      head: {
+        title: `${post.title} — avedon`,
+        description: `Post ${post.id} on the avedon example app.`,
+      },
+    }
   }
 
   export const actions = {

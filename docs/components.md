@@ -1,6 +1,6 @@
 # Components
 
-A `.ave` file is a page or layout unit: markup, styles, client logic, and optional server logic live together. The compiler splits client and server so server code never ships to the browser.
+A `.ave` file is a **page**, **layout**, or reusable **UI component**: markup, styles, client logic, and (for pages/layouts) server logic live together. The compiler splits client and server so server code never ships to the browser.
 
 ## Sections
 
@@ -67,6 +67,27 @@ Supported patterns include:
 - Control flow: `{#if}` / `{:else}` / `{/if}`, `{#each}` / `{/each}`, `{#await}` / …
 - Bindings: `bind:value={name}`
 - Forms: `method="POST"` with [actions](./loading-data.md)
+
+## Using components
+
+Import another `.ave` file and use it as a **PascalCase** tag. The import must be a default import whose name matches the tag, or compilation fails.
+
+```avedon
+<script>
+  import Counter from './Counter.ave'
+</script>
+<template>
+  <Counter start={3} />
+</template>
+```
+
+- **Props:** attributes become props — `start={3}` (dynamic) or `label="hi"` (static). `export let` in the component declares them.
+- **Events:** `on:click={handler}` on a component becomes an `onclick` prop the component can wire to the DOM (`export let onclick` + `on:click={onclick}`). There is no event dispatcher in v1.
+- **Default slot:** children between the tags fill the component's `<slot />` (`children` prop; see [Security](./security.md) for the trusted-HTML contract).
+
+UI components are presentational: they cannot declare `<script server>` / `load` / `actions`. Keep server logic in the route page or layout.
+
+Not supported in v1 (fails at compile time with a clear message): named slots, `bind:` on components, `class:` / `style:` / `transition:` / `use:` directives, `{@const}`, `{#key}`, keyed `{#each}`, and spread attributes.
 
 ## Isolation rule
 

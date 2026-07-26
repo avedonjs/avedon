@@ -38,6 +38,7 @@ const routes = defineRoutes([
     layout: Layout,
     component: Post,
     render: 'ssr',
+    awaitHead: true,
   }),
   {
     path: '/stream',

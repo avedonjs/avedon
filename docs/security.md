@@ -23,6 +23,10 @@ Client codegen inserts string `children` via a `<template>` element's `innerHTML
 
 **Only** use for trusted content (for example build-time markdown you control). Never pass request bodies, query strings, or unsanitized CMS HTML into `{@html}`.
 
+## `head.html` (trusted HTML)
+
+`head.title` and `head.description` from [`load`](./loading-data.md#page-head) are escaped, but `head.html` is injected into `<head>` verbatim — same contract as `{@html}`. Build the string from values you control; never interpolate request input into it.
+
 ## Forms and CSRF
 
 Form `actions` use Origin/Referer same-origin checks — see [Middleware](./middleware.md). Pair with `SameSite` session cookies from [Session](./session.md).

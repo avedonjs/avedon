@@ -61,6 +61,7 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
           )
 
           const handler = createHandler({
+            dev: true,
             routes,
             appHtml,
             hooks: ((hooks as { default?: unknown })?.default ?? hooks) as never,

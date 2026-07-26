@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { error, isHttpError, notFound } from './errors.js'
 import { createHandler } from './pipeline.js'
 
@@ -501,5 +501,112 @@ describe('renderShell', () => {
     // client script is a sibling of #app, not nested inside it
     const appClose = html.indexOf('</div>', html.indexOf('id="app"'))
     expect(html.indexOf('src="/src/client.ts"')).toBeGreaterThan(appClose)
+  })
+})
+
+describe('page head', () => {
+  const headAppHtml =
+    '<!doctype html><html><head><title>base</title>%avedon.head%</head><body><div id="app">%avedon.body%</div></body></html>'
+
+  it('injects head on a bufferHtml route', async () => {
+    const handler = createHandler({
+      appHtml: headAppHtml,
+      routes: [
+        {
+          path: '/p',
+          bufferHtml: true,
+          component: {
+            render: () => '<p>x</p>',
+            load: () => ({ head: { title: 'Buffered', description: 'buffered page' } }),
+          },
+        },
+      ],
+    })
+    const text = await (await handler(new Request('http://localhost/p'))).text()
+    expect(text).toContain('<title>Buffered</title>')
+    expect(text).toContain('content="buffered page"')
+  })
+
+  it('injects head on a csr route', async () => {
+    const handler = createHandler({
+      appHtml: headAppHtml,
+      routes: [
+        {
+          path: '/c',
+          render: 'csr',
+          component: {
+            render: () => '<p>x</p>',
+            load: () => ({ head: { title: 'Csr' } }),
+          },
+        },
+      ],
+    })
+    const text = await (await handler(new Request('http://localhost/c'))).text()
+    expect(text).toContain('<title>Csr</title>')
+  })
+
+  it('injects head on a streaming route that opts in with awaitHead', async () => {
+    const handler = createHandler({
+      appHtml: headAppHtml,
+      routes: [
+        {
+          path: '/s',
+          awaitHead: true,
+          component: {
+            render: () => '<p>x</p>',
+            async load() {
+              await new Promise((r) => setTimeout(r, 60))
+              return { head: { title: 'Streamed' } }
+            },
+          },
+        },
+      ],
+    })
+    const text = await (await handler(new Request('http://localhost/s'))).text()
+    expect(text).toContain('<title>Streamed</title>')
+    expect(text).toContain('<p>x</p>')
+  })
+
+  it('fails in dev when a streaming route returns head without awaitHead', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const handler = createHandler({
+      dev: true,
+      appHtml: headAppHtml,
+      routes: [
+        {
+          path: '/bad',
+          component: {
+            render: () => '<p>x</p>',
+            load: () => ({ head: { title: 'Nope' } }),
+          },
+        },
+      ],
+    })
+    const res = await handler(new Request('http://localhost/bad'))
+    expect(res.status).toBe(500)
+    expect(errors.mock.calls.flat().join(' ')).toContain('awaitHead')
+    errors.mockRestore()
+  })
+
+  it('warns and keeps rendering in production when awaitHead is missing', async () => {
+    const warns = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const handler = createHandler({
+      appHtml: headAppHtml,
+      routes: [
+        {
+          path: '/bad',
+          component: {
+            render: () => '<p>x</p>',
+            load: () => ({ head: { title: 'Nope' } }),
+          },
+        },
+      ],
+    })
+    const res = await handler(new Request('http://localhost/bad'))
+    const text = await res.text()
+    expect(res.status).toBe(200)
+    expect(text).toContain('<title>base</title>')
+    expect(warns.mock.calls.flat().join(' ')).toContain('awaitHead')
+    warns.mockRestore()
   })
 })

@@ -42,7 +42,13 @@
 
 <script server>
   export async function load() {
-    return {}
+    return {
+      head: {
+        title: 'avedon — TypeScript-first full-stack web framework',
+        description:
+          'avedon is a TypeScript-first full-stack web framework: single-file .ave components, explicit typed routing, and hybrid SSR/SSG/CSR rendering.',
+      },
+    }
   }
 </script>
 

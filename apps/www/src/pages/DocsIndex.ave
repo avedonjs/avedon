@@ -8,6 +8,10 @@
   export async function load() {
     return {
       groups: listNavGroups(true),
+      head: {
+        title: 'Docs — avedon',
+        description: 'Guides and API reference for avedon: routing, rendering, data loading, components, and deployment.',
+      },
     }
   }
 </script>

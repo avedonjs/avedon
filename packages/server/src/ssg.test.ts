@@ -105,3 +105,26 @@ describe('renderSsgPage', () => {
     expect(page).toBeNull()
   })
 })
+
+describe('ssg page head', () => {
+  it('renders per-page title and description from load head', async () => {
+    const headAppHtml =
+      '<!doctype html><html><head><title>base</title>%avedon.head%</head><body><div id="app">%avedon.body%</div></body></html>'
+    const pages = await buildSsgPages(
+      [
+        {
+          path: '/about',
+          render: 'ssg',
+          component: {
+            render: () => '<p>about</p>',
+            load: () => ({ head: { title: 'About — avedon', description: 'About page' } }),
+          },
+        },
+      ],
+      headAppHtml,
+    )
+    expect(pages[0].html).toContain('<title>About — avedon</title>')
+    expect(pages[0].html).not.toContain('<title>base</title>')
+    expect(pages[0].html).toContain('content="About page"')
+  })
+})

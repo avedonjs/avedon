@@ -24,6 +24,10 @@
       slug: entry.slug,
       prev,
       next,
+      head: {
+        title: `${entry.title} — avedon`,
+        description: entry.blurb,
+      },
     }
   }
 </script>

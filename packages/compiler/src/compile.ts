@@ -8,6 +8,8 @@ export interface CompileOptions {
   generate?: 'client' | 'ssr'
   /** Emit HMR signal bags / getHmrState (dev only; default false). */
   hmr?: boolean
+  /** When true, forbid <script server> (file used as a presentational UI component). */
+  asUiComponent?: boolean
 }
 
 export interface CompileResult {
@@ -21,14 +23,20 @@ export interface CompileResult {
 export function compile(source: string, options: CompileOptions = {}): CompileResult {
   const filename = options.filename ?? 'Component.ave'
   const generate = options.generate ?? 'client'
-  if (generate === 'ssr') return compileSsr(source, { filename })
+  if (generate === 'ssr') return compileSsr(source, { filename, asUiComponent: options.asUiComponent })
 
   const hmr = options.hmr === true
   const parsed = parse(source)
+  assertNoServerOnUiComponent(parsed.serverScript, options.asUiComponent, filename)
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const cssHash = hashStyle(parsed.style, filename)
   const css = parsed.scoped ? scopeCss(parsed.style, cssHash) : parsed.style
-  const { ssrExpr, clientBuild } = compileMarkup(parsed.markup || '<!-- empty -->', cssHash)
+  const components = extractComponentImports(clientImports)
+  const { ssrExpr, clientBuild, componentsUsed } = compileMarkup(
+    parsed.markup || '<!-- empty -->',
+    cssHash,
+    components,
+  )
 
   const hmrImport = hmr
     ? `, __hmrBeginSignalBag, __hmrEndSignalBag, __hmrSnapshotSignals`
@@ -38,7 +46,7 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
   const code = `import { escapeHtml as __escape${hmrImport} } from '@avedon/runtime';
 ${clientImports}
 
-export const css = ${JSON.stringify(css)};
+export const css = ${cssExportExpr(css, componentsUsed)};
 export const cssHash = ${JSON.stringify(cssHash)};
 
 export function render(__props = {}) {
@@ -90,13 +98,22 @@ export default { render, mount, hydrate, css, cssHash };
   return { code, css, cssHash, dts: generateDts(filename, clientBody, parsed.serverScript), map: null }
 }
 
-export function compileSsr(source: string, options: { filename?: string } = {}): CompileResult {
+export function compileSsr(
+  source: string,
+  options: { filename?: string; asUiComponent?: boolean } = {},
+): CompileResult {
   const filename = options.filename ?? 'Component.ave'
   const parsed = parse(source)
+  assertNoServerOnUiComponent(parsed.serverScript, options.asUiComponent, filename)
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const cssHash = hashStyle(parsed.style, filename)
   const css = parsed.scoped ? scopeCss(parsed.style, cssHash) : parsed.style
-  const { ssrExpr, ssrStream } = compileMarkup(parsed.markup || '<!-- empty -->', cssHash)
+  const components = extractComponentImports(clientImports)
+  const { ssrExpr, ssrStream, componentsUsed } = compileMarkup(
+    parsed.markup || '<!-- empty -->',
+    cssHash,
+    components,
+  )
 
   const hasLoad = /\bexport\s+(?:async\s+)?function\s+load\b|\bexport\s+(?:const|let|var)\s+load\b/.test(
     parsed.serverScript,
@@ -153,12 +170,41 @@ export function renderToStream(__props = {}) {
   return __ctrl.stream;
 }
 
-export const css = ${JSON.stringify(css)};
+export const css = ${cssExportExpr(css, componentsUsed)};
 export const cssHash = ${JSON.stringify(cssHash)};
 
 export default { ${[...new Set(defaultParts)].join(', ')} };
 `
   return { code, css, cssHash, dts: generateDts(filename, clientBody, parsed.serverScript), map: null }
+}
+
+function assertNoServerOnUiComponent(
+  serverScript: string,
+  asUiComponent: boolean | undefined,
+  filename: string,
+): void {
+  if (asUiComponent && serverScript.trim()) {
+    throw new Error(
+      `UI components cannot have a <script server> (${filename}). Move server logic to a route page or layout.`,
+    )
+  }
+}
+
+/** Default imports with PascalCase bindings — candidate UI components for template tags. */
+function extractComponentImports(importsCode: string): Set<string> {
+  const set = new Set<string>()
+  const re = /import\s+([A-Z][A-Za-z0-9_]*)\s+from\s+['"][^'"]+['"]/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(importsCode))) set.add(m[1])
+  return set
+}
+
+/** Parent css export; appends css of components used in the template so SSR shells stay styled. */
+function cssExportExpr(css: string, componentsUsed: string[]): string {
+  const base = JSON.stringify(css)
+  if (componentsUsed.length === 0) return base
+  const parts = componentsUsed.map((n) => `(${n}.css || '')`)
+  return [base, ...parts].join(' + ')
 }
 
 function generateDts(filename: string, clientScript: string, serverScript = ''): string {

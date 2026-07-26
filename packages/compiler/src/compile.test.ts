@@ -227,6 +227,117 @@ const items = signal([1,2])
   })
 })
 
+describe('component composition', () => {
+  it('compiles a PascalCase tag to Comp.render with props and children', () => {
+    const src = `<script>
+  import Card from './Card.ave'
+  export let title
+</script>
+<template><Card title={title} label="hi"><p>slot</p></Card></template>`
+    const out = compile(src, { filename: 'Home.ave', generate: 'ssr' })
+    expect(out.code).toContain('Card.render(')
+    expect(out.code).toContain('"title": (title)')
+    expect(out.code).toContain('"label": "hi"')
+    expect(out.code).toMatch(/children:/)
+    expect(out.code).not.toContain('document.createElement("Card")')
+  })
+
+  it('throws when a PascalCase tag has no matching default import', () => {
+    const src = `<template><Card /></template>`
+    expect(() => compile(src, { filename: 'Home.ave', generate: 'ssr' })).toThrow(
+      /Unknown component <Card>/,
+    )
+  })
+
+  it('mounts a component on the client with children and reactive props', () => {
+    const src = `<script>
+  import Card from './Card.ave'
+  export let title
+</script>
+<template><Card title={title}><span>x</span></Card></template>`
+    const out = compile(src, { filename: 'Home.ave', generate: 'client' })
+    expect(out.code).toContain('Card.mount(')
+    expect(out.code).toMatch(/\.update\(\{/)
+    expect(out.code).not.toContain('document.createElement("Card")')
+  })
+
+  it('maps component on:click to an onclick prop that re-invalidates the parent', () => {
+    const src = `<script>
+  import Btn from './Btn.ave'
+</script>
+<template><Btn on:click={() => 1} /></template>`
+    const out = compile(src, { filename: 'Home.ave', generate: 'client' })
+    expect(out.code).toContain('"onclick":')
+    expect(out.code).toContain('__invalidate()')
+  })
+
+  it('emits component render into the streaming SSR path', () => {
+    const src = `<script>
+  import Card from './Card.ave'
+</script>
+<template><Card label="hi"><i>c</i></Card></template>`
+    const out = compile(src, { filename: 'Home.ave', generate: 'ssr' })
+    expect(out.code).toMatch(/__enqueue\(Card\.render\(/)
+  })
+
+  it('aggregates imported component css into the parent css export (ssr)', () => {
+    const src = `<script>
+  import Card from './Card.ave'
+</script>
+<template><Card /></template>`
+    const out = compile(src, { filename: 'Home.ave', generate: 'ssr' })
+    expect(out.code).toContain("(Card.css || '')")
+  })
+})
+
+describe('fail-closed syntax', () => {
+  it.each([
+    ['const', `<template>{#each xs as x}{@const y = x}<b>{y}</b>{/each}</template>`, /Unsupported \{@const\}/],
+    ['key', `<template>{#key id}<b>x</b>{/key}</template>`, /Unsupported \{#key\}/],
+    ['named slot', `<template><div><slot name="footer" /></div></template>`, /Named slots are not supported/],
+    ['spread', `<template><div {...rest}>x</div></template>`, /Spread attributes are not supported/],
+    ['bind checked', `<template><input type="checkbox" bind:checked={on} /></template>`, /Unsupported binding "bind:checked"/],
+    ['class dir', `<template><div class:active={on}>x</div></template>`, /Unsupported directive "class:active"/],
+  ])('fails closed on %s', (_name, src, re) => {
+    expect(() => compile(src, { filename: 'T.ave', generate: 'ssr' })).toThrow(re)
+  })
+
+  it('rejects bind on a component tag', () => {
+    const src = `<script>
+  import Card from './Card.ave'
+</script>
+<template><Card bind:value={v} /></template>`
+    expect(() => compile(src, { filename: 'T.ave', generate: 'ssr' })).toThrow(
+      /bind: is not supported on components/,
+    )
+  })
+
+  it('still allows bind:value on native inputs and on:click on elements', () => {
+    const src = `<template><input bind:value={name} /><button on:click={() => 1}>x</button></template>`
+    expect(() => compile(src, { filename: 'T.ave', generate: 'ssr' })).not.toThrow()
+  })
+})
+
+describe('asUiComponent', () => {
+  const srcWithServer = `<script server>
+  export function load() { return { data: {} } }
+</script>
+<template><p>x</p></template>`
+
+  it('rejects <script server> when compiled as a UI component', () => {
+    expect(() => compile(srcWithServer, { filename: 'Card.ave', asUiComponent: true })).toThrow(
+      /UI components cannot have a <script server>/,
+    )
+    expect(() => compileSsr(srcWithServer, { filename: 'Card.ave', asUiComponent: true })).toThrow(
+      /UI components cannot have a <script server>/,
+    )
+  })
+
+  it('allows <script server> by default (route pages)', () => {
+    expect(() => compile(srcWithServer, { filename: 'Page.ave' })).not.toThrow()
+  })
+})
+
 describe('scopeCss', () => {
   it('BUG-005: scopes selectors inside @media', () => {
     const out = scopeCss('@media (min-width: 1px) { .card { color:red } }', 'avedon-x')

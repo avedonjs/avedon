@@ -1,5 +1,6 @@
 <script lang="ts">
   import { signal } from '@avedon/runtime'
+  import Counter from './Counter.ave'
 
   export let title
 
@@ -202,6 +203,9 @@
           <button type="button" on:click={reset}>Reset</button>
         </div>
       </div>
+      <p class="demo-label">Reusable component — same signal API, own scope.</p>
+      <Counter start={3} />
     </section>
+    <p class="support"><a href="/posts/1">Sample post</a> — per-page title from load().</p>
   </main>
 </template>

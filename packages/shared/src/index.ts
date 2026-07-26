@@ -87,6 +87,16 @@ export type LoadEvent<Path extends string = string> = string extends Path
 
 export type LoadResult = Record<string, unknown> | void | Response
 
+/** Per-page document head contributed by `load` under the `head` key. */
+export interface HeadMeta {
+  /** Replaces `<title>` (escaped). */
+  title?: string
+  /** Replaces / adds `<meta name="description">` (escaped). */
+  description?: string
+  /** Raw trusted HTML appended to `<head>` — same contract as `{@html}`. */
+  html?: string
+}
+
 export type ActionContext<Params extends object = Record<string, string>> = LoadContext<Params> & {
   formData: FormData
 }

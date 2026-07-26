@@ -11,6 +11,7 @@ import {
 import type {
   ApiHandler,
   HandlerOptions,
+  HeadMeta,
   LoadEvent,
   Middleware,
   RouteConfig,
@@ -57,6 +58,28 @@ function startLoadOutcome(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
+}
+
+/** `head` stays inside the page data so the client can retitle on navigation. */
+function headOf(data: Record<string, unknown> | undefined): HeadMeta | undefined {
+  const raw = data?.head
+  if (!raw || typeof raw !== 'object') return undefined
+  return raw as HeadMeta
+}
+
+/**
+ * Streaming SSR flushes the shell before `load()` settles, so a `head` returned by a
+ * route that did not opt in would arrive too late to matter.
+ */
+function assertHeadOptIn(
+  options: HandlerOptions,
+  route: RouteConfig,
+  data: Record<string, unknown>,
+): void {
+  if (!headOf(data)) return
+  const msg = `load() returned "head" for ${route.path} but the route does not set awaitHead: true — the shell flushes before the head is known.`
+  if (options.dev) throw new Error(msg)
+  console.warn(`[avedon] ${msg}`)
 }
 
 function clientRedirectScript(response: Response): string {
@@ -352,6 +375,7 @@ async function renderPage(
     if (options.getCss?.()) cssParts.push(options.getCss())
     const html = renderShell(options.appHtml, {
       body,
+      head: headOf(data),
       css: cssParts.filter(Boolean).join('\n'),
       props: data,
       clientEntry: options.clientEntry,
@@ -385,6 +409,7 @@ async function renderPage(
     const body = await renderPageBodyBuffered(component, data, layouts)
     const html = renderShell(options.appHtml, {
       body,
+      head: headOf(data),
       css,
       props: data,
       clientEntry: options.clientEntry,
@@ -395,7 +420,8 @@ async function renderPage(
     })
   }
 
-  const prefix = renderShellPrefix(options.appHtml, { css })
+  const prefixFor = (data?: Record<string, unknown>) =>
+    renderShellPrefix(options.appHtml, { css, head: headOf(data) })
 
   const buildWriters = (data: Record<string, unknown>) => {
     let writeBody: (ctrl: RenderStreamController) => Promise<void> = async (ctrl) => {
@@ -419,7 +445,11 @@ async function renderPage(
     })
 
   const { promise: loadPromise, get: getLoadOutcome } = startLoadOutcome(component, event, extra)
-  await Promise.race([loadPromise, sleep(SSR_SHELL_FLUSH_MS)])
+  if (route.awaitHead) {
+    await loadPromise
+  } else {
+    await Promise.race([loadPromise, sleep(SSR_SHELL_FLUSH_MS)])
+  }
 
   const early = getLoadOutcome()
   if (early.kind === 'response' || early.kind === 'throw') {
@@ -427,12 +457,13 @@ async function renderPage(
   }
 
   if (early.kind === 'data') {
+    if (!route.awaitHead) assertHeadOptIn(options, route, early.data)
     const writeBody = buildWriters(early.data)
     const ctrl = createRenderStream()
     const stream = ctrl.stream
     void (async () => {
       try {
-        ctrl.enqueueHtml(prefix)
+        ctrl.enqueueHtml(prefixFor(route.awaitHead ? early.data : undefined))
         await writeBody(ctrl)
         await ctrl.waitPending()
         ctrl.enqueueHtml(suffixFor(early.data))
@@ -451,7 +482,7 @@ async function renderPage(
   const stream = ctrl.stream
   void (async () => {
     try {
-      ctrl.enqueueHtml(prefix)
+      ctrl.enqueueHtml(prefixFor())
       await loadPromise
       const final = getLoadOutcome()
       if (final.kind === 'response') {
@@ -470,6 +501,7 @@ async function renderPage(
         ctrl.error(new Error('load did not settle after await'))
         return
       }
+      assertHeadOptIn(options, route, final.data)
       await buildWriters(final.data)(ctrl)
       await ctrl.waitPending()
       ctrl.enqueueHtml(suffixFor(final.data))

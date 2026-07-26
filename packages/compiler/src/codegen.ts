@@ -30,14 +30,22 @@ export interface CompiledTemplate {
   ssrStream: string
   /** statements that build `el` HTMLElement from state */
   clientBuild: string
+  /** PascalCase component bindings referenced by the template */
+  componentsUsed: string[]
 }
 
-export function compileMarkup(markup: string, hash: string): CompiledTemplate {
+export function compileMarkup(
+  markup: string,
+  hash: string,
+  components: Set<string> = new Set(),
+): CompiledTemplate {
   const tokens = tokenize(markup)
+  validateTokens(tokens, components)
   return {
     ssrExpr: emitSsr(tokens, hash),
     ssrStream: emitSsrStream(tokens, hash),
     clientBuild: emitClient(tokens, hash),
+    componentsUsed: [...collectComponentNames(tokens)],
   }
 }
 
@@ -52,6 +60,13 @@ type Token =
   | {
       type: 'element'
       tag: string
+      attrs: Attr[]
+      children: Token[]
+      selfClosing: boolean
+    }
+  | {
+      type: 'component'
+      name: string
       attrs: Attr[]
       children: Token[]
       selfClosing: boolean
@@ -151,6 +166,15 @@ function tokenize(input: string): Token[] {
       continue
     }
 
+    if (startsWith('{@')) {
+      const m = input.slice(i).match(/^\{@(\w+)/)
+      throw new Error(`Unsupported {@${m ? m[1] : ''}} — not available in v1`)
+    }
+
+    if (startsWith('{#key')) {
+      throw new Error('Unsupported {#key} — not available in v1')
+    }
+
     if (startsWith('{') && !startsWith('{#') && !startsWith('{/') && !startsWith('{:')) {
       const end = input.indexOf('}', i + 1)
       if (end === -1) throw new Error('Unclosed expression')
@@ -173,6 +197,9 @@ function tokenize(input: string): Token[] {
       }
       i += parsed.raw.length
       if (parsed.tag.toLowerCase() === 'slot') {
+        if (/(^|\s)name\s*=/.test(parsed.attrStr)) {
+          throw new Error('Named slots are not supported in v1 — use the default <slot />')
+        }
         if (!parsed.selfClosing) {
           const closeIdx = findClosingTag(input, i, parsed.tag)
           if (closeIdx === -1) throw new Error('Unclosed tag <slot>')
@@ -191,6 +218,16 @@ function tokenize(input: string): Token[] {
         children = tokenize(input.slice(i, closeIdx))
         i = closeIdx + close.length
       }
+      if (/^[A-Z]/.test(parsed.tag)) {
+        tokens.push({
+          type: 'component',
+          name: parsed.tag,
+          attrs,
+          children,
+          selfClosing: parsed.selfClosing,
+        })
+        continue
+      }
       tokens.push({ type: 'element', tag: parsed.tag, attrs, children, selfClosing })
       continue
     }
@@ -203,6 +240,98 @@ function tokenize(input: string): Token[] {
   }
 
   return tokens
+}
+
+function collectComponentNames(tokens: Token[], out: Set<string> = new Set()): Set<string> {
+  for (const t of tokens) {
+    if (t.type === 'component') {
+      out.add(t.name)
+      collectComponentNames(t.children, out)
+    } else if (t.type === 'element') {
+      collectComponentNames(t.children, out)
+    } else if (t.type === 'if') {
+      collectComponentNames(t.then, out)
+      if (t.else) collectComponentNames(t.else, out)
+    } else if (t.type === 'each') {
+      collectComponentNames(t.body, out)
+    } else if (t.type === 'await') {
+      collectComponentNames(t.thenBody, out)
+      if (t.catchBody) collectComponentNames(t.catchBody, out)
+    }
+  }
+  return out
+}
+
+function validateTokens(tokens: Token[], components: Set<string>): void {
+  for (const t of tokens) {
+    if (t.type === 'component') {
+      if (!components.has(t.name)) {
+        throw new Error(
+          `Unknown component <${t.name}>: add \`import ${t.name} from './${t.name}.ave'\` (default import required).`,
+        )
+      }
+      validateAttrs(t.attrs, { component: true, tag: t.name })
+      validateTokens(t.children, components)
+    } else if (t.type === 'element') {
+      validateAttrs(t.attrs, { component: false, tag: t.tag })
+      validateTokens(t.children, components)
+    } else if (t.type === 'if') {
+      validateTokens(t.then, components)
+      if (t.else) validateTokens(t.else, components)
+    } else if (t.type === 'each') {
+      validateTokens(t.body, components)
+    } else if (t.type === 'await') {
+      validateTokens(t.thenBody, components)
+      if (t.catchBody) validateTokens(t.catchBody, components)
+    }
+  }
+}
+
+function validateAttrs(attrs: Attr[], ctx: { component: boolean; tag: string }): void {
+  for (const a of attrs) {
+    if (a.name.startsWith('{')) {
+      throw new Error(`Spread attributes are not supported (${a.name}) on <${ctx.tag}>`)
+    }
+    const colon = a.name.indexOf(':')
+    if (colon > 0) {
+      const prefix = a.name.slice(0, colon)
+      if (prefix === 'on') continue
+      if (prefix === 'bind') {
+        if (ctx.component) {
+          throw new Error(`bind: is not supported on components (<${ctx.tag} ${a.name}>)`)
+        }
+        if (a.name !== 'bind:value') {
+          throw new Error(
+            `Unsupported binding "${a.name}" — only bind:value on native inputs is supported`,
+          )
+        }
+        continue
+      }
+      throw new Error(`Unsupported directive "${a.name}" on <${ctx.tag}>`)
+    }
+  }
+}
+
+/** Build a component props object literal (SSR paths; client handles events itself). */
+function componentPropsObject(
+  t: Extract<Token, { type: 'component' }>,
+  childrenExpr: string | null,
+): string {
+  const entries: string[] = []
+  for (const a of t.attrs) {
+    if (a.kind === 'event') {
+      const key = 'on' + a.name.slice(3) // on:click → onclick
+      entries.push(`${JSON.stringify(key)}: (${a.value})`)
+    } else if (a.kind === 'expr') {
+      entries.push(`${JSON.stringify(a.name)}: (${a.value})`)
+    } else if (a.value == null) {
+      entries.push(`${JSON.stringify(a.name)}: true`)
+    } else {
+      entries.push(`${JSON.stringify(a.name)}: ${JSON.stringify(a.value)}`)
+    }
+  }
+  if (childrenExpr != null) entries.push(`children: (${childrenExpr})`)
+  return `{ ${entries.join(', ')} }`
 }
 
 const VOID = new Set([
@@ -460,6 +589,10 @@ function emitSsr(tokens: Token[], hash: string): string {
     } else if (t.type === 'await') {
       // Sync render(): empty placeholder; streaming path uses emitSsrStream
       parts.push('``')
+    } else if (t.type === 'component') {
+      const childrenExpr =
+        t.selfClosing || t.children.length === 0 ? null : emitSsr(t.children, hash)
+      parts.push(`${t.name}.render(${componentPropsObject(t, childrenExpr)})`)
     } else if (t.type === 'element') {
       parts.push(emitSsrElement(t, hash))
     }
@@ -506,6 +639,11 @@ function emitSsrStream(tokens: Token[], hash: string): string {
           `  const __awaitBoundary = (p, t, c) => __ctrl.enqueueBoundary(p, t, c, __enqueue);\n` +
           `${indentStream(thenBody)}\n}${catchPart});`,
       )
+    } else if (t.type === 'component') {
+      // v1: slotted content is materialized synchronously (no OOO boundaries inside components)
+      const childrenExpr =
+        t.selfClosing || t.children.length === 0 ? null : emitSsr(t.children, hash)
+      lines.push(`__enqueue(${t.name}.render(${componentPropsObject(t, childrenExpr)}));`)
     } else if (t.type === 'element') {
       lines.push(emitSsrStreamElement(t, hash))
     }
@@ -722,6 +860,38 @@ function emitClientNodes(
           for (const fn of __blockEffects) fn();
         }` : ''});
       }`)
+    } else if (t.type === 'component') {
+      const childrenVar = `${id}_children`
+      const instVar = `${id}_inst`
+      const hasChildren = !t.selfClosing && t.children.length > 0
+      const sub: string[] = []
+      if (hasChildren) {
+        sub.push(`const ${childrenVar} = document.createDocumentFragment();`)
+        sub.push(emitClientNodes(t.children, hash, childrenVar, effectsVar))
+      }
+      const staticEntries: string[] = []
+      const dynamicEntries: string[] = []
+      for (const a of t.attrs) {
+        if (a.kind === 'event') {
+          const key = 'on' + a.name.slice(3)
+          staticEntries.push(
+            `${JSON.stringify(key)}: (...__a) => { const __h = (${a.value}); const __r = typeof __h === 'function' ? __h(...__a) : undefined; __invalidate(); return __r; }`,
+          )
+        } else if (a.kind === 'expr') {
+          dynamicEntries.push(`${JSON.stringify(a.name)}: (${a.value})`)
+        } else if (a.value == null) {
+          staticEntries.push(`${JSON.stringify(a.name)}: true`)
+        } else {
+          staticEntries.push(`${JSON.stringify(a.name)}: ${JSON.stringify(a.value)}`)
+        }
+      }
+      if (hasChildren) staticEntries.push(`children: ${childrenVar}`)
+      const initProps = `{ ${[...staticEntries, ...dynamicEntries].join(', ')} }`
+      sub.push(`const ${instVar} = ${t.name}.mount(${parent}, ${initProps});`)
+      if (dynamicEntries.length > 0) {
+        sub.push(`${effectsVar}.push(() => { ${instVar}.update({ ${dynamicEntries.join(', ')} }); });`)
+      }
+      lines.push(`{ ${sub.join('\n')} }`)
     } else if (t.type === 'element') {
       lines.push(emitClientElement(t, hash, parent, id, effectsVar))
     }

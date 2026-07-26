@@ -7,6 +7,7 @@ import type {
   Cookies,
   ExtractParams,
   GuardFn,
+  HeadMeta,
   JoinPaths,
   LoadContext,
   LoadEvent,
@@ -22,6 +23,7 @@ export type {
   ActionHandler,
   ApiHandler,
   GuardFn,
+  HeadMeta,
   LoadResult,
   AdapterInterface,
   AdapterBuilder,
@@ -88,6 +90,12 @@ export interface RouteConfig {
    * stay HTTP-level without a shell-first race.
    */
   bufferHtml?: boolean
+  /**
+   * Streaming SSR: wait for `load()` before flushing the shell so a `head` from the
+   * load result lands in the first bytes. Unneeded for ssg/csr/`bufferHtml` routes,
+   * which already await `load()`.
+   */
+  awaitHead?: boolean
   error?: AvedonComponentModule
   notFound?: AvedonComponentModule
 }
@@ -119,6 +127,8 @@ export interface HandlerOptions {
   csrf?: CsrfOptions
   /** Sealed session cookie (Web Crypto). Requires `secret` (32+ chars). */
   session?: SessionOptions
+  /** Dev mode: surface framework misuse (e.g. `head` without `awaitHead`) as errors. */
+  dev?: boolean
 }
 
 export type SessionOptions = {
@@ -139,6 +149,10 @@ type RouteRest<Params extends ParamsRecord> = {
   getStaticPaths?: () => Promise<string[]> | string[]
   /** ISR interval in seconds for `render: 'ssg'` (see RouteConfig.revalidate). */
   revalidate?: number
+  /** Buffer the whole document instead of streaming (see RouteConfig.bufferHtml). */
+  bufferHtml?: boolean
+  /** Await `load()` before flushing the streaming shell (see RouteConfig.awaitHead). */
+  awaitHead?: boolean
   error?: AvedonComponentModule
   notFound?: AvedonComponentModule
   /**

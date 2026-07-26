@@ -20,6 +20,38 @@ Runs on the server (and during SSG) to provide data:
 
 Prefer returning `{ data: T }` so generated types flow to `export let data`. Helpers from `@avedon/server`: `json`, `notFound`, `redirect`, `error`.
 
+## Page head
+
+`load` may return a `head` object next to `data` to control the document head for that page:
+
+```avedon
+<script server>
+  import { notFound, type HeadMeta, type LoadEvent } from '@avedon/server'
+
+  export async function load({ params }: LoadEvent<'/posts/:id'>): Promise<{
+    data: { post: Post }
+    head: HeadMeta
+  }> {
+    const post = await getPost(params.id)
+    if (!post) throw notFound()
+    return {
+      data: { post },
+      head: { title: `${post.title} — avedon`, description: post.excerpt },
+    }
+  }
+</script>
+```
+
+| Field | Effect |
+|-------|--------|
+| `title` | Replaces `<title>` (HTML-escaped) |
+| `description` | Replaces or adds `<meta name="description">` (HTML-escaped) |
+| `html` | Raw **trusted** HTML appended to `<head>` — same contract as `{@html}`, see [Security](./security.md) |
+
+Without `head.title` the `<title>` from `src/app.html` stays. Client-side navigations pick the new title up from the fetched document.
+
+Streaming SSR routes must opt in with `awaitHead: true` so the shell waits for `load()`; `ssg`, `csr`, and `bufferHtml` routes need no flag. See [Rendering](./rendering.md#awaithead-true).
+
 ## `actions`
 
 Named (or `default`) handlers for form posts. Use `?_action=name`:

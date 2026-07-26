@@ -6,7 +6,7 @@ import {
   renderShellSuffixFromTemplate,
   resolveComponent,
 } from './ssr.js'
-import type { Routes, AvedonComponentModule } from './types.js'
+import type { HeadMeta, Routes, AvedonComponentModule } from './types.js'
 
 export type SsgPage = { path: string; html: string }
 
@@ -70,7 +70,10 @@ export async function renderSsgPage(
   const clientEntry = options.clientEntry ?? '/assets/client.js'
   const ctrl = createRenderStream()
   const htmlP = streamToString(ctrl.stream)
-  ctrl.enqueueHtml(renderShellPrefix(appHtml, { css: cssParts.filter(Boolean).join('\n') }))
+  const head = data.head && typeof data.head === 'object' ? (data.head as HeadMeta) : undefined
+  ctrl.enqueueHtml(
+    renderShellPrefix(appHtml, { css: cssParts.filter(Boolean).join('\n'), head }),
+  )
   await writeBody(ctrl)
   await ctrl.waitPending()
   ctrl.enqueueHtml(
