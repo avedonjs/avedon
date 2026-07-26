@@ -1,0 +1,56 @@
+<script lang="ts">
+</script>
+
+<style scoped>
+  .topnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem clamp(1rem, 3vw, 2rem);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .topnav-brand {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .topnav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .topnav-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.65rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .topnav-links a:hover {
+    color: var(--fg);
+  }
+</style>
+
+<template>
+  <header class="topnav">
+    <a class="topnav-brand" href="/">avedon</a>
+    <nav class="topnav-links" aria-label="Primary">
+      <a href="/docs/">Docs</a>
+      <a href="https://github.com/avedonjs/avedon" rel="noopener noreferrer" target="_blank">GitHub</a>
+    </nav>
+  </header>
+</template>

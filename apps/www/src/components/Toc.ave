@@ -1,0 +1,63 @@
+<script lang="ts">
+  export let headings
+</script>
+
+<style scoped>
+  .toc {
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+    font-size: 0.85rem;
+  }
+
+  .toc > p {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+  }
+
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.25rem 0;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--fg);
+  }
+
+  a.h3 {
+    padding-left: 0.75rem;
+  }
+
+  @media (max-width: 960px) {
+    .toc {
+      display: none;
+    }
+  }
+</style>
+
+<template>
+  <aside class="toc">
+    {#if headings.length}
+      <p>On this page</p>
+      <nav aria-label="On this page">
+        {#each headings as h}
+          <a href={'#' + h.id} class={h.level === 3 ? 'h3' : ''}>{h.text}</a>
+        {/each}
+      </nav>
+    {/if}
+  </aside>
+</template>

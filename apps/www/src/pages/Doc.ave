@@ -1,4 +1,8 @@
 <script lang="ts">
+  import DocsSidebar from '../components/DocsSidebar.ave'
+  import Toc from '../components/Toc.ave'
+  import Pager from '../components/Pager.ave'
+
   export let html
   export let headings
   export let groups
@@ -41,55 +45,6 @@
     margin: 0 auto;
     padding: 1.5rem clamp(1rem, 3vw, 2rem) 3rem;
     box-sizing: border-box;
-  }
-
-  .docs-shell .side {
-    border-right: 1px solid var(--line);
-    padding-right: 1rem;
-    position: sticky;
-    top: 1rem;
-    align-self: start;
-    max-height: calc(100vh - 2rem);
-    overflow: auto;
-  }
-
-  .docs-shell .side .group {
-    margin-bottom: 1.25rem;
-  }
-
-  .docs-shell .side .group-title {
-    margin: 0 0 0.5rem;
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .docs-shell .side nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .docs-shell .side a {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0.35rem 0.25rem;
-    color: var(--muted);
-    font-size: 0.95rem;
-    font-weight: 500;
-    text-decoration: none;
-  }
-
-  .docs-shell .side a:hover,
-  .docs-shell .side a.active {
-    color: var(--fg);
-  }
-
-  .docs-shell .side a.active {
-    color: var(--accent);
   }
 
   .docs-shell .prose {
@@ -185,84 +140,9 @@
     text-align: left;
   }
 
-  .docs-shell .pager {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-top: 2.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--line);
-  }
-
-  .docs-shell .pager a {
-    color: var(--accent);
-    font-weight: 600;
-    max-width: 45%;
-    text-decoration: underline;
-    text-underline-offset: 0.18em;
-  }
-
-  .docs-shell .pager .next {
-    margin-left: auto;
-    text-align: right;
-  }
-
-  .docs-shell .pager .label {
-    display: block;
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    margin-bottom: 0.25rem;
-  }
-
-  .docs-shell .toc {
-    position: sticky;
-    top: 1rem;
-    align-self: start;
-    font-size: 0.85rem;
-  }
-
-  .docs-shell .toc > p {
-    margin: 0 0 0.5rem;
-    color: var(--muted);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: 0.75rem;
-  }
-
-  .docs-shell .toc nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .docs-shell .toc a {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0.25rem 0;
-    color: var(--muted);
-    text-decoration: none;
-  }
-
-  .docs-shell .toc a:hover {
-    color: var(--fg);
-  }
-
-  .docs-shell .toc .h3 {
-    padding-left: 0.75rem;
-  }
-
   @media (max-width: 960px) {
     .docs-shell {
       grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr);
-    }
-
-    .docs-shell .toc {
-      display: none;
     }
   }
 
@@ -270,58 +150,16 @@
     .docs-shell {
       grid-template-columns: 1fr;
     }
-
-    .docs-shell .side {
-      position: static;
-      max-height: none;
-      border-right: none;
-      border-bottom: 1px solid var(--line);
-      padding-right: 0;
-      padding-bottom: 1rem;
-    }
   }
 </style>
 
 <template>
   <div class="docs-shell">
-    <aside class="side">
-      {#each groups as g}
-        <div class="group">
-          <p class="group-title">{g.title}</p>
-          <nav aria-label={g.title}>
-            {#each g.docs as d}
-              <a href={'/docs/' + d.slug + '/'} class={d.slug === slug ? 'active' : ''}>{d.title}</a>
-            {/each}
-          </nav>
-        </div>
-      {/each}
-    </aside>
+    <DocsSidebar groups={groups} slug={slug} />
     <article class="prose">
       {@html html}
-      <nav class="pager" aria-label="Previous and next">
-        {#if prev}
-          <a href={'/docs/' + prev.slug + '/'}>
-            <span class="label">Previous</span>
-            {prev.title}
-          </a>
-        {/if}
-        {#if next}
-          <a class="next" href={'/docs/' + next.slug + '/'}>
-            <span class="label">Next</span>
-            {next.title}
-          </a>
-        {/if}
-      </nav>
+      <Pager prev={prev} next={next} />
     </article>
-    <aside class="toc">
-      {#if headings.length}
-        <p>On this page</p>
-        <nav aria-label="On this page">
-          {#each headings as h}
-            <a href={'#' + h.id} class={h.level === 3 ? 'h3' : ''}>{h.text}</a>
-          {/each}
-        </nav>
-      {/if}
-    </aside>
+    <Toc headings={headings} />
   </div>
 </template>
