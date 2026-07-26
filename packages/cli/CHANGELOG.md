@@ -1,5 +1,14 @@
 # avedon
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [0304df9]
+  - @avedon/server@0.2.1
+  - @avedon/vite-plugin@0.1.4
+  - @avedon/adapter-node@0.1.4
+
 ## 0.1.4
 
 ### Patch Changes

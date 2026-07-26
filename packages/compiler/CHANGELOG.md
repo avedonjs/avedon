@@ -1,5 +1,11 @@
 # @avedon/compiler
 
+## 0.2.1
+
+### Patch Changes
+
+- 0304df9: Harden codegen and per-page head against CodeQL findings: component prop keys/values now use `\u003c`-safe literals (js/bad-code-sanitization), and the document `<title>` / `<meta name="description">` replacements use linear scanning instead of backtracking regexes (js/polynomial-redos).
+
 ## 0.2.0
 
 ### Minor Changes
