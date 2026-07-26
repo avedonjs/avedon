@@ -50,3 +50,14 @@ Create token: [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-to
 Dashboard: [Pages → avedon](https://dash.cloudflare.com/e3714019f2a0917f5191a9ea42b65b1b/pages/view/avedon)
 
 No Node server at runtime — all v1 routes are SSG.
+
+## Custom domain / SEO origin
+
+Sitemap, `robots.txt`, and absolute `og:image` / `twitter:image` URLs use:
+
+```bash
+AVEDON_DOCS_ORIGIN=https://your.domain pnpm -F www generate
+```
+
+Default (unset): `https://avedon.pages.dev`. After pointing a custom domain at the Pages project, set this env in CI/local generate, rebuild, and redeploy so crawlers see the new origin.
+

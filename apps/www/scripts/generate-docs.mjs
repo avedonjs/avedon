@@ -3,6 +3,28 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Marked } from 'marked'
 import { getHighlighter, highlightCode } from './highlight.mjs'
+import { getDocsOrigin } from './site-origin.mjs'
+
+/**
+ * Rewrite absolute social/meta image URLs in `app.html` to match the docs origin.
+ * @param {string} appHtmlPath
+ * @param {string} origin
+ */
+export function syncAppHtmlOrigin(appHtmlPath, origin) {
+  if (!fs.existsSync(appHtmlPath)) return
+  let html = fs.readFileSync(appHtmlPath, 'utf8')
+  const abs = `${origin}/og-image.png`
+  const next = html
+    .replace(
+      /(<meta\s+property="og:image"\s+content=")([^"]*)(")/,
+      `$1${abs}$3`,
+    )
+    .replace(
+      /(<meta\s+name="twitter:image"\s+content=")([^"]*)(")/,
+      `$1${abs}$3`,
+    )
+  if (next !== html) fs.writeFileSync(appHtmlPath, next, 'utf8')
+}
 
 /**
  * @typedef {{ id: string, title: string, slugs: string[] }} ManifestGroup
@@ -158,9 +180,23 @@ function createMarked(highlighter) {
 }
 
 /**
- * @param {{ docsDir: string, outPath: string, manifestPath?: string }} opts
+ * @param {{
+ *   docsDir: string
+ *   outPath: string
+ *   manifestPath?: string
+ *   publicDir?: string | null
+ *   appHtmlPath?: string | null
+ *   origin?: string
+ * }} opts
  */
-export async function generateDocs({ docsDir, outPath, manifestPath }) {
+export async function generateDocs({
+  docsDir,
+  outPath,
+  manifestPath,
+  publicDir,
+  appHtmlPath,
+  origin: originOpt,
+}) {
   const resolvedManifest =
     manifestPath ?? path.join(docsDir, 'manifest.json')
   const manifest = loadManifest(resolvedManifest)
@@ -195,10 +231,14 @@ export async function generateDocs({ docsDir, outPath, manifestPath }) {
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
   fs.writeFileSync(outPath, JSON.stringify({ groups, docs }, null, 2) + '\n', 'utf8')
 
+  const origin = originOpt ?? getDocsOrigin()
+
   // Keep public sitemap in sync with the manifest (copied into build/client).
-  const publicDir = path.resolve(path.dirname(outPath), '../public')
-  if (fs.existsSync(publicDir)) {
-    const origin = process.env.AVEDON_DOCS_ORIGIN || 'https://avedon.pages.dev'
+  const resolvedPublic =
+    publicDir === null
+      ? null
+      : (publicDir ?? path.resolve(path.dirname(outPath), '../public'))
+  if (resolvedPublic && fs.existsSync(resolvedPublic)) {
     const urls = [`${origin}/`, `${origin}/docs/`, ...slugs.map((s) => `${origin}/docs/${s}/`)]
     const body = [
       '<?xml version="1.0" encoding="UTF-8"?>',
@@ -207,10 +247,12 @@ export async function generateDocs({ docsDir, outPath, manifestPath }) {
       '</urlset>',
       '',
     ].join('\n')
-    fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), body, 'utf8')
+    fs.writeFileSync(path.join(resolvedPublic, 'sitemap.xml'), body, 'utf8')
     const robots = `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`
-    fs.writeFileSync(path.join(publicDir, 'robots.txt'), robots, 'utf8')
+    fs.writeFileSync(path.join(resolvedPublic, 'robots.txt'), robots, 'utf8')
   }
+
+  if (appHtmlPath) syncAppHtmlOrigin(appHtmlPath, origin)
 
   return outPath
 }
@@ -225,6 +267,7 @@ if (isMain) {
   await generateDocs({
     docsDir: path.join(repoRoot, 'docs'),
     outPath: path.join(appRoot, '.generated', 'docs.json'),
+    appHtmlPath: path.join(appRoot, 'src', 'app.html'),
   })
   console.log('Wrote', path.join(appRoot, '.generated', 'docs.json'))
 }

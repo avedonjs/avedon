@@ -49,8 +49,8 @@ Open http://localhost:5173.
 | `@avedon/server` | Route match, guards, middleware, `load` / `actions` / `api_*`, SSR |
 | `@avedon/vite-plugin` | Vite transform, HMR, and dev middleware for `.ave` |
 | `@avedon/adapter-node` | Production Node HTTP + static assets |
-| `@avedon/adapter-bun` | Interface stub |
-| `@avedon/adapter-cloudflare` | Interface stub |
+| `@avedon/adapter-bun` | Bun.serve + SSG/ISR |
+| `@avedon/adapter-cloudflare` | Cloudflare Workers + Assets (SSG) |
 | `avedon` | CLI (`create`, `dev`, `build`, `start`) |
 | `create-avedon-app` | App scaffold |
 

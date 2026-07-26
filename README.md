@@ -18,7 +18,7 @@ avedon gives you a single component format (`.ave`), explicit routing, hybrid re
 - **Hybrid rendering** — `ssr`, `ssg`, and `csr` on a per-route basis (default `ssr`)
 - **Colocated server APIs** — `load`, form `actions`, and `api_*` handlers next to the page UI
 - **Reactive client runtime** — `signal`, `computed`, and `effect` from `@avedon/runtime`
-- **Adapter model** — platform-agnostic `Request` / `Response` core; Node adapter for production today
+- **Adapter model** — platform-agnostic `Request` / `Response` core; Node, Cloudflare Workers, and Bun adapters
 
 ## Requirements
 
@@ -57,7 +57,7 @@ Full walkthrough: [docs/quick-start.md](./docs/quick-start.md) or [https://avedo
 | [Rendering](./docs/rendering.md) | `ssr` / `ssg` / `csr` |
 | [Middleware](./docs/middleware.md) | `sequence`, CORS, logging, rate-limit |
 | [Session](./docs/session.md) | Cookies and sealed session |
-| [Deployment](./docs/deployment.md) | Node production |
+| [Deployment](./docs/deployment.md) | Node, Cloudflare Workers, Bun |
 
 ## Packages
 
@@ -69,8 +69,8 @@ Full walkthrough: [docs/quick-start.md](./docs/quick-start.md) or [https://avedo
 | `@avedon/server` | Matching, guards, middleware, load/actions/api, SSR orchestration |
 | `@avedon/vite-plugin` | Vite transform, HMR, and middleware |
 | `@avedon/adapter-node` | Node production server |
-| `@avedon/adapter-bun` | Bun adapter interface (stub) |
-| `@avedon/adapter-cloudflare` | Cloudflare adapter interface (stub) |
+| `@avedon/adapter-bun` | Bun.serve production server (SSG + ISR) |
+| `@avedon/adapter-cloudflare` | Cloudflare Workers + Assets (SSG; no ISR in v1) |
 | `avedon` | CLI (`create`, `dev`, `build`, `start`) |
 | `create-avedon-app` | App scaffold (`pnpm create avedon-app`) |
 
@@ -124,8 +124,8 @@ See [docs/routing.md](./docs/routing.md). Contributors working on the framework 
 
 ## Roadmap
 
-- Language service for `.ave` (today: sibling `.ave.d.ts` stubs)
-- Production adapters beyond Node (Bun, Cloudflare, and others)
+- Language service / LSP for `.ave` (today: sibling `.ave.d.ts` files)
+- Richer template directives (`{#key}`, transitions, named slots)
 - First-class CSS tooling integrations
 
 ## Community

@@ -44,6 +44,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build www
+        env:
+          # Optional repo Variable — set to the custom docs origin after domain cutover.
+          AVEDON_DOCS_ORIGIN: ${{ vars.AVEDON_DOCS_ORIGIN }}
         run: pnpm -F www build
 
       - name: Deploy to Cloudflare Pages

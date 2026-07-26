@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { flattenSlugs, generateDocs, loadManifest } from './generate-docs.mjs'
+import { flattenSlugs, generateDocs, loadManifest, syncAppHtmlOrigin } from './generate-docs.mjs'
+import { getDocsOrigin, DEFAULT_DOCS_ORIGIN } from './site-origin.mjs'
 import { getHighlighter, highlightAve, highlightCode } from './highlight.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -18,6 +19,7 @@ test('generateDocs writes quick-start and manifest groups', async () => {
   const file = await generateDocs({
     docsDir,
     outPath: path.join(outDir, 'docs.json'),
+    publicDir: null,
   })
   const data = JSON.parse(fs.readFileSync(file, 'utf8'))
 
@@ -82,4 +84,41 @@ test('highlightCode maps avedon alias and typescript', async () => {
   assert.match(ts, /github-dark-high-contrast/)
   const ave = highlightCode(highlighter, '<script>\nconst n = 1\n</script>', 'avedon')
   assert.match(ave, /language-avedon/)
+})
+
+test('getDocsOrigin defaults and strips trailing slash', () => {
+  assert.equal(getDocsOrigin({}), DEFAULT_DOCS_ORIGIN)
+  assert.equal(getDocsOrigin({ AVEDON_DOCS_ORIGIN: 'https://avedon.dev/' }), 'https://avedon.dev')
+})
+
+test('syncAppHtmlOrigin rewrites og and twitter image to absolute origin', () => {
+  const tmp = path.join(outDir, 'app.html')
+  fs.mkdirSync(outDir, { recursive: true })
+  fs.writeFileSync(
+    tmp,
+    `<meta property="og:image" content="/og-image.png" />
+<meta name="twitter:image" content="https://old.example/og-image.png" />
+`,
+    'utf8',
+  )
+  syncAppHtmlOrigin(tmp, 'https://avedon.dev')
+  const html = fs.readFileSync(tmp, 'utf8')
+  assert.match(html, /property="og:image" content="https:\/\/avedon\.dev\/og-image\.png"/)
+  assert.match(html, /name="twitter:image" content="https:\/\/avedon\.dev\/og-image\.png"/)
+})
+
+test('generateDocs writes sitemap for a custom origin', async () => {
+  const pub = path.join(outDir, 'public-origin')
+  fs.rmSync(pub, { recursive: true, force: true })
+  fs.mkdirSync(pub, { recursive: true })
+  await generateDocs({
+    docsDir,
+    outPath: path.join(outDir, 'docs-origin.json'),
+    publicDir: pub,
+    origin: 'https://avedon.dev',
+  })
+  const robots = fs.readFileSync(path.join(pub, 'robots.txt'), 'utf8')
+  const sitemap = fs.readFileSync(path.join(pub, 'sitemap.xml'), 'utf8')
+  assert.match(robots, /Sitemap: https:\/\/avedon\.dev\/sitemap\.xml/)
+  assert.match(sitemap, /<loc>https:\/\/avedon\.dev\/<\/loc>/)
 })
