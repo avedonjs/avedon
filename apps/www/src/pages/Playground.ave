@@ -270,267 +270,35 @@
   }
 </script>
 
-<style unscoped>
-  /* Page-local .pg-* classes; unscoped so runtime CodeMirror nodes can be styled. */
-  .pg {
-    flex: 1;
-    display: grid;
-    grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0;
-    min-height: 0;
-    width: 100%;
-    height: 100%;
-    border-top: 1px solid var(--line);
-  }
-
-  .pg-side {
-    border-right: 1px solid var(--line);
-    padding: 1rem 0.75rem 1.5rem;
-    overflow: auto;
-    min-height: 0;
-  }
-
-  .pg-side h2 {
-    margin: 0 0 0.75rem;
-    padding: 0 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .pg-cat {
-    margin-bottom: 1rem;
-  }
-
-  .pg-cat h3 {
-    margin: 0 0 0.35rem;
-    padding: 0 0.5rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #71717a;
-  }
-
-  .pg-cat button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    border: none;
-    background: transparent;
-    color: var(--muted);
-    font: inherit;
-    font-size: 0.9rem;
-    padding: 0.45rem 0.5rem;
-    border-radius: 0.35rem;
-    cursor: pointer;
-  }
-
-  .pg-cat button:hover {
-    color: var(--fg);
-    background: rgba(250, 250, 250, 0.04);
-  }
-
-  .pg-cat button.active {
-    color: var(--accent);
-    background: rgba(34, 211, 238, 0.08);
-  }
-
-  .pg-editor {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    border-right: 1px solid var(--line);
-  }
-
-  .pg-window {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    border: 1px solid var(--line);
-    overflow: hidden;
-    background: #0c0c0e;
-  }
-
-  .pg-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.65rem 0.85rem;
-    border-bottom: 1px solid var(--line);
-    font-size: 0.85rem;
-    color: var(--muted);
-    flex: 0 0 auto;
-  }
-
-  .pg-window-left {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    min-width: 0;
-  }
-
-  .pg-window-title {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .pg-window-dots {
-    display: flex;
-    gap: 0.4rem;
-    align-items: center;
-    flex: 0 0 auto;
-  }
-
-  .pg-window-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 999px;
-    display: inline-block;
-  }
-
-  .pg-window-dot-red {
-    background: #f87171;
-  }
-
-  .pg-window-dot-yellow {
-    background: #fbbf24;
-  }
-
-  .pg-window-dot-green {
-    background: #34d399;
-  }
-
-  .pg-toolbar-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .pg-toolbar button {
-    font: inherit;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid var(--line);
-    background: transparent;
-    color: var(--fg);
-    border-radius: 0.35rem;
-    padding: 0.35rem 0.65rem;
-    cursor: pointer;
-  }
-
-  .pg-toolbar button:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .pg-textarea {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    width: 100%;
-    border: none;
-    outline: none;
-    padding: 0;
-    background: #0c0c0e;
-  }
-
-  .pg-textarea .CodeMirror {
-    height: 100% !important;
-    flex: 1;
-    width: 100%;
-    background: #0c0c0e;
-    color: #e4e4e7;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    border-radius: 0;
-  }
-
-  .pg-textarea .CodeMirror-scroll,
-  .pg-textarea .CodeMirror-gutters {
-    background: #0c0c0e;
-  }
-
-  .pg-textarea .CodeMirror-scroll {
-    min-height: 100%;
-  }
-
-  .pg-preview {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    background: #0c0c0e;
-  }
-
-  .pg-preview-head {
-    padding: 0.65rem 0.85rem;
-    border-bottom: 1px solid var(--line);
-    font-size: 0.85rem;
-    color: var(--muted);
-    flex: 0 0 auto;
-  }
-
-  .pg-error {
-    margin: 0;
-    padding: 0.75rem 0.85rem;
-    font-family: ui-monospace, monospace;
-    font-size: 0.8rem;
-    color: #fca5a5;
-    background: rgba(239, 68, 68, 0.08);
-    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
-    white-space: pre-wrap;
-    flex: 0 0 auto;
-  }
-
-  .pg-frame {
-    flex: 1;
-    width: 100%;
-    min-height: 0;
-    border: none;
-    background: #09090b;
-  }
-
-  @media (max-width: 960px) {
-    .pg {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto minmax(18rem, 1fr) 20rem;
-      height: auto;
-      min-height: calc(100vh - 4rem);
-    }
-
-    .pg-side {
-      border-right: none;
-      border-bottom: 1px solid var(--line);
-      max-height: 12rem;
-    }
-
-    .pg-editor {
-      border-right: none;
-      border-bottom: 1px solid var(--line);
-    }
-  }
-</style>
-
 <template>
-  <div class="pg" data-playground>
-    <aside class="pg-side" aria-label="Examples">
-      <h2>Examples</h2>
+  <div
+    class="grid h-full min-h-0 w-full flex-1 grid-cols-1 border-t border-line max-lg:min-h-[calc(100vh-4rem)] max-lg:grid-rows-[auto_minmax(18rem,1fr)_20rem] lg:grid-cols-[minmax(11rem,14rem)_minmax(0,1fr)_minmax(0,1fr)]"
+    data-playground
+  >
+    <aside
+      class="min-h-0 overflow-auto border-b border-line px-3 py-4 pb-6 max-lg:max-h-48 lg:border-b-0 lg:border-r lg:border-line"
+      aria-label="Examples"
+    >
+      <h2
+        class="mb-3 mt-0 px-2 text-xs font-bold uppercase tracking-[0.08em] text-muted"
+      >
+        Examples
+      </h2>
       {#each categories as category}
-        <div class="pg-cat">
-          <h3>{category}</h3>
+        <div class="mb-4">
+          <h3
+            class="mb-1.5 mt-0 px-2 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-zinc-500"
+          >
+            {category}
+          </h3>
           {#each presetsFor(category) as preset}
             <button
               type="button"
-              class={presetId.get() === preset.id ? 'active' : ''}
+              class={
+                presetId.get() === preset.id
+                  ? 'block w-full cursor-pointer rounded-[0.35rem] border-0 bg-accent/10 px-2 py-[0.45rem] text-left font-sans text-[0.9rem] text-accent'
+                  : 'block w-full cursor-pointer rounded-[0.35rem] border-0 bg-transparent px-2 py-[0.45rem] text-left font-sans text-[0.9rem] text-muted hover:bg-fg/[0.04] hover:text-fg'
+              }
               on:click={() => selectPreset(preset)}
             >
               {preset.title}
@@ -540,16 +308,23 @@
       {/each}
     </aside>
 
-    <section class="pg-editor" aria-label="Editor">
-      <div class="pg-window">
-        <div class="pg-toolbar">
-          <div class="pg-window-left">
-            <div class="pg-window-dots" aria-hidden="true">
-              <span class="pg-window-dot pg-window-dot-red"></span>
-              <span class="pg-window-dot pg-window-dot-yellow"></span>
-              <span class="pg-window-dot pg-window-dot-green"></span>
+    <section
+      class="flex min-h-0 min-w-0 flex-col border-b border-line lg:border-b-0 lg:border-r lg:border-line"
+      aria-label="Editor"
+    >
+      <div
+        class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border border-line bg-[#0c0c0e]"
+      >
+        <div
+          class="flex shrink-0 items-center justify-between gap-3 border-b border-line px-3.5 py-2.5 text-[0.85rem] text-muted"
+        >
+          <div class="flex min-w-0 items-center gap-2.5">
+            <div class="flex shrink-0 items-center gap-1.5" aria-hidden="true">
+              <span class="inline-block size-2.5 rounded-full bg-[#f87171]"></span>
+              <span class="inline-block size-2.5 rounded-full bg-[#fbbf24]"></span>
+              <span class="inline-block size-2.5 rounded-full bg-[#34d399]"></span>
             </div>
-            <span class="pg-window-title">
+            <span class="overflow-hidden text-ellipsis whitespace-nowrap">
               {#if status.get() === 'running'}
                 Compiling…
               {:else if dirty.get()}
@@ -559,22 +334,44 @@
               {/if}
             </span>
           </div>
-          <div class="pg-toolbar-actions">
-            <button type="button" on:click={resetPreset}>Reset</button>
-            <button type="button" on:click={scheduleRun}>Run</button>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="cursor-pointer rounded-[0.35rem] border border-line bg-transparent px-2.5 py-1.5 font-sans text-xs font-semibold text-fg hover:border-accent hover:text-accent"
+              on:click={resetPreset}
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              class="cursor-pointer rounded-[0.35rem] border border-line bg-transparent px-2.5 py-1.5 font-sans text-xs font-semibold text-fg hover:border-accent hover:text-accent"
+              on:click={scheduleRun}
+            >
+              Run
+            </button>
           </div>
         </div>
-        <div class="pg-textarea" aria-label="Avedon source" use:codeEditorHost></div>
+        <div
+          class="pg-textarea flex min-h-0 w-full flex-1 flex-col border-0 bg-[#0c0c0e] p-0 outline-none"
+          aria-label="Avedon source"
+          use:codeEditorHost
+        ></div>
       </div>
     </section>
 
-    <section class="pg-preview" aria-label="Preview">
-      <div class="pg-preview-head">Preview</div>
+    <section class="flex min-h-0 min-w-0 flex-col bg-[#0c0c0e]" aria-label="Preview">
+      <div
+        class="shrink-0 border-b border-line px-3.5 py-2.5 text-[0.85rem] text-muted"
+      >
+        Preview
+      </div>
       {#if compileError.get()}
-        <pre class="pg-error">{compileError.get()}</pre>
+        <pre
+          class="m-0 shrink-0 whitespace-pre-wrap border-b border-red-500/20 bg-red-500/[0.08] px-3.5 py-3 font-mono text-xs text-red-300"
+        >{compileError.get()}</pre>
       {/if}
       <iframe
-        class="pg-frame"
+        class="min-h-0 w-full flex-1 border-0 bg-bg"
         title="Playground preview"
         sandbox="allow-scripts allow-forms"
         use:previewHost

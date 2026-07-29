@@ -2,60 +2,28 @@
   export let headings
 </script>
 
-<style scoped>
-  .toc {
-    position: sticky;
-    top: 1rem;
-    align-self: start;
-    font-size: 0.85rem;
-  }
-
-  .toc > p {
-    margin: 0 0 0.5rem;
-    color: var(--muted);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: 0.75rem;
-  }
-
-  nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  a {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0.25rem 0;
-    color: var(--muted);
-    text-decoration: none;
-  }
-
-  a:hover {
-    color: var(--fg);
-  }
-
-  a.h3 {
-    padding-left: 0.75rem;
-  }
-
-  @media (max-width: 960px) {
-    .toc {
-      display: none;
-    }
-  }
-</style>
-
 <template>
-  <aside class="toc">
+  <aside
+    class="hidden self-start text-[0.85rem] lg:sticky lg:top-4 lg:block lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto"
+  >
     {#if headings.length}
-      <p>On this page</p>
-      <nav aria-label="On this page">
+      <p
+        class="sticky top-0 z-10 mb-2 mt-0 bg-bg pb-1 text-[0.75rem] font-bold uppercase tracking-[0.04em] text-muted"
+      >
+        On this page
+      </p>
+      <nav class="flex flex-col gap-0.5" aria-label="On this page">
         {#each headings as h}
-          <a href={'#' + h.id} class={h.level === 3 ? 'h3' : ''}>{h.text}</a>
+          <a
+            href={'#' + h.id}
+            class={
+              h.level === 3
+                ? 'flex items-center py-1 pl-3 leading-snug text-muted no-underline hover:text-fg'
+                : 'flex items-center py-1 leading-snug text-muted no-underline hover:text-fg'
+            }
+          >
+            {h.text}
+          </a>
         {/each}
       </nav>
     {/if}

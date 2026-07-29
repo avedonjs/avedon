@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+/* Scan .ave templates (not in Tailwind's default extension set). */
+@source "./**/*.{ave,html,js,ts}";
+
+@theme {
+  --color-bg: #09090b;
+  --color-fg: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-accent: #06b6d4;
+  --color-accent-deep: #0891b2;
+  --color-line: rgba(250, 250, 250, 0.12);
+  --font-sans: 'Syne', sans-serif;
+}
+
+/* Unlayered rules beat utilities — keep document defaults in @layer base. */
+@layer base {
+  html {
+    height: 100%;
+  }
+
+  html,
+  body {
+    margin: 0;
+    min-height: 100%;
+    height: 100%;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  a:hover {
+    color: var(--color-accent-deep);
+  }
+}
+
+/* —— Home atmosphere —— */
+.stage-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(250, 250, 250, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(250, 250, 250, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 35% 25%, #000 18%, transparent 75%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Brighter grid lines revealed under the cursor (vars set by stagePointer). */
+.stage-grid-glow {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(6, 182, 212, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.35) 1px, transparent 1px),
+    radial-gradient(
+      circle 9rem at var(--mx, 50%) var(--my, 40%),
+      rgba(6, 182, 212, 0.1),
+      transparent 70%
+    );
+  background-size: 44px 44px, 44px 44px, auto;
+  -webkit-mask-image: radial-gradient(
+    circle 11rem at var(--mx, 50%) var(--my, 40%),
+    #000 0%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    circle 11rem at var(--mx, 50%) var(--my, 40%),
+    #000 0%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.stage-grid-glow.is-active {
+  opacity: 1;
+}
+
+.brand {
+  animation: rise 0.75s ease both;
+}
+
+.headline {
+  animation: rise 0.75s ease 0.06s both;
+}
+
+.support {
+  animation: rise 0.75s ease 0.12s both;
+}
+
+.hero-ctas {
+  animation: rise 0.75s ease 0.18s both;
+}
+
+.specimen-rise {
+  animation: rise 0.8s ease 0.12s both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.65rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand,
+  .headline,
+  .support,
+  .hero-ctas,
+  .specimen-rise {
+    animation: none;
+  }
+
+  .stage-grid-glow {
+    display: none;
+  }
+}
+
+/* —— Home Shiki specimen —— */
+.specimen-code pre.shiki {
+  margin: 0;
+  padding: 1.1rem 1.15rem 1.35rem;
+  background: transparent !important;
+  overflow-x: auto;
+  font-size: clamp(0.72rem, 1.4vw, 0.84rem);
+  line-height: 1.55;
+}
+
+.specimen-code pre.shiki code {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: inherit;
+  background: transparent;
+  padding: 0;
+  white-space: pre;
+}
+
+/* —— Docs prose (markdown {@html}) —— */
+.prose {
+  max-width: 42rem;
+  line-height: 1.6;
+  font-size: 1.02rem;
+}
+
+.prose a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.prose a:hover {
+  color: var(--color-accent-deep);
+}
+
+.prose h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.prose h2 {
+  margin: 2rem 0 0.75rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+
+.prose h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.prose p,
+.prose ul,
+.prose ol {
+  margin: 0 0 1rem;
+}
+
+.prose li {
+  margin-bottom: 0.35rem;
+}
+
+.prose pre {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.1rem;
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  background: #0a0c10;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.prose pre.shiki {
+  background: #0a0c10;
+}
+
+.prose pre code {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88rem;
+  background: transparent;
+  padding: 0;
+  white-space: pre;
+}
+
+.prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.prose :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+  background: rgba(250, 250, 250, 0.06);
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--color-line);
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+}
+
+/* —— Playground CodeMirror (runtime DOM; must stay global) —— */
+.pg-textarea .CodeMirror {
+  height: 100% !important;
+  flex: 1;
+  width: 100%;
+  background: #0c0c0e;
+  color: #e4e4e7;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  border-radius: 0;
+}
+
+.pg-textarea .CodeMirror-scroll,
+.pg-textarea .CodeMirror-gutters {
+  background: #0c0c0e;
+}
+
+.pg-textarea .CodeMirror-scroll {
+  min-height: 100%;
+}

@@ -3,6 +3,8 @@
 </script>
 
 <template>
-  <h1>Not found</h1>
-  <p>No page for {url}</p>
+  <div class="mx-auto w-[min(100%,40rem)] px-6 py-16">
+    <h1 class="mt-0 mb-3 text-[clamp(1.75rem,4vw,2.25rem)] tracking-[-0.03em]">Not found</h1>
+    <p class="m-0 text-muted">No page for {url}</p>
+  </div>
 </template>

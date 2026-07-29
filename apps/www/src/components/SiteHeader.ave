@@ -1,79 +1,43 @@
 <script lang="ts">
 </script>
 
-<style scoped>
-  .topnav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.75rem clamp(1rem, 3vw, 2rem);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .topnav-brand-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    min-height: 44px;
-  }
-
-  .topnav-brand {
-    margin: 0;
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: var(--fg);
-    text-decoration: none;
-  }
-
-  .topnav-beta {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
-    border: 1px solid rgba(34, 211, 238, 0.35);
-    padding: 0.15rem 0.4rem;
-    line-height: 1.2;
-  }
-
-  .topnav-links {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-  }
-
-  .topnav-links a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 0.65rem;
-    color: var(--muted);
-    text-decoration: none;
-  }
-
-  .topnav-links a:hover {
-    color: var(--fg);
-  }
-</style>
-
 <template>
-  <header class="topnav">
-    <div class="topnav-brand-wrap">
-      <a class="topnav-brand" href="/">avedon</a>
-      <span class="topnav-beta" title="avedon is in beta">beta</span>
+  <header class="flex items-center justify-between gap-4 border-b border-line px-[clamp(1rem,3vw,2rem)] py-3">
+    <div class="inline-flex min-h-11 items-center gap-2.5">
+      <a
+        class="m-0 inline-flex min-h-11 items-center text-[1.25rem] font-extrabold tracking-[-0.03em] text-fg no-underline hover:text-fg"
+        href="/"
+      >
+        avedon
+      </a>
+      <span
+        class="border border-accent/35 px-1.5 py-0.5 font-mono text-[0.65rem] font-bold uppercase tracking-[0.08em] text-accent"
+        title="avedon is in beta"
+      >
+        beta
+      </span>
     </div>
-    <nav class="topnav-links" aria-label="Primary">
-      <a href="/docs/">Docs</a>
-      <a href="/playground">Playground</a>
-      <a href="https://github.com/avedonjs/avedon" rel="noopener noreferrer" target="_blank">GitHub</a>
+    <nav class="flex items-center gap-1 text-[0.95rem] font-semibold" aria-label="Primary">
+      <a
+        class="inline-flex min-h-11 items-center px-2.5 text-muted no-underline hover:text-fg"
+        href="/docs/"
+      >
+        Docs
+      </a>
+      <a
+        class="inline-flex min-h-11 items-center px-2.5 text-muted no-underline hover:text-fg"
+        href="/playground"
+      >
+        Playground
+      </a>
+      <a
+        class="inline-flex min-h-11 items-center px-2.5 text-muted no-underline hover:text-fg"
+        href="https://github.com/avedonjs/avedon"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        GitHub
+      </a>
     </nav>
   </header>
 </template>

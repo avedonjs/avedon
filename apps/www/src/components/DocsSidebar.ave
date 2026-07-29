@@ -3,76 +3,29 @@
   export let slug
 </script>
 
-<style scoped>
-  .side {
-    border-right: 1px solid var(--line);
-    padding-right: 1rem;
-    position: sticky;
-    top: 1rem;
-    align-self: start;
-    max-height: calc(100vh - 2rem);
-    overflow: auto;
-  }
-
-  .group {
-    margin-bottom: 1.25rem;
-  }
-
-  .group-title {
-    margin: 0 0 0.5rem;
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  nav {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  a {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0.35rem 0.25rem;
-    color: var(--muted);
-    font-size: 0.95rem;
-    font-weight: 500;
-    text-decoration: none;
-  }
-
-  a:hover,
-  a.active {
-    color: var(--fg);
-  }
-
-  a.active {
-    color: var(--accent);
-  }
-
-  @media (max-width: 720px) {
-    .side {
-      position: static;
-      max-height: none;
-      border-right: none;
-      border-bottom: 1px solid var(--line);
-      padding-right: 0;
-      padding-bottom: 1rem;
-    }
-  }
-</style>
-
 <template>
-  <aside class="side">
+  <aside
+    class="self-start border-b border-line pb-4 md:sticky md:top-4 md:max-h-[calc(100vh-2rem)] md:overflow-auto md:border-b-0 md:border-r md:border-line md:pb-0 md:pr-4"
+  >
     {#each groups as g}
-      <div class="group">
-        <p class="group-title">{g.title}</p>
-        <nav aria-label={g.title}>
+      <div class="mb-7">
+        <p
+          class="mb-2.5 mt-0 border-b border-line pb-2 text-[0.8rem] font-extrabold tracking-[-0.01em] text-fg"
+        >
+          {g.title}
+        </p>
+        <nav class="flex flex-col gap-0.5 pl-0.5" aria-label={g.title}>
           {#each g.docs as d}
-            <a href={'/docs/' + d.slug + '/'} class={d.slug === slug ? 'active' : ''}>{d.title}</a>
+            <a
+              href={'/docs/' + d.slug + '/'}
+              class={
+                d.slug === slug
+                  ? 'flex min-h-10 items-center border-l-2 border-accent px-2.5 py-1.5 text-[0.9rem] font-medium text-accent no-underline'
+                  : 'flex min-h-10 items-center border-l-2 border-transparent px-2.5 py-1.5 text-[0.9rem] font-normal text-muted no-underline hover:border-line hover:text-fg'
+              }
+            >
+              {d.title}
+            </a>
           {/each}
         </nav>
       </div>
