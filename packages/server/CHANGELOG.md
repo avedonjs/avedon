@@ -1,5 +1,13 @@
 # @avedon/server
 
+## 0.2.3
+
+### Patch Changes
+
+- d324875: Playground dogfood: signal-script transform, compiler/runtime fixes, session write chain.
+- Updated dependencies [d324875]
+  - @avedon/runtime@0.2.1
+
 ## 0.2.2
 
 ### Patch Changes
