@@ -1,5 +1,42 @@
 /** Compile avedon markup into SSR expression (returns HTML string) and client DOM builder. */
 
+import { prepareSignalExpr } from './signal-script.js'
+
+let compileSignalNames: Set<string> = new Set()
+
+function sigExpr(expr: string): string {
+  if (compileSignalNames.size === 0) return expr
+  return prepareSignalExpr(expr, compileSignalNames)
+}
+
+function eachListExpr(list: string): string {
+  return `((${sigExpr(list)}) || [])`
+}
+
+/** Register block body updaters as nested effects so child reads don't remount the parent. */
+function emitRunBlockEffects(
+  effectsName = '__blockEffects',
+  cleanupsName = '__blockCleanups',
+): string {
+  return `for (const __fn of ${effectsName}) ${cleanupsName}.push(__effect(__fn));`
+}
+
+/** Drain block cleanups when the parent component/block is destroyed. */
+function emitBlockDestroyCleanup(cleanupsName = '__blockCleanups', genName?: string): string {
+  const bump = genName ? `${genName}++; ` : ''
+  return `__cleanups.push(() => { ${bump}for (const __c of ${cleanupsName}) { try { __c(); } catch {} } ${cleanupsName} = []; });`
+}
+
+/** Read a bind target that may be a plain value or a signal. */
+function emitBindRead(expr: string): string {
+  return `((__b) => (__b && typeof __b.get === 'function') ? __b.get() : __b)(${expr})`
+}
+
+/** Write a bind target that may be a plain lvalue or a signal. */
+function emitBindWrite(expr: string, nextExpr: string): string {
+  return `{ const __b = (${expr}); const __n = (${nextExpr}); if (__b && typeof __b.set === 'function') __b.set(__n); else if (__b && typeof __b.update === 'function') __b.update(() => __n); else (${expr}) = __n; }`
+}
+
 function escapeForTemplateLiteral(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
 }
@@ -38,7 +75,9 @@ export function compileMarkup(
   markup: string,
   hash: string,
   components: Set<string> = new Set(),
+  signalNames: Set<string> = new Set(),
 ): CompiledTemplate {
+  compileSignalNames = signalNames
   const tokens = tokenize(markup)
   validateTokens(tokens, components)
   return {
@@ -88,6 +127,125 @@ interface Attr {
   kind: 'static' | 'event' | 'bind' | 'expr' | 'class' | 'style' | 'use' | 'transition' | 'spread'
 }
 
+/**
+ * Read a JS expression starting at `start` until the matching top-level `}` that
+ * closes a `{…}` template mustache / block header. Respects strings, templates, comments.
+ */
+function readBalancedJs(input: string, start: number): { expr: string; end: number } {
+  let i = start
+  let depth = 0
+  let braceDepth = 0
+  let parenDepth = 0
+  let bracketDepth = 0
+  let quote: '"' | "'" | '`' | null = null
+  let escaped = false
+  let lineComment = false
+  let blockComment = false
+
+  while (i < input.length) {
+    const ch = input[i]!
+    const next = input[i + 1]
+
+    if (lineComment) {
+      if (ch === '\n') lineComment = false
+      i++
+      continue
+    }
+    if (blockComment) {
+      if (ch === '*' && next === '/') {
+        blockComment = false
+        i += 2
+        continue
+      }
+      i++
+      continue
+    }
+    if (quote) {
+      if (escaped) {
+        escaped = false
+        i++
+        continue
+      }
+      if (ch === '\\') {
+        escaped = true
+        i++
+        continue
+      }
+      if (ch === quote) {
+        quote = null
+        i++
+        continue
+      }
+      // template literal ${…}
+      if (quote === '`' && ch === '$' && next === '{') {
+        braceDepth++
+        i += 2
+        continue
+      }
+      i++
+      continue
+    }
+
+    if (ch === '/' && next === '/') {
+      lineComment = true
+      i += 2
+      continue
+    }
+    if (ch === '/' && next === '*') {
+      blockComment = true
+      i += 2
+      continue
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      quote = ch
+      i++
+      continue
+    }
+    if (ch === '(') {
+      parenDepth++
+      i++
+      continue
+    }
+    if (ch === ')') {
+      parenDepth--
+      i++
+      continue
+    }
+    if (ch === '[') {
+      bracketDepth++
+      i++
+      continue
+    }
+    if (ch === ']') {
+      bracketDepth--
+      i++
+      continue
+    }
+    if (ch === '{') {
+      braceDepth++
+      depth++
+      i++
+      continue
+    }
+    if (ch === '}') {
+      if (braceDepth > 0) {
+        braceDepth--
+        depth--
+        i++
+        continue
+      }
+      // Closing the outer template `{…}` — only when not inside (), [].
+      if (parenDepth === 0 && bracketDepth === 0) {
+        return { expr: input.slice(start, i), end: i }
+      }
+      i++
+      continue
+    }
+    i++
+  }
+  throw new Error('Unclosed expression')
+}
+
 function tokenize(input: string): Token[] {
   const tokens: Token[] = []
   let i = 0
@@ -102,8 +260,8 @@ function tokenize(input: string): Token[] {
   while (i < input.length) {
     if (startsWith('{#if ')) {
       i += 5
-      const condEnd = input.indexOf('}', i)
-      const cond = input.slice(i, condEnd).trim()
+      const { expr: condRaw, end: condEnd } = readBalancedJs(input, i)
+      const cond = condRaw.trim()
       i = condEnd + 1
       const parsed = parseIfChain(cond, input, i)
       i = parsed.next
@@ -113,8 +271,8 @@ function tokenize(input: string): Token[] {
 
     if (startsWith('{#each ')) {
       i += 7
-      const end = input.indexOf('}', i)
-      const header = input.slice(i, end).trim()
+      const { expr: headerRaw, end } = readBalancedJs(input, i)
+      const header = headerRaw.trim()
       i = end + 1
       const m = header.match(
         /^(.+?)\s+as\s+(\w+)(?:\s*,\s*(\w+))?(?:\s+\((.+)\))?$/,
@@ -144,9 +302,8 @@ function tokenize(input: string): Token[] {
 
     if (startsWith('{#key ')) {
       i += 6
-      const end = input.indexOf('}', i)
-      if (end === -1) throw new Error('Unclosed {#key}')
-      const expr = input.slice(i, end).trim()
+      const { expr: exprRaw, end } = readBalancedJs(input, i)
+      const expr = exprRaw.trim()
       if (!expr) throw new Error('{#key} requires an expression')
       i = end + 1
       const block = readBlock(input.slice(i), ['{/key}'])
@@ -157,8 +314,8 @@ function tokenize(input: string): Token[] {
 
     if (startsWith('{#await ')) {
       i += 8
-      const end = input.indexOf('}', i)
-      const header = input.slice(i, end).trim()
+      const { expr: headerRaw, end } = readBalancedJs(input, i)
+      const header = headerRaw.trim()
       i = end + 1
       let promise = header
       let pending: Token[] | undefined
@@ -230,18 +387,16 @@ function tokenize(input: string): Token[] {
 
     if (startsWith('{@html ')) {
       i += '{@html '.length
-      const end = input.indexOf('}', i)
-      if (end === -1) throw new Error('Unclosed {@html}')
-      tokens.push({ type: 'html', value: input.slice(i, end).trim() })
+      const { expr, end } = readBalancedJs(input, i)
+      tokens.push({ type: 'html', value: expr.trim() })
       i = end + 1
       continue
     }
 
     if (startsWith('{@const ')) {
       i += '{@const '.length
-      const end = input.indexOf('}', i)
-      if (end === -1) throw new Error('Unclosed {@const}')
-      const body = input.slice(i, end).trim()
+      const { expr: bodyRaw, end } = readBalancedJs(input, i)
+      const body = bodyRaw.trim()
       const m = body.match(/^([A-Za-z_$][\w$]*)\s*=\s*([\s\S]+)$/)
       if (!m) throw new Error(`Invalid {@const} — expected \`{@const name = expr}\`, got {@const ${body}}`)
       tokens.push({ type: 'const', name: m[1]!, value: m[2]!.trim() })
@@ -259,9 +414,8 @@ function tokenize(input: string): Token[] {
     }
 
     if (startsWith('{') && !startsWith('{#') && !startsWith('{/') && !startsWith('{:')) {
-      const end = input.indexOf('}', i + 1)
-      if (end === -1) throw new Error('Unclosed expression')
-      tokens.push({ type: 'expr', value: input.slice(i + 1, end).trim() })
+      const { expr, end } = readBalancedJs(input, i + 1)
+      tokens.push({ type: 'expr', value: expr.trim() })
       i = end + 1
       continue
     }
@@ -536,13 +690,13 @@ function emitClientBindGroup(groupExpr: string, id: string, attrs: Attr[], effec
   const val = inputValueExpr(attrs)
   if (isStaticCheckbox(attrs)) {
     return [
-      `${effectsVar}.push(() => { ${id}.checked = Array.isArray(${groupExpr}) && ${groupExpr}.includes(${val}); });`,
-      `${id}.addEventListener('change', () => { const __g = Array.isArray(${groupExpr}) ? ${groupExpr} : []; ${groupExpr} = ${id}.checked ? (__g.includes(${val}) ? __g : __g.concat([${val}])) : __g.filter((__x) => __x !== ${val}); __invalidate(); });`,
+      `${effectsVar}.push(() => { const __b = ${groupExpr}; const __arr = (__b && typeof __b.get === 'function') ? __b.get() : __b; ${id}.checked = Array.isArray(__arr) && __arr.includes(${val}); });`,
+      `${id}.addEventListener('change', () => { const __b = ${groupExpr}; const __arr = (__b && typeof __b.get === 'function') ? __b.get() : __b; const __g = Array.isArray(__arr) ? __arr : []; const __next = ${id}.checked ? (__g.includes(${val}) ? __g : __g.concat([${val}])) : __g.filter((__x) => __x !== ${val}); if (__b && typeof __b.update === 'function') __b.update(() => __next); else ${groupExpr} = __next; __invalidate(); });`,
     ].join('\n')
   }
   return [
-    `${effectsVar}.push(() => { ${id}.checked = (${groupExpr}) === ${val}; });`,
-    `${id}.addEventListener('change', () => { if (${id}.checked) { ${groupExpr} = ${val}; __invalidate(); } });`,
+    `${effectsVar}.push(() => { const __b = ${groupExpr}; const __v = (__b && typeof __b.get === 'function') ? __b.get() : __b; ${id}.checked = __v === ${val}; });`,
+    `${id}.addEventListener('change', () => { if (${id}.checked) { const __b = ${groupExpr}; if (__b && typeof __b.update === 'function') __b.update(() => ${val}); else ${groupExpr} = ${val}; __invalidate(); } });`,
   ].join('\n')
 }
 
@@ -554,7 +708,7 @@ function classNameExpr(classAttrs: Attr[], classDirs: Attr[]): string {
   }
   for (const d of classDirs) {
     const cls = d.name.slice('class:'.length)
-    parts.push(`((${d.value}) ? ${jsLiteral(cls)} : '')`)
+    parts.push(`((${sigExpr(d.value)}) ? ${jsLiteral(cls)} : '')`)
   }
   return `[${parts.join(', ')}].filter(Boolean).join(' ').replace(/\\s+/g, ' ').trim()`
 }
@@ -591,7 +745,7 @@ function styleCssTextExpr(styleAttrs: Attr[], styleDirs: Attr[]): string {
   for (const d of styleDirs) {
     const prop = d.name.slice('style:'.length)
     parts.push(
-      `((() => { const __v = (${d.value}); return (__v == null || __v === false) ? '' : (${jsLiteral(prop + ':')} + __v); })())`,
+      `((() => { const __raw = (${sigExpr(d.value)}); const __v = (__raw && typeof __raw.get === 'function') ? __raw.get() : __raw; return (__v == null || __v === false) ? '' : (${jsLiteral(prop + ':')} + __v); })())`,
     )
   }
   return `[${parts.join(', ')}].filter(Boolean).join('; ').trim()`
@@ -646,7 +800,7 @@ function componentPropsObject(
           )
         }
       } else if (a.kind === 'expr') {
-        entries.push(`${jsLiteral(a.name)}: (${a.value})`)
+        entries.push(`${jsLiteral(a.name)}: (${sigExpr(a.value!)})`)
       } else if (a.value == null) {
         entries.push(`${jsLiteral(a.name)}: true`)
       } else {
@@ -883,24 +1037,34 @@ function emitSsrSpreadAttrFragment(expr: string): string {
     let __o = '';
     for (const __k of Object.keys(__sp)) {
       if (/^on/i.test(__k) || __k.indexOf(':') !== -1) continue;
+      if (!/^[a-zA-Z_:][\\w:.-]*$/.test(__k)) continue;
       const __v = __sp[__k];
       if (__v == null || __v === false) continue;
       if (__v === true) __o += ' ' + __k;
       else __o += ' ' + __k + '="' + __escape(__v) + '"';
     }
     return __o;
-  })(${expr})`
+  })(${sigExpr(expr)})`
 }
 
 /** Client effect for `{...obj}` — applies attrs and clears removed keys. */
-function emitClientSpread(a: Attr, id: string, effectsVar: string): string {
+function emitClientSpread(
+  a: Attr,
+  id: string,
+  effectsVar: string,
+  protectedKeys: string[] = [],
+): string {
+  const protectedLit = `[${protectedKeys.map((k) => jsLiteral(k)).join(', ')}]`
   return `{
     let __spreadKeys = [];
+    const __protected = new Set(${protectedLit});
     ${effectsVar}.push(() => {
-      const __sp = (${a.value}) || {};
+      const __sp = (${sigExpr(a.value!)}) || {};
       const __next = [];
       for (const __k of Object.keys(__sp)) {
         if (/^on/i.test(__k) || __k.indexOf(':') !== -1) continue;
+        if (!/^[a-zA-Z_:][\\w:.-]*$/.test(__k)) continue;
+        if (__protected.has(__k)) continue;
         const __v = __sp[__k];
         if (__v == null || __v === false) {
           ${id}.removeAttribute(__k);
@@ -911,7 +1075,7 @@ function emitClientSpread(a: Attr, id: string, effectsVar: string): string {
         else ${id}.setAttribute(__k, String(__v));
       }
       for (const __k of __spreadKeys) {
-        if (__next.indexOf(__k) === -1) ${id}.removeAttribute(__k);
+        if (__next.indexOf(__k) === -1 && !__protected.has(__k)) ${id}.removeAttribute(__k);
       }
       __spreadKeys = __next;
     });
@@ -1096,12 +1260,35 @@ function emitClientIfBranches(
   for (let i = 0; i < branches.length; i++) {
     const b = branches[i]!
     const kw = i === 0 ? 'if' : 'else if'
-    parts.push(`${kw} (${b.cond}) {\n${emitClientNodes(b.body, hash, frag, effectsVar, inSvg)}\n}`)
+    parts.push(
+      `${kw} (${sigExpr(b.cond)}) {\n${emitClientNodes(
+        b.body,
+        hash,
+        frag,
+        effectsVar,
+        inSvg,
+      )}\n}`,
+    )
   }
   if (elseBody) {
     parts.push(`else {\n${emitClientNodes(elseBody, hash, frag, effectsVar, inSvg)}\n}`)
   }
   return parts.join(' ')
+}
+
+/** Evaluate which if/else-if/else branch is active (index), without mounting. */
+function emitClientIfBranchIndex(t: Extract<Token, { type: 'if' }>): string {
+  const { branches, elseBody } = flattenIfBranches(t)
+  const parts: string[] = []
+  for (let i = 0; i < branches.length; i++) {
+    const b = branches[i]!
+    const kw = i === 0 ? 'if' : 'else if'
+    parts.push(`${kw} (${sigExpr(b.cond)}) __next = ${i};`)
+  }
+  if (elseBody) {
+    parts.push(`else __next = ${branches.length};`)
+  }
+  return parts.join('\n          ')
 }
 
 function readBlock(
@@ -1353,20 +1540,20 @@ function emitSsr(tokens: Token[], hash: string): string {
     const t = tokens[i]!
     if (t.type === 'const') {
       const rest = emitSsr(tokens.slice(i + 1), hash)
-      parts.push(`((${t.name}) => (${rest}))(${t.value})`)
+      parts.push(`((${t.name}) => (${rest}))(${sigExpr(t.value)})`)
       break
     } else if (t.type === 'text') {
       parts.push('`' + escapeForTemplateLiteral(t.value) + '`')
     } else if (t.type === 'slot') {
       parts.push(emitSlotContentExpr(t, hash))
     } else if (t.type === 'html') {
-      parts.push(`(${t.value})`)
+      parts.push(`(${sigExpr(t.value)})`)
     } else if (t.type === 'expr') {
-      parts.push(`__escape(${t.value})`)
+      parts.push(`__escape(${sigExpr(t.value)})`)
     } else if (t.type === 'if') {
       const thenExpr = emitSsr(t.then, hash)
       const elseExpr = t.else ? emitSsr(t.else, hash) : '``'
-      parts.push(`((${t.cond}) ? (${thenExpr}) : (${elseExpr}))`)
+      parts.push(`((${sigExpr(t.cond)}) ? (${thenExpr}) : (${elseExpr}))`)
     } else if (t.type === 'each') {
       const body = emitSsr(t.body, hash)
       const idx = t.index ? `, ${t.index}` : ''
@@ -1374,10 +1561,10 @@ function emitSsr(tokens: Token[], hash: string): string {
       if (t.else) {
         const elseExpr = emitSsr(t.else, hash)
         parts.push(
-          `(((__list) => __list.length ? (${mapExpr}) : (${elseExpr}))((${t.list}) || []))`,
+          `(((__list) => __list.length ? (${mapExpr}) : (${elseExpr}))(${eachListExpr(t.list)}))`,
         )
       } else {
-        parts.push(`((${t.list}) || []).map((${t.item}${idx}) => (${body})).join('')`)
+        parts.push(`${eachListExpr(t.list)}.map((${t.item}${idx}) => (${body})).join('')`)
       }
     } else if (t.type === 'key') {
       // Key only affects client remount; SSR renders the body once.
@@ -1405,7 +1592,7 @@ function emitSsrStream(tokens: Token[], hash: string): string {
     const t = tokens[i]!
     if (t.type === 'const') {
       lines.push(
-        `{\n  const ${t.name} = (${t.value});\n${indentStream(emitSsrStream(tokens.slice(i + 1), hash))}\n}`,
+        `{\n  const ${t.name} = (${sigExpr(t.value)});\n${indentStream(emitSsrStream(tokens.slice(i + 1), hash))}\n}`,
       )
       break
     } else if (t.type === 'text') {
@@ -1413,16 +1600,18 @@ function emitSsrStream(tokens: Token[], hash: string): string {
     } else if (t.type === 'slot') {
       lines.push(`await __pipeChildren(${emitSlotContentExpr(t, hash)});`)
     } else if (t.type === 'html') {
-      lines.push(`__enqueue(${t.value});`)
+      lines.push(`__enqueue(${sigExpr(t.value)});`)
     } else if (t.type === 'expr') {
-      lines.push(`__enqueue(__escape(${t.value}));`)
+      lines.push(`__enqueue(__escape(${sigExpr(t.value)}));`)
     } else if (t.type === 'if') {
       const { branches, elseBody } = flattenIfBranches(t)
       const parts: string[] = []
       for (let bi = 0; bi < branches.length; bi++) {
         const b = branches[bi]!
         const kw = bi === 0 ? 'if' : 'else if'
-        parts.push(`${kw} (${b.cond}) {\n${indentStream(emitSsrStream(b.body, hash))}\n}`)
+        parts.push(
+          `${kw} (${sigExpr(b.cond)}) {\n${indentStream(emitSsrStream(b.body, hash))}\n}`,
+        )
       }
       if (elseBody) {
         parts.push(`else {\n${indentStream(emitSsrStream(elseBody, hash))}\n}`)
@@ -1437,15 +1626,15 @@ function emitSsrStream(tokens: Token[], hash: string): string {
         : ''
       if (t.index) {
         lines.push(
-          `{\n  const __list = (${t.list}) || [];\n  if (__list.length) {\n    let ${t.index} = 0;\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n      ${t.index}++;\n    }\n  }${elsePart}\n}`,
+          `{\n  const __list = ${eachListExpr(t.list)};\n  if (__list.length) {\n    let ${t.index} = 0;\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n      ${t.index}++;\n    }\n  }${elsePart}\n}`,
         )
       } else if (t.else) {
         lines.push(
-          `{\n  const __list = (${t.list}) || [];\n  if (__list.length) {\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n    }\n  }${elsePart}\n}`,
+          `{\n  const __list = ${eachListExpr(t.list)};\n  if (__list.length) {\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n    }\n  }${elsePart}\n}`,
         )
       } else {
         lines.push(
-          `for (const ${t.item} of ((${t.list}) || [])) {\n${indentStream(body)}\n}`,
+          `for (const ${t.item} of ${eachListExpr(t.list)}) {\n${indentStream(body)}\n}`,
         )
       }
     } else if (t.type === 'key') {
@@ -1524,11 +1713,11 @@ function emitSsrStreamElement(el: Token & { type: 'element' }, hash: string): st
     // Never emit raw HTML event handlers (static or dynamic).
     if (/^on[a-z]/i.test(a.name)) continue
     if (a.kind === 'bind' && a.name === 'bind:value') {
-      attrParts.push(`\` value="\` + __escape(${a.value}) + \`"\``)
+      attrParts.push(`\` value="\` + __escape(${emitBindRead(a.value!)}) + \`"\``)
       continue
     }
     if (a.kind === 'bind' && a.name === 'bind:checked') {
-      attrParts.push(`((${a.value}) ? ' checked' : '')`)
+      attrParts.push(`((${emitBindRead(a.value!)}) ? ' checked' : '')`)
       continue
     }
     if (a.kind === 'bind' && a.name === 'bind:group') {
@@ -1552,7 +1741,7 @@ function emitSsrStreamElement(el: Token & { type: 'element' }, hash: string): st
       continue
     }
     if (a.kind === 'bind' && a.name === 'bind:open') {
-      attrParts.push(`((${a.value}) ? ' open' : '')`)
+      attrParts.push(`((${emitBindRead(a.value!)}) ? ' open' : '')`)
       continue
     }
     if (a.kind === 'bind' && (a.name === 'bind:muted' || a.name === 'bind:paused')) continue
@@ -1566,9 +1755,9 @@ function emitSsrStreamElement(el: Token & { type: 'element' }, hash: string): st
     if (a.kind === 'bind' && (a.name === 'bind:textContent' || a.name === 'bind:innerText')) continue
     if (a.kind === 'expr') {
       if (isBooleanAttr(a.name)) {
-        attrParts.push(`((${a.value}) ? ' ${a.name}' : '')`)
+        attrParts.push(`((${sigExpr(a.value!)}) ? ' ${a.name}' : '')`)
       } else {
-        attrParts.push(`\` ${a.name}="\` + __escape(${a.value}) + \`"\``)
+        attrParts.push(`\` ${a.name}="\` + __escape(${sigExpr(a.value!)}) + \`"\``)
       }
     } else if (a.value == null) {
       attrParts.push(`\` ${a.name}\``)
@@ -1636,11 +1825,11 @@ function emitSsrElement(el: Token & { type: 'element' }, hash: string): string {
     // Never emit raw HTML event handlers (static or dynamic).
     if (/^on[a-z]/i.test(a.name)) continue
     if (a.kind === 'bind' && a.name === 'bind:value') {
-      attrParts.push(`\` value="\` + __escape(${a.value}) + \`"\``)
+      attrParts.push(`\` value="\` + __escape(${emitBindRead(a.value!)}) + \`"\``)
       continue
     }
     if (a.kind === 'bind' && a.name === 'bind:checked') {
-      attrParts.push(`((${a.value}) ? ' checked' : '')`)
+      attrParts.push(`((${emitBindRead(a.value!)}) ? ' checked' : '')`)
       continue
     }
     if (a.kind === 'bind' && a.name === 'bind:group') {
@@ -1664,7 +1853,7 @@ function emitSsrElement(el: Token & { type: 'element' }, hash: string): string {
       continue
     }
     if (a.kind === 'bind' && a.name === 'bind:open') {
-      attrParts.push(`((${a.value}) ? ' open' : '')`)
+      attrParts.push(`((${emitBindRead(a.value!)}) ? ' open' : '')`)
       continue
     }
     if (a.kind === 'bind' && (a.name === 'bind:muted' || a.name === 'bind:paused')) continue
@@ -1678,9 +1867,9 @@ function emitSsrElement(el: Token & { type: 'element' }, hash: string): string {
     if (a.kind === 'bind' && (a.name === 'bind:textContent' || a.name === 'bind:innerText')) continue
     if (a.kind === 'expr') {
       if (isBooleanAttr(a.name)) {
-        attrParts.push(`((${a.value}) ? ' ${a.name}' : '')`)
+        attrParts.push(`((${sigExpr(a.value!)}) ? ' ${a.name}' : '')`)
       } else {
-        attrParts.push(`\` ${a.name}="\` + __escape(${a.value}) + \`"\``)
+        attrParts.push(`\` ${a.name}="\` + __escape(${sigExpr(a.value!)}) + \`"\``)
       }
     } else if (a.value == null) {
       attrParts.push(`\` ${a.name}\``)
@@ -1725,7 +1914,7 @@ function emitClientNodes(
     const id = `${parent}_n${n++}`
     if (t.type === 'const') {
       lines.push(`{
-        const ${t.name} = (${t.value});
+        const ${t.name} = (${sigExpr(t.value)});
         ${emitClientNodes(tokens.slice(i + 1), hash, parent, effectsVar, inSvg)}
       }`)
       break
@@ -1760,14 +1949,14 @@ function emitClientNodes(
       lines.push(`{
         // trusted HTML — {@html}; see docs/security.md
         const ${id} = document.createElement('template');
-        ${id}.innerHTML = String(${t.value} ?? '');
+        ${id}.innerHTML = String(${sigExpr(t.value)} ?? '');
         ${parent}.appendChild(${id}.content);
       }`)
     } else if (t.type === 'expr') {
       lines.push(`{
         const ${id} = document.createTextNode('');
         ${parent}.appendChild(${id});
-        ${effectsVar}.push(() => { ${id}.data = String(${t.value} ?? ''); });
+        ${effectsVar}.push(() => { ${id}.data = String(${sigExpr(t.value)} ?? ''); });
       }`)
     } else if (t.type === 'if') {
       lines.push(`{
@@ -1778,7 +1967,11 @@ function emitClientNodes(
         let __blockEffects = [];
         let __blockCleanups = [];
         let __outroGen = 0;
+        let __branch = -1;
         ${effectsVar}.push(() => {
+          let __next = -1;
+          ${emitClientIfBranchIndex(t)}
+          if (__next === __branch) return;
           const __g = ++__outroGen;
           const __leaving = __nodes;
           const __leavingCleanups = __blockCleanups;
@@ -1787,6 +1980,7 @@ function emitClientNodes(
           __blockCleanups = [];
           const __enter = () => {
             if (__g !== __outroGen) return;
+            __branch = __next;
             const __frag = document.createDocumentFragment();
             {
               const __effects = __blockEffects;
@@ -1798,11 +1992,12 @@ function emitClientNodes(
               __nodes.push(__frag.firstChild);
               __anchor.parentNode.insertBefore(__frag.firstChild, __insertBefore);
             }
-            for (const fn of __blockEffects) fn();
+            ${emitRunBlockEffects()}
           };
           for (const __c of __leavingCleanups) { try { __c(); } catch {} }
           __runOutro(__leaving, __enter);
         });
+        ${emitBlockDestroyCleanup('__blockCleanups', '__outroGen')}
       }`)
     } else if (t.type === 'each' && t.key) {
       const idx = t.index ?? '__i'
@@ -1822,7 +2017,7 @@ function emitClientNodes(
             __elseNodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
-          for (const fn of __blockEffects) fn();`
+          ${emitRunBlockEffects('__blockEffects', '__elseCleanups')}`
         : ''
       lines.push(`{
         const ${id} = document.createComment('each-keyed');
@@ -1834,7 +2029,7 @@ function emitClientNodes(
         let __outroGen = 0;
         ${effectsVar}.push(() => {
           const __g = ++__outroGen;
-          const __list = ((${t.list}) || []);
+          const __list = ${eachListExpr(t.list)};
           if (!__list.length) {
             const __leaving = [];
             const __leavingCleanups = [];
@@ -1897,6 +2092,7 @@ function emitClientNodes(
               effects: __blockEffects,
               cleanups: __blockCleanups,
             };
+            ${emitRunBlockEffects('__blockEffects', '__blockCleanups')}
             __nextRecords.push(__rec);
           });
           for (const __rec of __oldByKey.values()) {
@@ -1914,11 +2110,16 @@ function emitClientNodes(
             }
           }
           __records = __nextRecords;
-          for (const __rec of __records) {
-            for (const fn of __rec.effects) fn();
-          }
           for (const __c of __leavingCleanups) { try { __c(); } catch {} }
           __runOutro(__leaving, () => {});
+        });
+        ${emitBlockDestroyCleanup('__elseCleanups', '__outroGen')}
+        __cleanups.push(() => {
+          __outroGen++;
+          for (const __rec of __records) {
+            for (const __c of __rec.cleanups) { try { __c(); } catch {} }
+          }
+          __records = [];
         });
       }`)
     } else if (t.type === 'each') {
@@ -1948,7 +2149,7 @@ function emitClientNodes(
             {
               const __effects = __blockEffects;
               const __cleanups = __blockCleanups;
-              const __list = ((${t.list}) || []);
+              const __list = ${eachListExpr(t.list)};
               if (__list.length) {
                 __list.forEach((${t.item}, ${idx}) => {
                   ${emitClientNodes(t.body, hash, '__frag', '__effects', inSvg)}
@@ -1960,11 +2161,12 @@ function emitClientNodes(
               __nodes.push(__frag.firstChild);
               ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
             }
-            for (const fn of __blockEffects) fn();
+            ${emitRunBlockEffects()}
           };
           for (const __c of __leavingCleanups) { try { __c(); } catch {} }
           __runOutro(__leaving, __enter);
         });
+        ${emitBlockDestroyCleanup('__blockCleanups', '__outroGen')}
       }`)
     } else if (t.type === 'key') {
       lines.push(`{
@@ -1975,7 +2177,7 @@ function emitClientNodes(
         let __blockCleanups = [];
         let __prevKey = Symbol('avedon-key');
         ${effectsVar}.push(() => {
-          const __k = (${t.expr});
+          const __k = (${sigExpr(t.expr)});
           if (Object.is(__k, __prevKey)) return;
           __prevKey = __k;
           for (const __c of __blockCleanups) { try { __c(); } catch {} }
@@ -1994,11 +2196,12 @@ function emitClientNodes(
             __nodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
-          for (const fn of __blockEffects) fn();
+          ${emitRunBlockEffects()}
         });
+        ${emitBlockDestroyCleanup()}
       }`)
     } else if (t.type === 'await') {
-      const pendingBlock = t.pending?.length
+      const pendingMount = t.pending?.length
         ? `{
           const __frag = document.createDocumentFragment();
           {
@@ -2011,22 +2214,10 @@ function emitClientNodes(
             __nodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
-          for (const fn of __blockEffects) fn();
+          ${emitRunBlockEffects()}
         }`
         : ''
-      lines.push(`{
-        const ${id} = document.createComment('await');
-        ${parent}.appendChild(${id});
-        let __nodes = [];
-        let __blockEffects = [];
-        let __blockCleanups = [];
-        ${pendingBlock}
-        Promise.resolve(${t.promise}).then((${t.thenName}) => {
-          for (const __c of __blockCleanups) { try { __c(); } catch {} }
-          for (const n of __nodes) n.remove();
-          __nodes = [];
-          __blockEffects = [];
-          __blockCleanups = [];
+      const thenMount = `{
           const __frag = document.createDocumentFragment();
           {
             const __effects = __blockEffects;
@@ -2038,26 +2229,58 @@ function emitClientNodes(
             __nodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
-          for (const fn of __blockEffects) fn();
-        }${t.catchBody ? `, (${t.catchName ?? 'error'}) => {
-          for (const __c of __blockCleanups) { try { __c(); } catch {} }
-          for (const n of __nodes) n.remove();
-          __nodes = [];
-          __blockEffects = [];
-          __blockCleanups = [];
+          ${emitRunBlockEffects()}
+        }`
+      const catchMount = t.catchBody
+        ? `{
           const __frag = document.createDocumentFragment();
           {
             const __effects = __blockEffects;
             const __cleanups = __blockCleanups;
-            ${emitClientNodes(t.catchBody!, hash, '__frag', '__effects', inSvg)}
+            ${emitClientNodes(t.catchBody, hash, '__frag', '__effects', inSvg)}
           }
           let __insertBefore = ${id}.nextSibling;
           while (__frag.firstChild) {
             __nodes.push(__frag.firstChild);
             ${id}.parentNode.insertBefore(__frag.firstChild, __insertBefore);
           }
-          for (const fn of __blockEffects) fn();
-        }` : ''});
+          ${emitRunBlockEffects()}
+        }`
+        : ''
+      lines.push(`{
+        const ${id} = document.createComment('await');
+        ${parent}.appendChild(${id});
+        let __nodes = [];
+        let __blockEffects = [];
+        let __blockCleanups = [];
+        let __awaitGen = 0;
+        ${effectsVar}.push(() => {
+          const __g = ++__awaitGen;
+          for (const __c of __blockCleanups) { try { __c(); } catch {} }
+          for (const n of __nodes) n.remove();
+          __nodes = [];
+          __blockEffects = [];
+          __blockCleanups = [];
+          ${pendingMount}
+          Promise.resolve(${sigExpr(t.promise)}).then((${t.thenName}) => {
+            if (__g !== __awaitGen) return;
+            for (const __c of __blockCleanups) { try { __c(); } catch {} }
+            for (const n of __nodes) n.remove();
+            __nodes = [];
+            __blockEffects = [];
+            __blockCleanups = [];
+            ${thenMount}
+          }${t.catchBody ? `, (${t.catchName ?? 'error'}) => {
+            if (__g !== __awaitGen) return;
+            for (const __c of __blockCleanups) { try { __c(); } catch {} }
+            for (const n of __nodes) n.remove();
+            __nodes = [];
+            __blockEffects = [];
+            __blockCleanups = [];
+            ${catchMount}
+          }` : ''});
+        });
+        ${emitBlockDestroyCleanup('__blockCleanups', '__awaitGen')}
       }`)
     } else if (t.type === 'component') {
       const childrenVar = `${id}_children`
@@ -2097,7 +2320,7 @@ function emitClientNodes(
               `${jsLiteral(propKey)}: (...__a) => { const event = __a[0]; ${prelude} ${call} }`,
             )
           } else if (a.kind === 'expr') {
-            dynamicEntries.push(`${jsLiteral(a.name)}: (${a.value})`)
+            dynamicEntries.push(`${jsLiteral(a.name)}: (${sigExpr(a.value!)})`)
           } else if (a.value == null) {
             staticEntries.push(`${jsLiteral(a.name)}: true`)
           } else {
@@ -2147,7 +2370,7 @@ function emitClientNodes(
               `${jsLiteral(propKey)}: (...__a) => { const event = __a[0]; ${prelude} ${call} }`,
             )
           } else if (a.kind === 'expr') {
-            const entry = `${jsLiteral(a.name)}: (${a.value})`
+            const entry = `${jsLiteral(a.name)}: (${sigExpr(a.value!)})`
             pending.push(entry)
             pendingDynamic.push(entry)
           } else if (a.value == null) {
@@ -2163,9 +2386,18 @@ function emitClientNodes(
           `const ${instVar} = ${t.name}.mount(${parent}, Object.assign({}, ${initChunks.join(', ')}));`,
         )
         if (updateChunks.length > 0) {
-          sub.push(
-            `${effectsVar}.push(() => { ${instVar}.update(Object.assign({}, ${updateChunks.join(', ')})); });`,
-          )
+          sub.push(`{
+            let __spreadPrev = [];
+            ${effectsVar}.push(() => {
+              const __bag = Object.assign({}, ${updateChunks.join(', ')});
+              const __keys = Object.keys(__bag);
+              for (const __k of __spreadPrev) {
+                if (!Object.prototype.hasOwnProperty.call(__bag, __k)) __bag[__k] = undefined;
+              }
+              __spreadPrev = __keys;
+              ${instVar}.update(__bag);
+            });
+          }`)
         }
       }
       sub.push(`__cleanups.push(() => { ${instVar}.destroy(); });`)
@@ -2236,13 +2468,16 @@ function emitClientElement(
       const opts = emitEventListenerOptions(modifiers)
       const handler =
         a.value != null
-          ? `const __handler = (${a.value}); if (typeof __handler === 'function') __handler.call(this, event);`
+          ? `const __handler = (${sigExpr(a.value)}); if (typeof __handler === 'function') __handler.call(this, event);`
           : ''
       lines.push(
         `${id}.addEventListener(${jsLiteral(event)}, function(event){ ${prelude} ${handler} __invalidate(); }${opts});`,
       )
     } else if (a.kind === 'spread') {
-      lines.push(emitClientSpread(a, id, effectsVar))
+      const protectedKeys = rest
+        .filter((x) => x !== a && x.kind !== 'spread' && x.kind !== 'event' && x.kind !== 'use' && x.kind !== 'transition' && !x.name.startsWith('bind:'))
+        .map((x) => x.name)
+      lines.push(emitClientSpread(a, id, effectsVar, protectedKeys))
     } else if (a.kind === 'use') {
       lines.push(emitClientUseAction(a, id, effectsVar))
     } else if (a.kind === 'transition') {
@@ -2250,32 +2485,37 @@ function emitClientElement(
     } else if (a.kind === 'bind' && a.name === 'bind:value') {
       if (isNumericInput(el.attrs)) {
         lines.push(
-          `${effectsVar}.push(() => { ${id}.value = (${a.value}) == null || Number.isNaN(${a.value}) ? '' : String(${a.value}); });`,
+          `${effectsVar}.push(() => { const __v = ${emitBindRead(a.value!)}; ${id}.value = (__v) == null || Number.isNaN(__v) ? '' : String(__v); });`,
         )
         lines.push(
-          `${id}.addEventListener('input', () => { const __n = ${id}.valueAsNumber; ${a.value} = Number.isNaN(__n) ? undefined : __n; __invalidate(); });`,
+          `${id}.addEventListener('input', () => { const __n = ${id}.valueAsNumber; const __next = Number.isNaN(__n) ? undefined : __n; ${emitBindWrite(a.value!, '__next')} __invalidate(); });`,
         )
       } else if (el.tag.toLowerCase() === 'select' && isStaticMultiple(el.attrs)) {
         lines.push(`${effectsVar}.push(() => {
-          const __vals = Array.isArray(${a.value}) ? ${a.value} : [];
+          const __raw = ${emitBindRead(a.value!)};
+          const __vals = Array.isArray(__raw) ? __raw : [];
           for (const __opt of Array.from(${id}.options)) {
             __opt.selected = __vals.some((__v) => Object.is(__v, __opt.value));
           }
         });`)
         lines.push(
-          `${id}.addEventListener(${jsLiteral('change')}, () => { ${a.value} = Array.from(${id}.selectedOptions).map((__o) => __o.value); __invalidate(); });`,
+          `${id}.addEventListener(${jsLiteral('change')}, () => { const __next = Array.from(${id}.selectedOptions).map((__o) => __o.value); ${emitBindWrite(a.value!, '__next')} __invalidate(); });`,
         )
       } else {
-        lines.push(`${effectsVar}.push(() => { ${id}.value = ${a.value} ?? ''; });`)
+        lines.push(
+          `${effectsVar}.push(() => { const __v = ${emitBindRead(a.value!)}; ${id}.value = __v ?? ''; });`,
+        )
         const ev = el.tag.toLowerCase() === 'select' ? 'change' : 'input'
         lines.push(
-          `${id}.addEventListener(${jsLiteral(ev)}, () => { ${a.value} = ${id}.value; __invalidate(); });`,
+          `${id}.addEventListener(${jsLiteral(ev)}, () => { const __next = ${id}.value; ${emitBindWrite(a.value!, '__next')} __invalidate(); });`,
         )
       }
     } else if (a.kind === 'bind' && a.name === 'bind:checked') {
-      lines.push(`${effectsVar}.push(() => { ${id}.checked = !!(${a.value}); });`)
       lines.push(
-        `${id}.addEventListener('change', () => { ${a.value} = ${id}.checked; __invalidate(); });`,
+        `${effectsVar}.push(() => { ${id}.checked = !!(${emitBindRead(a.value!)}); });`,
+      )
+      lines.push(
+        `${id}.addEventListener('change', () => { const __next = ${id}.checked; ${emitBindWrite(a.value!, '__next')} __invalidate(); });`,
       )
     } else if (a.kind === 'bind' && a.name === 'bind:group') {
       lines.push(emitClientBindGroup(a.value!, id, el.attrs, effectsVar))
@@ -2284,7 +2524,7 @@ function emitClientElement(
       lines.push(`__cleanups.push(() => { ${a.value} = null; });`)
     } else if (a.kind === 'bind' && a.name === 'bind:files') {
       lines.push(
-        `${id}.addEventListener('change', () => { ${a.value} = ${id}.files; __invalidate(); });`,
+        `${id}.addEventListener('change', () => { const __next = ${id}.files; ${emitBindWrite(a.value!, '__next')} __invalidate(); });`,
       )
     } else if (
       a.kind === 'bind' &&
@@ -2300,83 +2540,84 @@ function emitClientElement(
       lines.push(emitClientSelectionBind(a, id, effectsVar))
     } else if (a.kind === 'bind' && a.name === 'bind:indeterminate') {
       lines.push(
-        `${effectsVar}.push(() => { ${id}.indeterminate = !!(${a.value}); });`,
+        `${effectsVar}.push(() => { ${id}.indeterminate = !!(${emitBindRead(a.value!)}); });`,
       )
     } else if (a.kind === 'bind' && a.name === 'bind:open') {
-      lines.push(`${effectsVar}.push(() => { ${id}.open = !!(${a.value}); });`)
+      lines.push(`${effectsVar}.push(() => { ${id}.open = !!(${emitBindRead(a.value!)}); });`)
       lines.push(
-        `${id}.addEventListener('toggle', () => { ${a.value} = ${id}.open; __invalidate(); });`,
+        `${id}.addEventListener('toggle', () => { const __next = ${id}.open; ${emitBindWrite(a.value!, '__next')} __invalidate(); });`,
       )
     } else if (a.kind === 'bind' && a.name === 'bind:muted') {
-      lines.push(`${effectsVar}.push(() => { ${id}.muted = !!(${a.value}); });`)
+      lines.push(`${effectsVar}.push(() => { ${id}.muted = !!(${emitBindRead(a.value!)}); });`)
       lines.push(
-        `${id}.addEventListener('volumechange', () => { ${a.value} = ${id}.muted; __invalidate(); });`,
+        `${id}.addEventListener('volumechange', () => { const __next = ${id}.muted; ${emitBindWrite(a.value!, '__next')} __invalidate(); });`,
       )
     } else if (a.kind === 'bind' && a.name === 'bind:paused') {
       lines.push(`{
         ${effectsVar}.push(() => {
-          const __wantPause = !!(${a.value});
+          const __wantPause = !!(${emitBindRead(a.value!)});
           if (__wantPause !== ${id}.paused) {
             if (__wantPause) ${id}.pause();
             else { const __p = ${id}.play(); if (__p && typeof __p.catch === 'function') __p.catch(() => {}); }
           }
         });
-        ${id}.addEventListener('play', () => { ${a.value} = false; __invalidate(); });
-        ${id}.addEventListener('pause', () => { ${a.value} = true; __invalidate(); });
+        ${id}.addEventListener('play', () => { ${emitBindWrite(a.value!, 'false')} __invalidate(); });
+        ${id}.addEventListener('pause', () => { ${emitBindWrite(a.value!, 'true')} __invalidate(); });
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:volume') {
       lines.push(`{
         ${effectsVar}.push(() => {
-          const __v = Number(${a.value});
+          const __v = Number(${emitBindRead(a.value!)});
           if (!Number.isNaN(__v) && ${id}.volume !== __v) ${id}.volume = Math.min(1, Math.max(0, __v));
         });
-        ${id}.addEventListener('volumechange', () => { ${a.value} = ${id}.volume; __invalidate(); });
+        ${id}.addEventListener('volumechange', () => { const __next = ${id}.volume; ${emitBindWrite(a.value!, '__next')} __invalidate(); });
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:currentTime') {
       lines.push(`{
         ${effectsVar}.push(() => {
-          const __t = Number(${a.value});
+          const __t = Number(${emitBindRead(a.value!)});
           if (!Number.isNaN(__t) && Math.abs(${id}.currentTime - __t) > 0.25) ${id}.currentTime = __t;
         });
-        ${id}.addEventListener('timeupdate', () => { ${a.value} = ${id}.currentTime; __invalidate(); });
-        ${id}.addEventListener('seeked', () => { ${a.value} = ${id}.currentTime; __invalidate(); });
+        ${id}.addEventListener('timeupdate', () => { const __next = ${id}.currentTime; ${emitBindWrite(a.value!, '__next')} __invalidate(); });
+        ${id}.addEventListener('seeked', () => { const __next = ${id}.currentTime; ${emitBindWrite(a.value!, '__next')} __invalidate(); });
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:playbackRate') {
       lines.push(`{
         ${effectsVar}.push(() => {
-          const __r = Number(${a.value});
+          const __r = Number(${emitBindRead(a.value!)});
           if (!Number.isNaN(__r) && ${id}.playbackRate !== __r) ${id}.playbackRate = __r;
         });
-        ${id}.addEventListener('ratechange', () => { ${a.value} = ${id}.playbackRate; __invalidate(); });
+        ${id}.addEventListener('ratechange', () => { const __next = ${id}.playbackRate; ${emitBindWrite(a.value!, '__next')} __invalidate(); });
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:duration') {
       lines.push(`{
-        const __setDur = () => { ${a.value} = ${id}.duration; __invalidate(); };
+        const __setDur = () => { const __next = ${id}.duration; ${emitBindWrite(a.value!, '__next')} __invalidate(); };
         __setDur();
         ${id}.addEventListener('durationchange', __setDur);
         ${id}.addEventListener('loadedmetadata', __setDur);
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:ended') {
       lines.push(`{
-        const __setEnded = () => { ${a.value} = !!${id}.ended; __invalidate(); };
+        const __setEnded = () => { const __next = !!${id}.ended; ${emitBindWrite(a.value!, '__next')} __invalidate(); };
         __setEnded();
-        ${id}.addEventListener('ended', () => { ${a.value} = true; __invalidate(); });
+        ${id}.addEventListener('ended', () => { ${emitBindWrite(a.value!, 'true')} __invalidate(); });
         ${id}.addEventListener('play', __setEnded);
         ${id}.addEventListener('seeked', __setEnded);
         ${id}.addEventListener('timeupdate', __setEnded);
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:seeking') {
       lines.push(`{
-        ${a.value} = !!${id}.seeking; __invalidate();
-        ${id}.addEventListener('seeking', () => { ${a.value} = true; __invalidate(); });
-        ${id}.addEventListener('seeked', () => { ${a.value} = false; __invalidate(); });
+        { const __next = !!${id}.seeking; ${emitBindWrite(a.value!, '__next')} __invalidate(); }
+        ${id}.addEventListener('seeking', () => { ${emitBindWrite(a.value!, 'true')} __invalidate(); });
+        ${id}.addEventListener('seeked', () => { ${emitBindWrite(a.value!, 'false')} __invalidate(); });
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:played') {
       lines.push(`{
         const __setPlayed = () => {
           const __p = ${id}.played;
           const __v = __p.length ? __p.end(__p.length - 1) : 0;
-          ${a.value} = Number.isFinite(__v) ? __v : 0;
+          const __next = Number.isFinite(__v) ? __v : 0;
+          ${emitBindWrite(a.value!, '__next')}
           __invalidate();
         };
         __setPlayed();
@@ -2390,7 +2631,8 @@ function emitClientElement(
         const __setBuffered = () => {
           const __b = ${id}.buffered;
           const __v = __b.length ? __b.end(__b.length - 1) : 0;
-          ${a.value} = Number.isFinite(__v) ? __v : 0;
+          const __next = Number.isFinite(__v) ? __v : 0;
+          ${emitBindWrite(a.value!, '__next')}
           __invalidate();
         };
         __setBuffered();
@@ -2403,7 +2645,8 @@ function emitClientElement(
         const __setSeekable = () => {
           const __s = ${id}.seekable;
           const __v = __s.length ? __s.end(__s.length - 1) : 0;
-          ${a.value} = Number.isFinite(__v) ? __v : 0;
+          const __next = Number.isFinite(__v) ? __v : 0;
+          ${emitBindWrite(a.value!, '__next')}
           __invalidate();
         };
         __setSeekable();
@@ -2413,7 +2656,7 @@ function emitClientElement(
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:readyState') {
       lines.push(`{
-        const __setReady = () => { ${a.value} = ${id}.readyState; __invalidate(); };
+        const __setReady = () => { const __next = ${id}.readyState; ${emitBindWrite(a.value!, '__next')} __invalidate(); };
         __setReady();
         ${id}.addEventListener('loadstart', __setReady);
         ${id}.addEventListener('loadedmetadata', __setReady);
@@ -2424,7 +2667,7 @@ function emitClientElement(
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:networkState') {
       lines.push(`{
-        const __setNet = () => { ${a.value} = ${id}.networkState; __invalidate(); };
+        const __setNet = () => { const __next = ${id}.networkState; ${emitBindWrite(a.value!, '__next')} __invalidate(); };
         __setNet();
         ${id}.addEventListener('loadstart', __setNet);
         ${id}.addEventListener('progress', __setNet);
@@ -2437,7 +2680,7 @@ function emitClientElement(
     } else if (a.kind === 'bind' && (a.name === 'bind:videoWidth' || a.name === 'bind:videoHeight')) {
       const prop = a.name === 'bind:videoWidth' ? 'videoWidth' : 'videoHeight'
       lines.push(`{
-        const __setDim = () => { ${a.value} = ${id}.${prop}; __invalidate(); };
+        const __setDim = () => { const __next = ${id}.${prop}; ${emitBindWrite(a.value!, '__next')} __invalidate(); };
         __setDim();
         ${id}.addEventListener('loadedmetadata', __setDim);
         ${id}.addEventListener('resize', __setDim);
@@ -2446,7 +2689,7 @@ function emitClientElement(
     } else if (a.kind === 'bind' && (a.name === 'bind:naturalWidth' || a.name === 'bind:naturalHeight')) {
       const prop = a.name === 'bind:naturalWidth' ? 'naturalWidth' : 'naturalHeight'
       lines.push(`{
-        const __setNat = () => { ${a.value} = ${id}.${prop}; __invalidate(); };
+        const __setNat = () => { const __next = ${id}.${prop}; ${emitBindWrite(a.value!, '__next')} __invalidate(); };
         __setNat();
         ${id}.addEventListener('load', __setNat);
         ${id}.addEventListener('error', __setNat);
@@ -2454,18 +2697,18 @@ function emitClientElement(
     } else if (a.kind === 'bind' && a.name === 'bind:textContent') {
       lines.push(`{
         ${effectsVar}.push(() => {
-          const __t = (${a.value}) ?? '';
+          const __t = (${emitBindRead(a.value!)}) ?? '';
           if (${id}.textContent !== __t) ${id}.textContent = __t;
         });
-        ${id}.addEventListener('input', () => { ${a.value} = ${id}.textContent; __invalidate(); });
+        ${id}.addEventListener('input', () => { const __next = ${id}.textContent; ${emitBindWrite(a.value!, '__next')} __invalidate(); });
       }`)
     } else if (a.kind === 'bind' && a.name === 'bind:innerText') {
       lines.push(`{
         ${effectsVar}.push(() => {
-          const __t = (${a.value}) ?? '';
+          const __t = (${emitBindRead(a.value!)}) ?? '';
           if (${id}.innerText !== __t) ${id}.innerText = __t;
         });
-        ${id}.addEventListener('input', () => { ${a.value} = ${id}.innerText; __invalidate(); });
+        ${id}.addEventListener('input', () => { const __next = ${id}.innerText; ${emitBindWrite(a.value!, '__next')} __invalidate(); });
       }`)
     } else if (/^on[a-z]/i.test(a.name)) {
       // Ignore HTML event attributes; use on:click instead.
@@ -2475,11 +2718,11 @@ function emitClientElement(
         const prop = a.name.toLowerCase()
         // Prefer IDL boolean properties when present (disabled, hidden, …).
         lines.push(
-          `${effectsVar}.push(() => { if ('${prop}' in ${id}) ${id}.${prop} = !!(${a.value}); else if (${a.value}) ${id}.setAttribute(${jsLiteral(a.name)}, ''); else ${id}.removeAttribute(${jsLiteral(a.name)}); });`,
+          `${effectsVar}.push(() => { const __v = !!(${sigExpr(a.value!)}); if ('${prop}' in ${id}) ${id}.${prop} = __v; else if (__v) ${id}.setAttribute(${jsLiteral(a.name)}, ''); else ${id}.removeAttribute(${jsLiteral(a.name)}); });`,
         )
       } else {
         lines.push(
-          `${effectsVar}.push(() => { ${id}.setAttribute(${jsLiteral(a.name)}, (${a.value}) ?? ''); });`,
+          `${effectsVar}.push(() => { ${id}.setAttribute(${jsLiteral(a.name)}, (${sigExpr(a.value!)}) ?? ''); });`,
         )
       }
     } else if (a.value == null) {
@@ -2528,7 +2771,7 @@ function emitClientUseAction(a: Attr, id: string, effectsVar: string): string {
 function emitClientDimensionBind(a: Attr, id: string): string {
   const prop = a.name.slice('bind:'.length)
   return `{
-    const __setDim = () => { ${a.value} = ${id}.${prop}; __invalidate(); };
+    const __setDim = () => { const __next = ${id}.${prop}; ${emitBindWrite(a.value!, '__next')} __invalidate(); };
     __setDim();
     if (typeof ResizeObserver !== 'undefined') {
       const __ro = new ResizeObserver(__setDim);
@@ -2543,10 +2786,10 @@ function emitClientScrollBind(a: Attr, id: string, effectsVar: string): string {
   const prop = a.name.slice('bind:'.length)
   return `{
     ${effectsVar}.push(() => {
-      const __v = Number(${a.value}) || 0;
+      const __v = Number(${emitBindRead(a.value!)}) || 0;
       if (${id}.${prop} !== __v) ${id}.${prop} = __v;
     });
-    ${id}.addEventListener('scroll', () => { ${a.value} = ${id}.${prop}; __invalidate(); }, { passive: true });
+    ${id}.addEventListener('scroll', () => { const __next = ${id}.${prop}; ${emitBindWrite(a.value!, '__next')} __invalidate(); }, { passive: true });
   }`
 }
 
@@ -2555,7 +2798,7 @@ function emitClientSelectionBind(a: Attr, id: string, effectsVar: string): strin
   const prop = a.name.slice('bind:'.length)
   return `{
     ${effectsVar}.push(() => {
-      const __v = Number(${a.value});
+      const __v = Number(${emitBindRead(a.value!)});
       if (Number.isNaN(__v)) return;
       try {
         if (${id}.${prop} !== __v) ${id}.${prop} = __v;
@@ -2564,8 +2807,8 @@ function emitClientSelectionBind(a: Attr, id: string, effectsVar: string): strin
     const __syncSel = () => {
       try {
         const __n = ${id}.${prop};
-        if (typeof __n === 'number' && ${a.value} !== __n) {
-          ${a.value} = __n;
+        if (typeof __n === 'number') {
+          ${emitBindWrite(a.value!, '__n')}
           __invalidate();
         }
       } catch (_) {}
@@ -2636,7 +2879,52 @@ function parseTransitionDirective(attrName: string): {
 
 /** Client-only `transition:` / `in:` / `out:` — fade, fly, slide, slideX, scale, blur, draw, spin, pop, bounce, drop, shake, flip, pulse, wipe, skew, roll, zoom. */
 function emitClientTransition(a: Attr, id: string): string {
-  const opts = a.value != null ? `(${a.value})` : 'null'
+  const body = emitClientTransitionBody(a, id)
+  const { mode } = parseTransitionDirective(a.name)
+  const doOut = mode === 'both' || mode === 'out'
+  // Snapshot authored inline styles and restore after intro/outro so transitions
+  // don't permanently leave identity transforms / transition props on the node.
+  return `{
+    const __ss = ${id}.style;
+    const __snap = {
+      opacity: __ss.opacity,
+      transform: __ss.transform,
+      filter: __ss.filter,
+      height: __ss.height,
+      width: __ss.width,
+      overflow: __ss.overflow,
+      transition: __ss.transition,
+      clipPath: __ss.clipPath,
+    };
+    const __restoreIdle = () => {
+      __ss.transition = __snap.transition;
+      if (!__snap.transform) __ss.transform = '';
+      if (!__snap.filter) __ss.filter = '';
+      if (!__snap.overflow) __ss.overflow = '';
+      if (!__snap.clipPath) __ss.clipPath = '';
+      if (!__snap.height) __ss.height = '';
+      if (!__snap.width) __ss.width = '';
+      if (!__snap.opacity && (__ss.opacity === '1' || __ss.opacity === '0')) __ss.opacity = '';
+    };
+    ${body.replace(/^\{/, '').replace(/\}$/, '')}
+    if (typeof __dur === 'number') {
+      setTimeout(__restoreIdle, __dur + (typeof __delay === 'number' ? __delay : 0) + 80);
+    }
+    ${
+      doOut
+        ? `if (typeof ${id}.__avedonOutro === 'function') {
+      const __prevOutro = ${id}.__avedonOutro;
+      ${id}.__avedonOutro = (done) => {
+        __prevOutro(() => { __restoreIdle(); done(); });
+      };
+    }`
+        : ''
+    }
+  }`
+}
+
+function emitClientTransitionBody(a: Attr, id: string): string {
+  const opts = a.value != null ? `(${sigExpr(a.value)})` : 'null'
   const { mode, type } = parseTransitionDirective(a.name)
   const doIn = mode === 'both' || mode === 'in'
   const doOut = mode === 'both' || mode === 'out'

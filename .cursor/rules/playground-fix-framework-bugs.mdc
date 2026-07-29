@@ -1,0 +1,32 @@
+---
+description: Playground work — fix framework bugs instead of workarounds
+globs: apps/www/src/playground/**/*,apps/www/src/pages/Playground.ave,apps/www/scripts/build-playground-runtime.mjs
+alwaysApply: false
+---
+
+# Playground: fix framework bugs, don't paper over them
+
+The www playground is a dogfood surface for `@avedon/*`. When something fails or looks wrong while building or using it, ask: **is this a framework bug?**
+
+## Do
+
+- If the compiler, runtime, server, or vite-plugin is wrong → **fix that package**, add a unit/Playwright test, then use the fixed behavior in the playground.
+- Prefer a real API (`:global` semantics, signal unwrap, scoped CSS for dynamic nodes, etc.) over a playground-only hack.
+- Record the fix briefly in `memories.md` when it is a non-obvious framework gap.
+
+## Don't
+
+- Don't special-case the playground to hide a general bug (extra `unscoped` dumps, manual DOM patches, duplicated compile paths) when the right fix belongs in `packages/*`.
+- Don't silently swallow compile/runtime errors in the playground runner without fixing the underlying issue when it is reproducible outside the REPL.
+
+## Examples
+
+```text
+❌ BAD — scoped CSS never matches CodeMirror (runtime DOM) → only set setSize in playground
+✅ GOOD — fix scoping / :global descendant behavior (or document + fix), then style normally
+
+❌ BAD — signal assign `count = count + 1` broken → rewrite all presets to `.set()`
+✅ GOOD — fix signal-script transform in `@avedon/compiler`, keep presets idiomatic
+```
+
+When unsure whether it is a framework bug: reproduce with a minimal `.ave` outside the playground (unit test or basic-app lab). If it fails there too, fix the framework.

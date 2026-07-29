@@ -39,20 +39,20 @@ export async function createSession(
     },
     set(next: Record<string, unknown>) {
       data = next
-      cookies.pending.push(
-        (async () => {
-          const sealed = await sealPayload(next, options.secret, maxAge)
-          assertCookieValueSize(sealed)
-          cookies.set(name, sealed, {
-            maxAge,
-            httpOnly: true,
-            sameSite: 'lax',
-            path: '/',
-            secure: url.protocol === 'https:',
-            ...cookieDefaults,
-          })
-        })(),
-      )
+      const prev = cookies.pending[cookies.pending.length - 1] ?? Promise.resolve()
+      const write = prev.then(async () => {
+        const sealed = await sealPayload(next, options.secret, maxAge)
+        assertCookieValueSize(sealed)
+        cookies.set(name, sealed, {
+          maxAge,
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: url.protocol === 'https:',
+          ...cookieDefaults,
+        })
+      })
+      cookies.pending.push(write)
     },
     destroy() {
       data = null

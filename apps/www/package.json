@@ -4,9 +4,9 @@
   "type": "module",
   "scripts": {
     "generate": "node ./scripts/generate-docs.mjs",
-    "predev": "pnpm run generate",
+    "predev": "pnpm run generate && node ./scripts/build-playground-runtime.mjs",
     "dev": "avedon dev",
-    "prebuild": "pnpm run generate",
+    "prebuild": "pnpm run generate && node ./scripts/build-playground-runtime.mjs",
     "build": "avedon build",
     "pages:deploy": "wrangler pages deploy ./build/client --project-name=avedon --branch=main --commit-dirty=true",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -14,14 +14,18 @@
   },
   "dependencies": {
     "@avedon/adapter-node": "workspace:*",
+    "@avedon/compiler": "workspace:*",
     "@avedon/runtime": "workspace:*",
     "@avedon/server": "workspace:*",
     "@avedon/vite-plugin": "workspace:*",
     "avedon": "workspace:*",
+    "codemirror": "^5.65.16",
     "marked": "^15.0.12",
     "shiki": "^4.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/browser": "4.1.11",
+    "esbuild": "^0.25.0",
     "typescript": "^5.8.2",
     "vite": "^6.2.2",
     "wrangler": "^4.113.0"

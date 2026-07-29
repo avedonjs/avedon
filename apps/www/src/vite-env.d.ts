@@ -1,5 +1,15 @@
 /// <reference types="vite/client" />
 
+declare module '*.worker.ts?worker' {
+  const WorkerFactory: new () => Worker
+  export default WorkerFactory
+}
+
+declare module '*?url' {
+  const url: string
+  export default url
+}
+
 /**
  * Fallback when sibling `*.ave.d.ts` files are absent.
  * Those siblings are gitignored and written by `@avedon/vite-plugin` during

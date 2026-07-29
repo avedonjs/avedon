@@ -1,0 +1,584 @@
+<script lang="ts">
+  import { onDestroy, signal } from '@avedon/runtime'
+  import { PlaygroundRunner } from '../playground/runner.js'
+  import 'codemirror/lib/codemirror.css'
+  import 'codemirror/theme/material-darker.css'
+  import {
+    getPreset,
+    playgroundPresets,
+    resolvePresetSource,
+  } from '../playground/presets.js'
+
+  type PresetCategory = 'Basics' | 'Reactivity' | 'Forms' | 'Directives' | 'Server'
+
+  const STORAGE_KEY = 'avedon-playground-draft'
+  const categories: PresetCategory[] = [
+    'Basics',
+    'Reactivity',
+    'Forms',
+    'Directives',
+    'Server',
+  ]
+
+  const presetId = signal(readPresetFromUrl())
+  const source = signal(loadInitialSource())
+  const compileError = signal('')
+  const status = signal<'idle' | 'running' | 'ready'>('idle')
+  const dirty = signal(false)
+
+  let runner: PlaygroundRunner | null = null
+  let iframeEl: HTMLIFrameElement | null = null
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  let codeMirror: any = null
+  let editorSyncing = false
+  let avedonModeDefined = false
+
+  function syncEditorValue(value: string) {
+    if (!codeMirror) return
+    editorSyncing = true
+    codeMirror.setValue(value)
+    editorSyncing = false
+  }
+
+  function onEditorValueChanged(value: string) {
+    source.set(value)
+    dirty.set(true)
+    compileError.set('')
+    localStorage.setItem(STORAGE_KEY, value)
+    scheduleRun()
+  }
+
+  function codeEditorHost(node: Element) {
+    const el = node as HTMLElement
+    if (typeof window === 'undefined') return
+
+    // Avoid re-init if the action runs twice.
+    if (codeMirror) return
+
+    void (async () => {
+      // Codemirror JS, `document` beklediği için sadece client’ta import ediyoruz.
+      const mod = await import('codemirror')
+      const CM = (mod as any).default ?? (mod as any)
+      await Promise.all([
+        import('codemirror/mode/javascript/javascript'),
+        import('codemirror/mode/css/css'),
+        import('codemirror/mode/htmlmixed/htmlmixed'),
+      ])
+
+      if (!avedonModeDefined) {
+        CM.defineMode('avedon', (config: any) => {
+          const js = CM.getMode(config, 'javascript')
+          const css = CM.getMode(config, 'css')
+          const html = CM.getMode(config, 'htmlmixed')
+
+          function modeFor(section: string) {
+            if (section === 'script') return js
+            if (section === 'style') return css
+            return html
+          }
+
+          return {
+            startState() {
+              return { section: 'html', innerState: html.startState ? html.startState() : {} }
+            },
+            copyState(state: any) {
+              const m = modeFor(state.section)
+              const innerState = CM.copyState ? CM.copyState(m, state.innerState) : state.innerState
+              return { section: state.section, innerState }
+            },
+            token(stream: any, state: any) {
+              // Highlight Avedon control blocks: {#if ...}, {:else ...}, {/if}, {@const ...}
+              if (stream.peek() === '{') {
+                if (stream.match(/^\{[#/:@][^}]*\}/)) return 'meta'
+              }
+
+              if (state.section === 'script') {
+                if (stream.match(/^<\/script\s*>/i)) {
+                  state.section = 'html'
+                  state.innerState = html.startState ? html.startState() : {}
+                  return 'tag'
+                }
+                const m = js
+                return m.token(stream, state.innerState)
+              }
+
+              if (state.section === 'style') {
+                if (stream.match(/^<\/style\s*>/i)) {
+                  state.section = 'html'
+                  state.innerState = html.startState ? html.startState() : {}
+                  return 'tag'
+                }
+                const m = css
+                return m.token(stream, state.innerState)
+              }
+
+              // Outside of <script>/<style>: detect section open tags.
+              if (stream.match(/^<script\b[^>]*>/i)) {
+                state.section = 'script'
+                state.innerState = js.startState ? js.startState() : {}
+                return 'tag'
+              }
+              if (stream.match(/^<style\b[^>]*>/i)) {
+                state.section = 'style'
+                state.innerState = css.startState ? css.startState() : {}
+                return 'tag'
+              }
+
+              const m = html
+              return m.token(stream, state.innerState)
+            },
+            blankLine(state: any) {
+              const m = modeFor(state.section)
+              if (m.blankLine) return m.blankLine(state.innerState)
+              return null
+            },
+          }
+        })
+        avedonModeDefined = true
+      }
+
+      editorSyncing = true
+      codeMirror = CM(el, {
+        value: source.get(),
+        lineNumbers: true,
+        mode: 'avedon',
+        theme: 'material-darker',
+      })
+      editorSyncing = false
+      codeMirror.setSize('100%', '100%')
+      requestAnimationFrame(() => codeMirror?.refresh?.())
+
+      codeMirror.on('change', () => {
+        if (editorSyncing) return
+        const value = codeMirror.getValue()
+        onEditorValueChanged(value)
+      })
+    })()
+
+    return {
+      destroy() {
+        if (codeMirror) {
+          const wrapper = codeMirror.getWrapperElement?.()
+          wrapper?.remove?.()
+        }
+        codeMirror = null
+      },
+    }
+  }
+
+  function readPresetFromUrl(): string {
+    if (typeof window === 'undefined') return 'counter'
+    const id = new URL(window.location.href).searchParams.get('e')
+    return id && getPreset(id) ? id : 'counter'
+  }
+
+  function loadInitialSource(): string {
+    if (typeof window === 'undefined') {
+      return resolvePresetSource(getPreset('counter')!)
+    }
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) return saved
+    const preset = getPreset(readPresetFromUrl())
+    return preset ? resolvePresetSource(preset) : ''
+  }
+
+  function presetsFor(category: PresetCategory) {
+    return playgroundPresets.filter((p) => p.category === category)
+  }
+
+  function selectPreset(preset: (typeof playgroundPresets)[number]) {
+    if (dirty.get() && !confirm('Discard edits and load this example?')) return
+    presetId.set(preset.id)
+    const next = resolvePresetSource(preset)
+    source.set(next)
+    if (typeof window !== 'undefined' && codeMirror) syncEditorValue(next)
+    dirty.set(false)
+    compileError.set('')
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('e', preset.id)
+      history.replaceState({}, '', url.pathname + url.search)
+      localStorage.removeItem(STORAGE_KEY)
+    }
+    scheduleRun()
+  }
+
+  function resetPreset() {
+    const preset = getPreset(presetId.get())
+    if (!preset) return
+    const next = resolvePresetSource(preset)
+    source.set(next)
+    if (typeof window !== 'undefined' && codeMirror) syncEditorValue(next)
+    dirty.set(false)
+    compileError.set('')
+    localStorage.removeItem(STORAGE_KEY)
+    scheduleRun()
+  }
+
+  function onSourceInput(e: Event) {
+    const value = (e.target as HTMLTextAreaElement).value
+    source.set(value)
+    dirty.set(true)
+    compileError.set('')
+    localStorage.setItem(STORAGE_KEY, value)
+    scheduleRun()
+  }
+
+  function scheduleRun() {
+    status.set('running')
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => void runPreview(), 320)
+  }
+
+  async function runPreview() {
+    if (!runner) return
+    const result = await runner.run(source.get())
+    compileError.set(result.error ?? '')
+    status.set(result.error ? 'idle' : 'ready')
+  }
+
+  function previewHost(node: Element) {
+    const el = node as HTMLIFrameElement
+    iframeEl = el
+    runner = new PlaygroundRunner()
+    runner.attach(el)
+    void runPreview()
+    return {
+      destroy() {
+        runner?.detach()
+        runner = null
+        iframeEl = null
+      },
+    }
+  }
+
+  onDestroy(() => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    runner?.detach()
+  })
+</script>
+
+<script server>
+  export async function load() {
+    return {
+      head: {
+        title: 'Playground — avedon',
+        description:
+          'Edit .ave components in the browser with live preview, preset examples, and mock load/actions.',
+      },
+    }
+  }
+</script>
+
+<style unscoped>
+  /* Page-local .pg-* classes; unscoped so runtime CodeMirror nodes can be styled. */
+  .pg {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(11rem, 14rem) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    border-top: 1px solid var(--line);
+  }
+
+  .pg-side {
+    border-right: 1px solid var(--line);
+    padding: 1rem 0.75rem 1.5rem;
+    overflow: auto;
+    min-height: 0;
+  }
+
+  .pg-side h2 {
+    margin: 0 0 0.75rem;
+    padding: 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .pg-cat {
+    margin-bottom: 1rem;
+  }
+
+  .pg-cat h3 {
+    margin: 0 0 0.35rem;
+    padding: 0 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #71717a;
+  }
+
+  .pg-cat button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 0.45rem 0.5rem;
+    border-radius: 0.35rem;
+    cursor: pointer;
+  }
+
+  .pg-cat button:hover {
+    color: var(--fg);
+    background: rgba(250, 250, 250, 0.04);
+  }
+
+  .pg-cat button.active {
+    color: var(--accent);
+    background: rgba(34, 211, 238, 0.08);
+  }
+
+  .pg-editor {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid var(--line);
+  }
+
+  .pg-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    background: #0c0c0e;
+  }
+
+  .pg-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.85rem;
+    color: var(--muted);
+    flex: 0 0 auto;
+  }
+
+  .pg-window-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+  }
+
+  .pg-window-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pg-window-dots {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  .pg-window-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    display: inline-block;
+  }
+
+  .pg-window-dot-red {
+    background: #f87171;
+  }
+
+  .pg-window-dot-yellow {
+    background: #fbbf24;
+  }
+
+  .pg-window-dot-green {
+    background: #34d399;
+  }
+
+  .pg-toolbar-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .pg-toolbar button {
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--fg);
+    border-radius: 0.35rem;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
+  }
+
+  .pg-toolbar button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .pg-textarea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 0;
+    background: #0c0c0e;
+  }
+
+  .pg-textarea .CodeMirror {
+    height: 100% !important;
+    flex: 1;
+    width: 100%;
+    background: #0c0c0e;
+    color: #e4e4e7;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    border-radius: 0;
+  }
+
+  .pg-textarea .CodeMirror-scroll,
+  .pg-textarea .CodeMirror-gutters {
+    background: #0c0c0e;
+  }
+
+  .pg-textarea .CodeMirror-scroll {
+    min-height: 100%;
+  }
+
+  .pg-preview {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: #0c0c0e;
+  }
+
+  .pg-preview-head {
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.85rem;
+    color: var(--muted);
+    flex: 0 0 auto;
+  }
+
+  .pg-error {
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.8rem;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.08);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+    white-space: pre-wrap;
+    flex: 0 0 auto;
+  }
+
+  .pg-frame {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: none;
+    background: #09090b;
+  }
+
+  @media (max-width: 960px) {
+    .pg {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(18rem, 1fr) 20rem;
+      height: auto;
+      min-height: calc(100vh - 4rem);
+    }
+
+    .pg-side {
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      max-height: 12rem;
+    }
+
+    .pg-editor {
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+</style>
+
+<template>
+  <div class="pg" data-playground>
+    <aside class="pg-side" aria-label="Examples">
+      <h2>Examples</h2>
+      {#each categories as category}
+        <div class="pg-cat">
+          <h3>{category}</h3>
+          {#each presetsFor(category) as preset}
+            <button
+              type="button"
+              class={presetId.get() === preset.id ? 'active' : ''}
+              on:click={() => selectPreset(preset)}
+            >
+              {preset.title}
+            </button>
+          {/each}
+        </div>
+      {/each}
+    </aside>
+
+    <section class="pg-editor" aria-label="Editor">
+      <div class="pg-window">
+        <div class="pg-toolbar">
+          <div class="pg-window-left">
+            <div class="pg-window-dots" aria-hidden="true">
+              <span class="pg-window-dot pg-window-dot-red"></span>
+              <span class="pg-window-dot pg-window-dot-yellow"></span>
+              <span class="pg-window-dot pg-window-dot-green"></span>
+            </div>
+            <span class="pg-window-title">
+              {#if status.get() === 'running'}
+                Compiling…
+              {:else if dirty.get()}
+                Edited
+              {:else}
+                {getPreset(presetId.get())?.description ?? 'Playground'}
+              {/if}
+            </span>
+          </div>
+          <div class="pg-toolbar-actions">
+            <button type="button" on:click={resetPreset}>Reset</button>
+            <button type="button" on:click={scheduleRun}>Run</button>
+          </div>
+        </div>
+        <div class="pg-textarea" aria-label="Avedon source" use:codeEditorHost></div>
+      </div>
+    </section>
+
+    <section class="pg-preview" aria-label="Preview">
+      <div class="pg-preview-head">Preview</div>
+      {#if compileError.get()}
+        <pre class="pg-error">{compileError.get()}</pre>
+      {/if}
+      <iframe
+        class="pg-frame"
+        title="Playground preview"
+        sandbox="allow-scripts allow-forms"
+        use:previewHost
+      ></iframe>
+    </section>
+  </div>
+</template>

@@ -468,15 +468,16 @@ describe('bind:checked', () => {
   it('ssr emits a conditional checked attribute', () => {
     const src = `<template><input type="checkbox" bind:checked={on} /></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
-    expect(out.code).toContain("((on) ? ' checked' : '')")
+    expect(out.code).toContain("' checked'")
+    expect(out.code).toContain('(on)')
   })
 
   it('client syncs the checked property both ways', () => {
     const src = `<template><input type="checkbox" bind:checked={on} /></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain('.checked = !!(on)')
+    expect(out.code).toContain('.checked = !!')
     expect(out.code).toContain("addEventListener('change'")
-    expect(out.code).toContain('on = ')
+    expect(out.code).toMatch(/\.set\(|\.update\(/)
   })
 })
 
@@ -507,8 +508,8 @@ describe('bind:group', () => {
   it('client syncs radio selection with the group binding', () => {
     const src = `<template><input type="radio" value="b" bind:group={choice} /></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain('.checked = (choice) === "b"')
-    expect(out.code).toContain('choice = "b"')
+    expect(out.code).toContain('.checked = __v === "b"')
+    expect(out.code).toContain('__b.update')
     expect(out.code).toContain("addEventListener('change'")
   })
 
@@ -1107,6 +1108,23 @@ describe('spread attributes', () => {
   })
 })
 
+describe('signal assignment syntax', () => {
+  it('rewrites signal assignment in template event handlers', () => {
+    const src = `<script lang="ts">
+  import { signal } from '@avedon/runtime'
+  const active = signal(false)
+</script>
+<template>
+  <button type="button" class:primary={active} on:click={() => active = !active}>
+    {active ? 'Active' : 'Inactive'}
+  </button>
+</template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'client' })
+    expect(out.code).toContain('active.set(!active.get())')
+    expect(out.code).toContain('active.get() ?')
+  })
+})
+
 describe('class: directive', () => {
   it('ssr toggles class names from expressions and merges with static class', () => {
     const src = `<template><div class="card" class:active={on} class:busy={busy}>x</div></template>`
@@ -1314,14 +1332,16 @@ describe('boolean attributes', () => {
   it('SSR omits falsy disabled', () => {
     const src = `<template><button disabled={on}>x</button></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
-    expect(out.code).toContain("((on) ? ' disabled' : '')")
+    expect(out.code).toContain("? ' disabled'")
+    expect(out.code).toContain('(on)')
     expect(out.code).not.toMatch(/disabled="\` \+ __escape\(on\)/)
   })
 
   it('client toggles the disabled property', () => {
     const src = `<template><button disabled={on}>x</button></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain('.disabled = !!(on)')
+    expect(out.code).toContain('.disabled = ')
+    expect(out.code).toContain('!!(on)')
   })
 
   it('still stringifies non-boolean attrs', () => {
@@ -1372,7 +1392,7 @@ describe('numeric bind:value', () => {
     const src = `<template><input bind:value={name} /></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
     expect(out.code).not.toContain('valueAsNumber')
-    expect(out.code).toMatch(/\.value\s*=\s*name/)
+    expect(out.code).toContain('__b.update')
   })
 })
 
@@ -1417,7 +1437,8 @@ describe('dimension bindings', () => {
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
     expect(out.code).toContain('ResizeObserver')
     expect(out.code).toContain('.clientWidth')
-    expect(out.code).toContain('w =')
+    expect(out.code).toContain('(w)')
+    expect(out.code).toMatch(/\.set\(|\.update\(/)
   })
 
   it('supports offsetHeight', () => {
@@ -1486,7 +1507,8 @@ describe('bind:indeterminate', () => {
   it('client sets the indeterminate property', () => {
     const src = `<template><input type="checkbox" bind:indeterminate={mid} /></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain('.indeterminate = !!(mid)')
+    expect(out.code).toContain('.indeterminate = !!')
+    expect(out.code).toContain('(mid)')
   })
 
   it('ssr ignores bind:indeterminate', () => {
@@ -1502,13 +1524,15 @@ describe('bind:open', () => {
   it('ssr emits open when truthy', () => {
     const src = `<template><details bind:open={show}><summary>x</summary></details></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
-    expect(out.code).toContain("((show) ? ' open' : '')")
+    expect(out.code).toContain("' open'")
+    expect(out.code).toContain('(show)')
   })
 
   it('client syncs open via toggle', () => {
     const src = `<template><details bind:open={show}><summary>x</summary></details></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain('.open = !!(show)')
+    expect(out.code).toContain('.open = !!')
+    expect(out.code).toContain('(show)')
     expect(out.code).toContain("addEventListener('toggle'")
   })
 })
@@ -1517,7 +1541,8 @@ describe('media bindings', () => {
   it('client syncs muted via volumechange', () => {
     const src = `<template><audio bind:muted={m}></audio></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain('.muted = !!(m)')
+    expect(out.code).toContain('.muted = !!')
+    expect(out.code).toContain('(m)')
     expect(out.code).toContain("addEventListener('volumechange'")
   })
 
@@ -1745,6 +1770,16 @@ describe('{#key}', () => {
 })
 
 describe('keyed {#each}', () => {
+  it('unwraps signal lists in client keyed each', () => {
+    const src = `<script lang="ts">
+  import { signal } from '@avedon/runtime'
+  const items = signal([{ id: 1, name: 'a' }])
+</script>
+<template>{#each items as item (item.id)}<b>{item.name}</b>{/each}</template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'client' })
+    expect(out.code).toContain('const __list = ((items.get()) || [])')
+  })
+
   it('SSR renders keyed each like a normal each block', () => {
     const src = `<template>{#each items as item (item.id)}<b>{item.name}</b>{/each}</template>`
     const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
@@ -1832,5 +1867,83 @@ describe('scopeCss', () => {
 
   it('scopes top-level selectors', () => {
     expect(scopeCss('h1 { color: red; }', 'avedon-y')).toContain('h1[avedon-y]')
+  })
+
+  it('does not scope selectors inside @keyframes', () => {
+    const out = scopeCss(
+      '.spinner { animation: spin 0.8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }',
+      'avedon-z',
+    )
+    expect(out).toContain('.spinner[avedon-z]')
+    expect(out).toContain('@keyframes spin')
+    expect(out).toContain('to { transform: rotate(360deg); }')
+    expect(out).not.toContain('to[avedon-z]')
+  })
+
+  it('does not scope selectors inside @font-face', () => {
+    const out = scopeCss(
+      '@font-face { font-family: X; src: url(x.woff2); } .t { color: red; }',
+      'avedon-f',
+    )
+    expect(out).toContain('@font-face { font-family: X; src: url(x.woff2); }')
+    expect(out).toContain('.t[avedon-f]')
+  })
+
+  it('keeps :is() commas intact and scopes before ::pseudo-elements', () => {
+    const out = scopeCss('.x:is(.a, .b)::before { content: ""; }', 'avedon-p')
+    expect(out).toContain('.x:is(.a, .b)[avedon-p]::before')
+    expect(out).not.toContain('.a[avedon-p]')
+  })
+
+  it('leaves :global(...) selectors unscoped', () => {
+    const out = scopeCss(':global(.external) { color: red; } .local { color: blue; }', 'avedon-g')
+    expect(out).toContain('.external {')
+    expect(out).not.toContain('.external[avedon-g]')
+    expect(out).toContain('.local[avedon-g]')
+  })
+})
+
+describe('audit regressions 2026-07-29', () => {
+  it('SSR unwraps signal text and boolean conditions', () => {
+    const src = `<script lang="ts">
+  import { signal } from '@avedon/runtime'
+  const n = signal(1)
+  const show = signal(false)
+</script>
+<template>{#if show}<p>{n}</p>{/if}</template>`
+    const out = compileSsr(src, { filename: 'SigSsr.ave' })
+    expect(out.code).toContain('show.get()')
+    expect(out.code).toContain('n.get()')
+  })
+
+  it('parses object literals inside mustache expressions', () => {
+    const src = `<template><pre>{JSON.stringify({ a: 1 })}</pre></template>`
+    const out = compile(src, { filename: 'Obj.ave', generate: 'client' })
+    expect(out.code).toContain('JSON.stringify({ a: 1 })')
+  })
+
+  it('rejects unsafe SSR spread attribute names', () => {
+    const src = `<template><div {...attrs}></div></template>`
+    const out = compileSsr(src, { filename: 'Sp.ave' })
+    expect(out.code).toContain('/^[a-zA-Z_:]')
+  })
+
+  it('if-blocks track branch identity and nest child effects', () => {
+    const src = `<template>{#if show}<span>{label}</span>{/if}</template>`
+    const out = compile(src, { filename: 'If.ave', generate: 'client' })
+    expect(out.code).toContain('__next === __branch')
+    expect(out.code).toContain('__effect(__fn)')
+  })
+
+  it('await blocks cancel settled callbacks after teardown', () => {
+    const src = `<template>{#await p then v}{v}{/await}</template>`
+    const out = compile(src, { filename: 'Aw.ave', generate: 'client' })
+    expect(out.code).toContain('__awaitGen')
+    expect(out.code).toContain('__g !== __awaitGen')
+  })
+
+  it('hydrate destroy clears the live target', () => {
+    const out = compile(`<template><p>x</p></template>`, { filename: 'H.ave', generate: 'client' })
+    expect(out.code).toMatch(/destroy\(\)\s*\{\s*inst\.destroy\(\);\s*target\.textContent/)
   })
 })

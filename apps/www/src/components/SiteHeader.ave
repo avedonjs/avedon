@@ -11,6 +11,13 @@
     border-bottom: 1px solid var(--line);
   }
 
+  .topnav-brand-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 44px;
+  }
+
   .topnav-brand {
     margin: 0;
     display: inline-flex;
@@ -21,6 +28,18 @@
     letter-spacing: -0.03em;
     color: var(--fg);
     text-decoration: none;
+  }
+
+  .topnav-beta {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    padding: 0.15rem 0.4rem;
+    line-height: 1.2;
   }
 
   .topnav-links {
@@ -47,9 +66,13 @@
 
 <template>
   <header class="topnav">
-    <a class="topnav-brand" href="/">avedon</a>
+    <div class="topnav-brand-wrap">
+      <a class="topnav-brand" href="/">avedon</a>
+      <span class="topnav-beta" title="avedon is in beta">beta</span>
+    </div>
     <nav class="topnav-links" aria-label="Primary">
       <a href="/docs/">Docs</a>
+      <a href="/playground">Playground</a>
       <a href="https://github.com/avedonjs/avedon" rel="noopener noreferrer" target="_blank">GitHub</a>
     </nav>
   </header>

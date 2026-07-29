@@ -91,4 +91,34 @@ describe('signal', () => {
     expect(ro.get()).toBe(5)
     expect(seen.at(-1)).toBe(5)
   })
+
+  it('dispose stops further effect runs', () => {
+    const n = signal(0)
+    const seen: number[] = []
+    const stop = effect(() => {
+      seen.push(n.get())
+    })
+    expect(seen).toEqual([0])
+    stop()
+    n.set(1)
+    expect(seen).toEqual([0])
+  })
+
+  it('drops stale dependencies when an effect stops reading a signal', () => {
+    const a = signal(0)
+    const b = signal(0)
+    const useA = signal(true)
+    const seen: number[] = []
+    effect(() => {
+      seen.push(useA.get() ? a.get() : b.get())
+    })
+    expect(seen).toEqual([0])
+    useA.set(false)
+    expect(seen.at(-1)).toBe(0)
+    const afterSwitch = seen.length
+    a.set(99)
+    expect(seen.length).toBe(afterSwitch)
+    b.set(7)
+    expect(seen.at(-1)).toBe(7)
+  })
 })

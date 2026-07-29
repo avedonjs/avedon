@@ -1,6 +1,37 @@
 # memories.md
 
-Updated: 2026-07-26
+Updated: 2026-07-29
+
+## Bug audit — fix notes (2026-07-29)
+
+**FIXED (2026-07-29):** Aşağıdaki P1/P2 maddeleri kodlandı + unit regression’lar (`audit regressions 2026-07-29`, signal dispose/stale-deps).
+
+### Yapılanlar
+1. Runtime `effect()` — dep reverse-map; dispose + rerun stale dep temizliği
+2. `hydrate()` destroy — canlı `target` temizleniyor
+3. `{#if}` branch identity + nested `__effect` (child remount yok)
+4. `{#key}` — nested effects; key aynıyken body reactive
+5. `{#await}` — gen cancel + effect’e bağlı; nested effects
+6. Block destroy cleanups root’a register
+7. SSR `signalNames` + `sigExpr` (boolean/text/attrs/props/html/const)
+8. Signal-script: compound/`++`, AST collect (nested/string yok), property-name skip
+9. Balanced JS mustache parser (`{JSON.stringify({a:1})}`)
+10. SSR/client spread attr-name validation; protected explicit keys
+11. Component spread stale keys → `undefined` + update delete
+12. `bind:*` duck-type `.get`/`.set`
+13. CSS: `:is()` comma, `::before` hash, `:global` marker
+14. Transition style snapshot/restore
+15. Playground `postMessage` origin; `session.set` write chain
+
+### Bilinçli kalan
+- Soft hydrate = remount + restore (DOM reuse yok)
+- CF ISR yok; `.ave` LSP yok
+- ASI: `signal(false)\\n()` sonraki satıra yapışır — deklarasyon sonrası `;` veya boş satır
+
+### Önceki audit
+- 2026-07-22: `docs/superpowers/audits/2026-07-22/`
+
+---
 
 ## Project
 
@@ -33,15 +64,20 @@ Updated: 2026-07-26
 
 ## Preferences
 
-- Stay on main; commit only when the user asks
+- Stay on main; commit only when asked
 - TypeScript: stay on 5.x for now; skip 6 bump — wait for **7.1** (stable programmatic API) before major TS upgrade (2026-07-22)
 - Creative feature loop: **paused** for release (2026-07-29) — user asked to publish accumulated features; do not re-arm `AGENT_LOOP_WAKE_avedon_build` until asked
 - Prior loop heartbeat was **~5m** (`sleep 300`)
+- **Playground dogfood (2026-07-29):** playground’da potansiyel framework bug görünce etrafından dolanma — `packages/*` içinde fixle + test. Rule: `.cursor/rules/playground-fix-framework-bugs.mdc`
 - **Published (2026-07-29):** Version Packages PR #6 merged; OIDC publish succeeded — `avedon@0.1.6`, `@avedon/runtime@0.2.0`, `@avedon/compiler@0.3.0`, `@avedon/server@0.2.2`, `@avedon/vite-plugin@0.1.5`, `@avedon/adapter-node@0.1.5`, `@avedon/adapter-{bun,cloudflare}@0.2.3`. Release: https://github.com/avedonjs/avedon/actions/runs/30429125581
 
 ## Status
 
-- **Rename (2026-07-21):** project and GitHub org `avedon` / `avedonjs`; old `vexjs` name unused in the codebase
+- **www playground Tailwind (2026-07-29):** iframe loads local `/playground-tailwind.js` (`@tailwindcss/browser@4.1.11`); create-app `@theme` tokens; all presets utility-styled. Also fixed sandboxed iframe `postMessage` targetOrigin (`'*'` — opaque origin made `window.location.origin` drop action messages). Spec/plan under `docs/superpowers/{specs,plans}/2026-07-29-playground-tailwind*`. **Uncommitted.**
+- **www home denser (2026-07-29):** Ana sayfa boş duruyordu — crop mark’lar, çift glow + grid/beam, sol copy+traits+install, sağ `Counter.ave` specimen paneli, alt monospace footer line. Still `unscoped` (`{@html}` token sınıfları için). **Uncommitted.**
+- **www playground (2026-07-29):** `/playground` live REPL — client compile (`@avedon/compiler`), mock server, 14 presets, iframe preview with import map → `/playground-runtime.js` (esbuild prebuild). Signal auto unwrap/assign (`active = !active`). Form-action mock keeps state across actions. `{#each}` unwraps signal lists. Playground iframe `allow-forms`; runner only intercepts `?_action=` forms. Editor/preview `1fr`/`1fr`; window radius removed. **Uncommitted.**
+- **Playground CodeMirror height (2026-07-29):** Editör varsayılan 300px’te kalıyordu çünkü scoped CSS `.CodeMirror[hash]` üretiyor; CM runtime’da oluştuğu için hash yok → kural eşleşmiyor. Fix: `Playground.ave` stilleri `unscoped` (`.pg-*` prefix), Layout flex zinciri (`shell`/`page-main`), `setSize('100%','100%')` + `refresh()`. Önceki oturum yarım kalmıştı (yalnızca layout/`vh` denemesi).
+- **scopeCss `@keyframes` bug (2026-07-29):** scoped CSS was rewriting `to`/`from`/`0%` inside `@keyframes` as `to[hash]`, breaking animations. Fix: leave `@keyframes` / `@font-face` / `@property` bodies unscoped.
 - DoD: `pnpm build`, `pnpm test`, `pnpm test:smoke` passed (after 2026-07-21 rename)
 - **Audit pass (2026-07-21):** create monorepo `file:` link + `e2e/create-smoke.mjs`; CSRF Origin/Referer docs; streaming TTFB unit test; `e2e/isr-smoke.mjs`; basic-app login + `requireSession`; action redirect + Set-Cookie fix; `getSession` export
 - **Streaming SSR default (2026-07-21):** `earlyShell` removed; SSR streams by default + ~40ms shell delay; post-shell redirect → `window.location` script; `bufferHtml` opt-out; `/login` bufferHtml; `e2e/stream-redirect-smoke.mjs`

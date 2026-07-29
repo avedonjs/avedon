@@ -63,8 +63,19 @@ type EffectFn = () => void | (() => void)
 
 let activeEffect: EffectFn | null = null
 const effectDeps = new WeakMap<object, Set<EffectFn>>()
+/** Reverse map so dispose / rerun can drop an effect from every signal it tracked. */
+const effectSources = new WeakMap<EffectFn, Set<object>>()
 let batchDepth = 0
 let pendingTriggers: Set<object> | null = null
+
+function clearEffectSources(run: EffectFn) {
+  const sources = effectSources.get(run)
+  if (!sources) return
+  for (const sig of sources) {
+    effectDeps.get(sig)?.delete(run)
+  }
+  sources.clear()
+}
 
 function track(sig: object) {
   if (!activeEffect) return
@@ -74,6 +85,12 @@ function track(sig: object) {
     effectDeps.set(sig, deps)
   }
   deps.add(activeEffect)
+  let sources = effectSources.get(activeEffect)
+  if (!sources) {
+    sources = new Set()
+    effectSources.set(activeEffect, sources)
+  }
+  sources.add(sig)
 }
 
 function flushTriggers(sigs: Set<object>) {
@@ -7504,8 +7521,11 @@ export function computed<T>(fn: () => T): Signal<T> {
 
 export function effect(fn: EffectFn): () => void {
   let cleanup: void | (() => void)
+  let disposed = false
   const run: EffectFn = () => {
+    if (disposed) return
     if (typeof cleanup === 'function') cleanup()
+    clearEffectSources(run)
     activeEffect = run
     try {
       cleanup = fn()
@@ -7515,7 +7535,10 @@ export function effect(fn: EffectFn): () => void {
   }
   run()
   return () => {
+    disposed = true
     if (typeof cleanup === 'function') cleanup()
+    cleanup = undefined
+    clearEffectSources(run)
   }
 }
 

@@ -148,7 +148,10 @@ export function hashStyle(css: string, filename: string): string {
   return 'avedon-' + (h >>> 0).toString(36)
 }
 
-/** Unwrap `:global(...)` without regex backtracking. */
+/** Unwrap `:global(...)` without regex backtracking. Marked so scoping skips them. */
+const GLOBAL_MARK_START = '\uE000'
+const GLOBAL_MARK_END = '\uE001'
+
 function unwrapGlobal(css: string): string {
   const token = ':global('
   let out = ''
@@ -168,35 +171,67 @@ function unwrapGlobal(css: string): string {
       else if (ch === ')') depth--
       j++
     }
-    out += css.slice(idx + token.length, depth === 0 ? j - 1 : j)
+    const inner = css.slice(idx + token.length, depth === 0 ? j - 1 : j)
+    out += GLOBAL_MARK_START + inner + GLOBAL_MARK_END
     i = j
   }
   return out
 }
 
 function scopeSelectorList(selector: string, hash: string): string {
-  return selector
-    .split(',')
+  return splitSelectors(selector)
     .map((s) => {
-      const t = s.trim()
+      let t = s.trim()
       if (!t) return t
+      if (t.includes(GLOBAL_MARK_START)) {
+        return t.split(GLOBAL_MARK_START).join('').split(GLOBAL_MARK_END).join('')
+      }
       if (t.includes(hash)) return t
-      // don't scope bare html/body
+      // don't scope bare html/body or descendants under them (legacy escape hatch)
       if (t === 'html' || t === 'body' || t.startsWith('body ') || t.startsWith('html ')) return t
+      // Insert hash before pseudo-elements (::before, ::after, …)
+      const pseudoEl = t.search(/::[a-zA-Z-]+/)
+      if (pseudoEl !== -1) {
+        return `${t.slice(0, pseudoEl)}[${hash}]${t.slice(pseudoEl)}`
+      }
       return `${t}[${hash}]`
     })
     .join(', ')
+}
+
+/** Split a selector list on top-level commas (not inside (), [], or :is/:where/:not). */
+function splitSelectors(selector: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i < selector.length; i++) {
+    const ch = selector[i]!
+    if (ch === '(' || ch === '[') depth++
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1)
+    else if (ch === ',' && depth === 0) {
+      parts.push(selector.slice(start, i))
+      start = i + 1
+    }
+  }
+  parts.push(selector.slice(start))
+  return parts
 }
 
 /**
  * Scope selectors without regex (avoids ReDoS on long whitespace runs).
  * Recurses into `@media` / `@supports` / `@container` bodies so nested
  * selectors receive the component hash.
+ * Leaves `@keyframes` / `@font-face` / similar rule bodies untouched —
+ * their "selectors" (`to`, `from`, `0%`, …) must not get the attribute.
  */
 export function scopeCss(css: string, hash: string): string {
   if (!css.trim()) return ''
   return scopeCssChunk(unwrapGlobal(css), hash)
 }
+
+/** At-rules whose bodies are not CSS selector lists and must stay unscoped. */
+const UNSCOPED_AT_RULE =
+  /^@(?:-webkit-)?keyframes\b|^@font-face\b|^@property\b|^@counter-style\b|^@font-feature-values\b|^@font-palette-values\b|^@page\b/
 
 function readBalancedBlock(src: string, openIdx: number): { body: string; end: number } {
   let depth = 1
@@ -240,9 +275,14 @@ function scopeCssChunk(src: string, hash: string): string {
         i++
         continue
       }
+      const prelude = src.slice(start, i)
       out += src.slice(start, i + 1)
       const { body, end } = readBalancedBlock(src, i)
-      out += scopeCssChunk(body, hash)
+      if (UNSCOPED_AT_RULE.test(prelude.trim())) {
+        out += body
+      } else {
+        out += scopeCssChunk(body, hash)
+      }
       out += '}'
       i = end
       continue

@@ -5,37 +5,55 @@
   const cmd = signal('npm create avedon-app')
   const copied = signal(false)
 
+  const specimenHtml = `<span class="tok-cmt">// one file, full stack</span>
+<span class="tok-tag">&lt;script</span> <span class="tok-attr">lang=</span><span class="tok-str">"ts"</span><span class="tok-tag">&gt;</span>
+  <span class="tok-kw">import</span> { signal } <span class="tok-kw">from</span> <span class="tok-str">'@avedon/runtime'</span>
+  <span class="tok-kw">const</span> count = signal(0)
+<span class="tok-tag">&lt;/script&gt;</span>
+
+<span class="tok-tag">&lt;script</span> <span class="tok-attr">server</span><span class="tok-tag">&gt;</span>
+  <span class="tok-kw">export async function</span> load() {
+    <span class="tok-kw">return</span> { head: { title: <span class="tok-str">'Counter'</span> } }
+  }
+<span class="tok-tag">&lt;/script&gt;</span>
+
+<span class="tok-tag">&lt;template&gt;</span>
+  &lt;button on:click={() =&gt; count.set(count.get() + 1)}&gt;
+    clicks: {count}
+  &lt;/button&gt;
+<span class="tok-tag">&lt;/template&gt;</span>`
+
   function pickNpm() {
-    selected.set('npm')
-    cmd.set('npm create avedon-app')
-    copied.set(false)
+    selected = 'npm'
+    cmd = 'npm create avedon-app'
+    copied = false
   }
 
   function pickPnpm() {
-    selected.set('pnpm')
-    cmd.set('pnpm create avedon-app')
-    copied.set(false)
+    selected = 'pnpm'
+    cmd = 'pnpm create avedon-app'
+    copied = false
   }
 
   function pickYarn() {
-    selected.set('yarn')
-    cmd.set('yarn create avedon-app')
-    copied.set(false)
+    selected = 'yarn'
+    cmd = 'yarn create avedon-app'
+    copied = false
   }
 
   function pickBun() {
-    selected.set('bun')
-    cmd.set('bun create avedon-app')
-    copied.set(false)
+    selected = 'bun'
+    cmd = 'bun create avedon-app'
+    copied = false
   }
 
   async function copyCmd() {
     try {
-      await navigator.clipboard.writeText(cmd.get())
-      copied.set(true)
-      setTimeout(() => copied.set(false), 1600)
+      await navigator.clipboard.writeText(cmd)
+      copied = true
+      setTimeout(() => (copied = false), 1600)
     } catch {
-      copied.set(false)
+      copied = false
     }
   }
 </script>
@@ -52,85 +70,248 @@
   }
 </script>
 
-<style scoped>
+<style unscoped>
   .stage {
     position: relative;
     isolation: isolate;
     min-height: calc(100vh - 4rem);
     box-sizing: border-box;
-    padding: clamp(1.5rem, 4vw, 3rem);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 1.75rem;
-    width: min(100%, 56rem);
+    padding: clamp(1.75rem, 4vw, 3.5rem) clamp(1.25rem, 4vw, 3rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    grid-template-rows: auto auto auto;
+    gap: clamp(1.25rem, 2.5vw, 2rem) clamp(1.5rem, 4vw, 3.5rem);
+    align-items: start;
+    width: min(100%, 72rem);
     margin: 0 auto;
     overflow: visible;
   }
 
   .stage-glow {
     position: absolute;
-    top: 0;
-    right: 0;
-    width: min(70vw, 36rem);
-    height: min(70vw, 36rem);
-    background: radial-gradient(circle, rgba(6, 182, 212, 0.16), transparent 68%);
+    top: -8%;
+    right: -6%;
+    width: min(72vw, 40rem);
+    height: min(72vw, 40rem);
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.18), transparent 68%);
     pointer-events: none;
     z-index: -1;
     will-change: transform;
     animation: drift 18s ease-in-out infinite alternate;
   }
 
+  .stage-glow-2 {
+    position: absolute;
+    bottom: -18%;
+    left: -12%;
+    width: min(55vw, 28rem);
+    height: min(55vw, 28rem);
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.08), transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+    animation: drift 22s ease-in-out infinite alternate-reverse;
+  }
+
   .stage-grid {
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(250, 250, 250, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(250, 250, 250, 0.03) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(ellipse at 30% 20%, #000 20%, transparent 70%);
+      linear-gradient(rgba(250, 250, 250, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(250, 250, 250, 0.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse at 28% 18%, #000 18%, transparent 72%);
     pointer-events: none;
     z-index: -1;
   }
 
+  .stage-beam {
+    position: absolute;
+    top: 12%;
+    left: -10%;
+    width: 55%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.35), transparent);
+    pointer-events: none;
+    z-index: -1;
+    transform: rotate(-12deg);
+    animation: beam 9s ease-in-out infinite alternate;
+  }
+
+  .crop {
+    position: absolute;
+    width: 1.35rem;
+    height: 1.35rem;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+    color: var(--accent);
+    animation: crop-in 1s ease both;
+  }
+
+  .crop::before,
+  .crop::after {
+    content: '';
+    position: absolute;
+    background: currentColor;
+  }
+
+  .crop-tl {
+    top: 1rem;
+    left: 1rem;
+  }
+
+  .crop-tl::before {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+  }
+
+  .crop-tl::after {
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 100%;
+  }
+
+  .crop-tr {
+    top: 1rem;
+    right: 1rem;
+    animation-delay: 0.08s;
+  }
+
+  .crop-tr::before {
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+  }
+
+  .crop-tr::after {
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+  }
+
+  .crop-bl {
+    bottom: 1rem;
+    left: 1rem;
+    animation-delay: 0.12s;
+  }
+
+  .crop-bl::before {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+  }
+
+  .crop-bl::after {
+    bottom: 0;
+    left: 0;
+    width: 1px;
+    height: 100%;
+  }
+
+  .crop-br {
+    bottom: 1rem;
+    right: 1rem;
+    animation-delay: 0.16s;
+  }
+
+  .crop-br::before {
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+  }
+
+  .crop-br::after {
+    bottom: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+  }
+
   .brand {
+    grid-column: 1 / -1;
+    grid-row: 1;
     margin: 0;
-    font-size: clamp(3.5rem, 12vw, 7rem);
+    font-size: clamp(3.75rem, 11vw, 7.25rem);
     font-weight: 800;
     letter-spacing: -0.04em;
-    line-height: 1;
+    line-height: 0.95;
     padding-right: 0.06em;
+    position: relative;
+    z-index: 2;
     animation: rise 0.7s ease both;
+  }
+
+  .copy {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.25rem;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
   }
 
   .headline {
     margin: 0;
-    max-width: 18ch;
-    font-size: clamp(1.35rem, 3.5vw, 2rem);
+    max-width: 16ch;
+    font-size: clamp(1.4rem, 3.2vw, 2.15rem);
     font-weight: 700;
     letter-spacing: -0.03em;
-    line-height: 1.15;
+    line-height: 1.12;
     animation: rise 0.7s ease 0.06s both;
   }
 
   .support {
     margin: 0;
-    max-width: 36rem;
+    max-width: 34rem;
     color: var(--muted);
     font-size: 1.05rem;
     font-weight: 400;
-    line-height: 1.5;
-    animation: rise 0.7s ease 0.12s both;
+    line-height: 1.55;
+    animation: rise 0.7s ease 0.1s both;
+  }
+
+  .traits {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--muted);
+    animation: rise 0.7s ease 0.14s both;
+  }
+
+  .traits li {
+    display: flex;
+    gap: 0.65rem;
+    align-items: baseline;
+  }
+
+  .traits .mark {
+    color: var(--accent);
+    flex: 0 0 auto;
   }
 
   .install {
     display: flex;
     flex-direction: column;
-    max-width: min(100%, 32rem);
+    max-width: min(100%, 34rem);
     border: 1px solid var(--line);
-    border-radius: 0.4rem;
     overflow: hidden;
-    animation: rise 0.7s ease 0.15s both;
+    animation: rise 0.7s ease 0.16s both;
   }
 
   .install-tabs {
@@ -203,7 +384,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    animation: rise 0.7s ease 0.18s both;
+    animation: rise 0.7s ease 0.2s both;
   }
 
   .cta-primary,
@@ -212,7 +393,6 @@
     font-weight: 700;
     font-size: 0.95rem;
     padding: 0.65rem 1.1rem;
-    border-radius: 0.35rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -242,6 +422,128 @@
     color: var(--accent);
   }
 
+  .specimen {
+    grid-column: 2;
+    grid-row: 2;
+    position: relative;
+    min-width: 0;
+    align-self: stretch;
+    z-index: 0;
+    animation: rise 0.8s ease 0.12s both;
+  }
+
+  .specimen-frame {
+    position: relative;
+    border: 1px solid var(--line);
+    background:
+      linear-gradient(160deg, rgba(250, 250, 250, 0.03), transparent 42%),
+      #0c0c0e;
+    overflow: hidden;
+  }
+
+  .specimen-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--line);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .specimen-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(250, 250, 250, 0.18);
+    flex: 0 0 auto;
+  }
+
+  .specimen-dot:nth-child(1) {
+    background: #f87171;
+  }
+
+  .specimen-dot:nth-child(2) {
+    background: #fbbf24;
+  }
+
+  .specimen-dot:nth-child(3) {
+    background: #34d399;
+  }
+
+  .specimen-file {
+    margin-left: 0.25rem;
+    color: var(--fg);
+    opacity: 0.85;
+  }
+
+  .specimen-code {
+    margin: 0;
+    padding: 1.1rem 1.15rem 1.35rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: clamp(0.72rem, 1.4vw, 0.84rem);
+    line-height: 1.55;
+    color: #d4d4d8;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .tok-kw {
+    color: var(--accent);
+  }
+
+  .tok-str {
+    color: #a5f3fc;
+  }
+
+  .tok-cmt {
+    color: #71717a;
+  }
+
+  .tok-tag {
+    color: #e4e4e7;
+  }
+
+  .tok-attr {
+    color: #67e8f9;
+  }
+
+  .specimen-glow {
+    position: absolute;
+    inset: auto -20% -35% auto;
+    width: 70%;
+    height: 70%;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.14), transparent 65%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .footer-line {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    align-items: center;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--line);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    animation: rise 0.7s ease 0.24s both;
+  }
+
+  .footer-line span {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .footer-line .sep {
+    color: rgba(250, 250, 250, 0.2);
+  }
+
   @keyframes rise {
     from {
       opacity: 0;
@@ -268,17 +570,73 @@
     }
   }
 
+  @keyframes beam {
+    from {
+      opacity: 0.35;
+      transform: rotate(-12deg) translateX(-2%);
+    }
+    to {
+      opacity: 0.8;
+      transform: rotate(-12deg) translateX(6%);
+    }
+  }
+
+  @keyframes crop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.7);
+    }
+    to {
+      opacity: 0.55;
+      transform: none;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .stage {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      align-items: start;
+      overflow: visible;
+    }
+
+    .brand,
+    .copy,
+    .specimen,
+    .footer-line {
+      grid-column: 1;
+      grid-row: auto;
+    }
+
+    .headline {
+      max-width: 22ch;
+    }
+
+    .crop {
+      display: none;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .brand,
     .headline,
     .support,
+    .traits,
     .install,
-    .ctas {
+    .ctas,
+    .specimen,
+    .footer-line,
+    .crop {
+      animation: none;
+    }
+
+    .stage-glow,
+    .stage-glow-2,
+    .stage-beam {
       animation: none;
     }
 
     .stage-glow {
-      animation: none;
       transform: translate(8%, -18%);
     }
   }
@@ -287,28 +645,67 @@
 <template>
   <div class="stage" data-www-stage>
     <div class="stage-glow" aria-hidden="true"></div>
+    <div class="stage-glow-2" aria-hidden="true"></div>
     <div class="stage-grid" aria-hidden="true"></div>
+    <div class="stage-beam" aria-hidden="true"></div>
+    <span class="crop crop-tl" aria-hidden="true"></span>
+    <span class="crop crop-tr" aria-hidden="true"></span>
+    <span class="crop crop-bl" aria-hidden="true"></span>
+    <span class="crop crop-br" aria-hidden="true"></span>
+
     <p class="brand">avedon</p>
-    <h1 class="headline">TypeScript-first full-stack web framework.</h1>
-    <p class="support">
-      One .ave file for UI, styles, and server logic — explicit routes, hybrid rendering, Vite
-      toolchain.
+
+    <div class="copy">
+      <h1 class="headline">TypeScript-first full-stack web framework.</h1>
+      <p class="support">
+        One .ave file for UI, styles, and server logic — explicit routes, hybrid rendering, Vite
+        toolchain.
+      </p>
+      <ul class="traits" aria-label="Highlights">
+        <li><span class="mark">▸</span><span>.ave components — script, style, template in one file</span></li>
+        <li><span class="mark">▸</span><span>Typed routes with load, actions, and streaming SSR</span></li>
+        <li><span class="mark">▸</span><span>Hybrid SSR / SSG / CSR — pick per route</span></li>
+      </ul>
+      <div class="install">
+        <div class="install-tabs" role="tablist" aria-label="Package manager">
+          <button type="button" role="tab" class={selected === 'npm' ? 'active' : ''} on:click={pickNpm}>npm</button>
+          <button type="button" role="tab" class={selected === 'pnpm' ? 'active' : ''} on:click={pickPnpm}>pnpm</button>
+          <button type="button" role="tab" class={selected === 'yarn' ? 'active' : ''} on:click={pickYarn}>yarn</button>
+          <button type="button" role="tab" class={selected === 'bun' ? 'active' : ''} on:click={pickBun}>bun</button>
+        </div>
+        <div class="install-row">
+          <code>{cmd}</code>
+          <button type="button" on:click={copyCmd}>{copied ? 'Copied' : 'Copy'}</button>
+        </div>
+      </div>
+      <div class="ctas">
+        <a class="cta-primary" href="/docs/quick-start/">Get started</a>
+        <a class="cta-secondary" href="/playground">Open playground</a>
+        <a class="cta-secondary" href="https://github.com/avedonjs/avedon" rel="noopener noreferrer" target="_blank">GitHub</a>
+      </div>
+    </div>
+
+    <aside class="specimen" aria-label="Sample .ave component">
+      <div class="specimen-glow" aria-hidden="true"></div>
+      <div class="specimen-frame">
+        <div class="specimen-bar">
+          <span class="specimen-dot" aria-hidden="true"></span>
+          <span class="specimen-dot" aria-hidden="true"></span>
+          <span class="specimen-dot" aria-hidden="true"></span>
+          <span class="specimen-file">Counter.ave</span>
+        </div>
+        <pre class="specimen-code">{@html specimenHtml}</pre>
+      </div>
+    </aside>
+
+    <p class="footer-line">
+      <span>This website is built with avedon.</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span>compiler · runtime · server</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span>adapters: node · bun · cloudflare</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span>open source</span>
     </p>
-    <div class="install">
-      <div class="install-tabs" role="tablist" aria-label="Package manager">
-        <button type="button" role="tab" class={selected.get() === 'npm' ? 'active' : ''} on:click={pickNpm}>npm</button>
-        <button type="button" role="tab" class={selected.get() === 'pnpm' ? 'active' : ''} on:click={pickPnpm}>pnpm</button>
-        <button type="button" role="tab" class={selected.get() === 'yarn' ? 'active' : ''} on:click={pickYarn}>yarn</button>
-        <button type="button" role="tab" class={selected.get() === 'bun' ? 'active' : ''} on:click={pickBun}>bun</button>
-      </div>
-      <div class="install-row">
-        <code>{cmd}</code>
-        <button type="button" on:click={copyCmd}>{copied.get() ? 'Copied' : 'Copy'}</button>
-      </div>
-    </div>
-    <div class="ctas">
-      <a class="cta-primary" href="/docs/quick-start/">Get started</a>
-      <a class="cta-secondary" href="https://github.com/avedonjs/avedon" rel="noopener noreferrer" target="_blank">GitHub</a>
-    </div>
   </div>
 </template>

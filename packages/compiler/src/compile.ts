@@ -1,5 +1,6 @@
 import { compileMarkup } from './codegen.js'
 import { extractActionKeys, extractLoadParamsType, inferLoadDataType } from './load-types.js'
+import { collectSignalNames, prepareSignalExpr } from './signal-script.js'
 import { hashStyle, parse, scopeCss } from './parse.js'
 import ts from 'typescript'
 
@@ -29,6 +30,7 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
   const parsed = parse(source)
   assertNoServerOnUiComponent(parsed.serverScript, options.asUiComponent, filename)
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
+  const signalNames = collectSignalNames(stripTypeScript(clientBody))
   const cssHash = hashStyle(parsed.style, filename)
   const css = parsed.scoped ? scopeCss(parsed.style, cssHash) : parsed.style
   const components = extractComponentImports(clientImports)
@@ -36,6 +38,7 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
     parsed.markup || '<!-- empty -->',
     cssHash,
     components,
+    signalNames,
   )
 
   const hmrImport = hmr
@@ -114,7 +117,10 @@ ${hmr ? '  const __signalBag = __hmrBeginSignalBag();\n' : ''}${clientMountBody(
       target.textContent = '';
     },
     update(next = {}) {
-      Object.assign(__props, next);
+      for (const __k of Object.keys(next)) {
+        if (next[__k] === undefined) delete __props[__k];
+        else __props[__k] = next[__k];
+      }
 ${assignProps(clientBody)}
       __invalidate();
     },${hmr ? `\n    getHmrState() {\n      return { data: __props.data, signals: __hmrSnapshotSignals(__signalBag) };\n    },` : ''}
@@ -141,7 +147,10 @@ export function hydrate(target, __props = {}) {
   __restoreScrollState(target, __scroll);
   __restoreFocus(target, __focus);
   return {
-    destroy() { inst.destroy(); },
+    destroy() {
+      inst.destroy();
+      target.textContent = '';
+    },
     update(next = {}) { inst.update(next); },${hmr ? `\n    getHmrState: inst.getHmrState,` : ''}
   };
 }
@@ -162,10 +171,12 @@ export function compileSsr(
   const cssHash = hashStyle(parsed.style, filename)
   const css = parsed.scoped ? scopeCss(parsed.style, cssHash) : parsed.style
   const components = extractComponentImports(clientImports)
+  const signalNames = collectSignalNames(stripTypeScript(clientBody))
   const { ssrExpr, ssrStream, componentsUsed } = compileMarkup(
     parsed.markup || '<!-- empty -->',
     cssHash,
     components,
+    signalNames,
   )
 
   const hasLoad = /\bexport\s+(?:async\s+)?function\s+load\b|\bexport\s+(?:const|let|var)\s+load\b/.test(
@@ -444,13 +455,15 @@ function ssrStreamBody(clientScript: string, ssrStream: string): string {
 function clientMountBody(clientScript: string, clientBuild: string, hmr = false): string {
   const lines: string[] = []
   const script = stripTypeScript(clientScript)
+  const signalNames = collectSignalNames(script)
   const exported = extractExportLets(script)
   for (const p of exported) {
     lines.push(`  let ${p} = __props.${p};`)
   }
   const body = wireEventDispatcher(stripExportLets(script, exported))
-  const prepared = hmr ? injectSignalHmrKeys(body) : body
-  if (prepared.trim()) lines.push(indent(prepared, 2))
+  const prepared = prepareSignalExpr(body, signalNames)
+  const withHmr = hmr ? injectSignalHmrKeys(prepared) : prepared
+  if (withHmr.trim()) lines.push(indent(withHmr, 2))
   lines.push(indent(clientBuild, 2))
   return lines.join('\n')
 }

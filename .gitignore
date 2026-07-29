@@ -15,4 +15,6 @@ examples/**/.ave/
 apps/**/.ave/
 apps/www/.generated/
 apps/www/.generated-test/
+apps/www/public/playground-runtime.js
+apps/www/public/playground-tailwind.js
 *.tsbuildinfo
