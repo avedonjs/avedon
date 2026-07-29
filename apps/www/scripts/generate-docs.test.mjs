@@ -3,7 +3,13 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { flattenSlugs, generateDocs, loadManifest, syncAppHtmlOrigin } from './generate-docs.mjs'
+import {
+  flattenSlugs,
+  generateDocs,
+  HOME_COUNTER_SPECIMEN,
+  loadManifest,
+  syncAppHtmlOrigin,
+} from './generate-docs.mjs'
 import { getDocsOrigin, DEFAULT_DOCS_ORIGIN } from './site-origin.mjs'
 import { getHighlighter, highlightAve, highlightCode } from './highlight.mjs'
 
@@ -33,6 +39,14 @@ test('generateDocs writes quick-start and manifest groups', async () => {
   assert.match(quickStart.html, /<h1/i)
   assert.match(quickStart.html, /class="shiki/)
   assert.ok(!data.docs.some((d) => d.slug === 'guide'))
+
+  const specimen = JSON.parse(
+    fs.readFileSync(path.join(outDir, 'home-specimen.json'), 'utf8'),
+  )
+  assert.match(specimen.html, /class="shiki/)
+  assert.match(specimen.html, /language-avedon/)
+  assert.match(specimen.html, /@avedon\/runtime/)
+  assert.ok(HOME_COUNTER_SPECIMEN.includes('signal(0)'))
 
   // Keep apps/www/src/lib/doc-paths.ts DOC_SLUGS in sync with manifest.
   const docPaths = fs.readFileSync(

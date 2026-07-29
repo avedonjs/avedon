@@ -2,8 +2,28 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Marked } from 'marked'
-import { getHighlighter, highlightCode } from './highlight.mjs'
+import { getHighlighter, highlightAve, highlightCode } from './highlight.mjs'
 import { getDocsOrigin } from './site-origin.mjs'
+
+/** Home page Counter.ave specimen (mirrors playground Counter sections). */
+export const HOME_COUNTER_SPECIMEN = `<script lang="ts">
+  // one file, full stack
+  import { signal } from '@avedon/runtime'
+  const count = signal(0)
+</script>
+
+<script server>
+  export async function load() {
+    return { head: { title: 'Counter' } }
+  }
+</script>
+
+<template>
+  <button on:click={() => count.set(count.get() + 1)}>
+    clicks: {count}
+  </button>
+</template>
+`
 
 /**
  * Rewrite absolute social/meta image URLs in `app.html` to match the docs origin.
@@ -231,6 +251,14 @@ export async function generateDocs({
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
   fs.writeFileSync(outPath, JSON.stringify({ groups, docs }, null, 2) + '\n', 'utf8')
 
+  const specimenHtml = highlightAve(highlighter, HOME_COUNTER_SPECIMEN)
+  const specimenPath = path.join(path.dirname(outPath), 'home-specimen.json')
+  fs.writeFileSync(
+    specimenPath,
+    JSON.stringify({ html: specimenHtml }, null, 2) + '\n',
+    'utf8',
+  )
+
   const origin = originOpt ?? getDocsOrigin()
 
   // Keep public sitemap in sync with the manifest (copied into build/client).
@@ -270,4 +298,5 @@ if (isMain) {
     appHtmlPath: path.join(appRoot, 'src', 'app.html'),
   })
   console.log('Wrote', path.join(appRoot, '.generated', 'docs.json'))
+  console.log('Wrote', path.join(appRoot, '.generated', 'home-specimen.json'))
 }

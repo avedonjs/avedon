@@ -1,27 +1,11 @@
 <script lang="ts">
   import { signal } from '@avedon/runtime'
 
+  export let specimenHtml
+
   const selected = signal('npm')
   const cmd = signal('npm create avedon-app')
   const copied = signal(false)
-
-  const specimenHtml = `<span class="tok-cmt">// one file, full stack</span>
-<span class="tok-tag">&lt;script</span> <span class="tok-attr">lang=</span><span class="tok-str">"ts"</span><span class="tok-tag">&gt;</span>
-  <span class="tok-kw">import</span> { signal } <span class="tok-kw">from</span> <span class="tok-str">'@avedon/runtime'</span>
-  <span class="tok-kw">const</span> count = signal(0)
-<span class="tok-tag">&lt;/script&gt;</span>
-
-<span class="tok-tag">&lt;script</span> <span class="tok-attr">server</span><span class="tok-tag">&gt;</span>
-  <span class="tok-kw">export async function</span> load() {
-    <span class="tok-kw">return</span> { head: { title: <span class="tok-str">'Counter'</span> } }
-  }
-<span class="tok-tag">&lt;/script&gt;</span>
-
-<span class="tok-tag">&lt;template&gt;</span>
-  &lt;button on:click={() =&gt; count.set(count.get() + 1)}&gt;
-    clicks: {count}
-  &lt;/button&gt;
-<span class="tok-tag">&lt;/template&gt;</span>`
 
   function pickNpm() {
     selected = 'npm'
@@ -59,8 +43,11 @@
 </script>
 
 <script server>
+  import { loadHomeSpecimenHtml } from '../lib/home-specimen'
+
   export async function load() {
     return {
+      specimenHtml: loadHomeSpecimenHtml(),
       head: {
         title: 'avedon — TypeScript-first full-stack web framework',
         description:
@@ -480,33 +467,25 @@
 
   .specimen-code {
     margin: 0;
+    overflow-x: auto;
+  }
+
+  .specimen-code pre.shiki {
+    margin: 0;
     padding: 1.1rem 1.15rem 1.35rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background: transparent !important;
+    overflow-x: auto;
     font-size: clamp(0.72rem, 1.4vw, 0.84rem);
     line-height: 1.55;
-    color: #d4d4d8;
-    overflow-x: auto;
+  }
+
+  .specimen-code pre.shiki code {
+    display: block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: inherit;
+    background: transparent;
+    padding: 0;
     white-space: pre;
-  }
-
-  .tok-kw {
-    color: var(--accent);
-  }
-
-  .tok-str {
-    color: #a5f3fc;
-  }
-
-  .tok-cmt {
-    color: #71717a;
-  }
-
-  .tok-tag {
-    color: #e4e4e7;
-  }
-
-  .tok-attr {
-    color: #67e8f9;
   }
 
   .specimen-glow {
@@ -694,7 +673,7 @@
           <span class="specimen-dot" aria-hidden="true"></span>
           <span class="specimen-file">Counter.ave</span>
         </div>
-        <pre class="specimen-code">{@html specimenHtml}</pre>
+        <div class="specimen-code">{@html specimenHtml}</div>
       </div>
     </aside>
 
