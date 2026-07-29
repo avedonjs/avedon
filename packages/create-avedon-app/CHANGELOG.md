@@ -1,5 +1,11 @@
 # create-avedon-app
 
+## 0.1.2
+
+### Patch Changes
+
+- a1b1b6b: Align scaffold dependency ranges with published packages so `@avedon/runtime` resolves to 0.2.x (exports `__contextBegin` required by compiler 0.4).
+
 ## 0.1.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @avedon/server
 
+## 0.2.4
+
+### Patch Changes
+
+- 6d9d01f: Link Vite-extracted client CSS in SSG/SSR shells so imports like CodeMirror styles load in production.
+
 ## 0.2.3
 
 ### Patch Changes

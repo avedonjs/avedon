@@ -1,5 +1,13 @@
 # @avedon/adapter-bun
 
+## 0.2.5
+
+### Patch Changes
+
+- 6d9d01f: Link Vite-extracted client CSS in SSG/SSR shells so imports like CodeMirror styles load in production.
+- Updated dependencies [6d9d01f]
+  - @avedon/server@0.2.4
+
 ## 0.2.4
 
 ### Patch Changes

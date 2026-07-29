@@ -1,5 +1,12 @@
 # @avedon/vite-plugin
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [6d9d01f]
+  - @avedon/server@0.2.4
+
 ## 0.1.6
 
 ### Patch Changes
