@@ -708,6 +708,7 @@ function classNameExpr(classAttrs: Attr[], classDirs: Attr[]): string {
   }
   for (const d of classDirs) {
     const cls = d.name.slice('class:'.length)
+    if (d.value == null) throw new Error(`class: directive missing expression: ${d.name}`)
     parts.push(`((${sigExpr(d.value)}) ? ${jsLiteral(cls)} : '')`)
   }
   return `[${parts.join(', ')}].filter(Boolean).join(' ').replace(/\\s+/g, ' ').trim()`
@@ -744,6 +745,7 @@ function styleCssTextExpr(styleAttrs: Attr[], styleDirs: Attr[]): string {
   }
   for (const d of styleDirs) {
     const prop = d.name.slice('style:'.length)
+    if (d.value == null) throw new Error(`style: directive missing expression: ${d.name}`)
     parts.push(
       `((() => { const __raw = (${sigExpr(d.value)}); const __v = (__raw && typeof __raw.get === 'function') ? __raw.get() : __raw; return (__v == null || __v === false) ? '' : (${jsLiteral(prop + ':')} + __v); })())`,
     )
