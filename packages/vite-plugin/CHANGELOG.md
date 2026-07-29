@@ -1,5 +1,35 @@
 # @avedon/vite-plugin
 
+## 0.1.5
+
+### Patch Changes
+
+- cf7f470: Auto-enable `asUiComponent` for `.ave` modules that are not route entries imported from `routes.ts`.
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+- Updated dependencies [cf7f470]
+  - @avedon/compiler@0.3.0
+  - @avedon/server@0.2.2
+
 ## 0.1.4
 
 ### Patch Changes
