@@ -37,6 +37,7 @@ Updated: 2026-07-26
 - TypeScript: stay on 5.x for now; skip 6 bump — wait for **7.1** (stable programmatic API) before major TS upgrade (2026-07-22)
 - Creative feature loop: **paused** for release (2026-07-29) — user asked to publish accumulated features; do not re-arm `AGENT_LOOP_WAKE_avedon_build` until asked
 - Prior loop heartbeat was **~5m** (`sleep 300`)
+- **Published (2026-07-29):** Version Packages PR #6 merged; OIDC publish succeeded — `avedon@0.1.6`, `@avedon/runtime@0.2.0`, `@avedon/compiler@0.3.0`, `@avedon/server@0.2.2`, `@avedon/vite-plugin@0.1.5`, `@avedon/adapter-node@0.1.5`, `@avedon/adapter-{bun,cloudflare}@0.2.3`. Release: https://github.com/avedonjs/avedon/actions/runs/30429125581
 
 ## Status
 
