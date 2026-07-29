@@ -2,6 +2,12 @@ import ts from 'typescript'
 
 const SIGNAL_API = new Set(['get', 'set', 'update', 'subscribe'])
 
+/** Callees that take a Signal and must not receive an auto-unwrapped value. */
+const SIGNAL_ARG_CALLEES = new Set(['readonly'])
+
+/** Factories whose result is treated like a signal binding for auto-unwrap. */
+const SIGNAL_FACTORY = new Set(['signal', 'readonly'])
+
 const COMPOUND_TO_BIN: Partial<Record<ts.SyntaxKind, ts.BinaryOperator>> = {
   [ts.SyntaxKind.PlusEqualsToken]: ts.SyntaxKind.PlusToken,
   [ts.SyntaxKind.MinusEqualsToken]: ts.SyntaxKind.MinusToken,
@@ -42,9 +48,9 @@ export function collectSignalNames(source: string): Set<string> {
 function isSignalCall(node: ts.Expression): boolean {
   if (!ts.isCallExpression(node)) return false
   const expr = node.expression
-  if (ts.isIdentifier(expr)) return expr.text === 'signal'
+  if (ts.isIdentifier(expr)) return SIGNAL_FACTORY.has(expr.text)
   if (ts.isPropertyAccessExpression(expr) && ts.isIdentifier(expr.name)) {
-    return expr.name.text === 'signal'
+    return SIGNAL_FACTORY.has(expr.name.text)
   }
   return false
 }
@@ -237,6 +243,20 @@ function shouldUnwrapSignalRead(node: ts.Identifier, names: Set<string>): boolea
   if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false
   if (ts.isPropertyAccessExpression(parent) && parent.expression === node) {
     if (SIGNAL_API.has(parent.name.text)) return false
+  }
+  if (ts.isCallExpression(parent)) {
+    const argIndex = parent.arguments.indexOf(node as ts.Expression)
+    if (argIndex >= 0) {
+      const callee = parent.expression
+      if (ts.isIdentifier(callee) && SIGNAL_ARG_CALLEES.has(callee.text)) return false
+      if (
+        ts.isPropertyAccessExpression(callee) &&
+        ts.isIdentifier(callee.name) &&
+        SIGNAL_ARG_CALLEES.has(callee.name.text)
+      ) {
+        return false
+      }
+    }
   }
   if (ts.isMetaProperty(parent)) return false
 

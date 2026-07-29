@@ -35,4 +35,15 @@ const s = "const value = signal(9)"`
     expect(names.has('real')).toBe(true)
     expect(names.has('value')).toBe(false)
   })
+
+  it('keeps signal args to readonly() and tracks readonly bindings', () => {
+    const src = `const count = signal(0)
+const view = readonly(count)`
+    const names = collectSignalNames(src)
+    expect(names.has('count')).toBe(true)
+    expect(names.has('view')).toBe(true)
+    const out = prepareSignalExpr(src, names)
+    expect(out).toContain('readonly(count)')
+    expect(out).not.toContain('readonly(count.get())')
+  })
 })
