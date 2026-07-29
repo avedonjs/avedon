@@ -26,6 +26,7 @@ export type ServeSsgIsrBunOptions = {
   routes: Routes
   appHtml: string
   clientEntry?: string
+  clientCss?: string[]
 }
 
 /**
@@ -35,7 +36,7 @@ export type ServeSsgIsrBunOptions = {
  * @returns Response if handled, otherwise null.
  */
 export function tryServeSsgIsrBun(opts: ServeSsgIsrBunOptions): Response | null {
-  const { request, clientDir, pathname, routes, appHtml, clientEntry } = opts
+  const { request, clientDir, pathname, routes, appHtml, clientEntry, clientCss } = opts
   const method = request.method.toUpperCase()
   if (method !== 'GET' && method !== 'HEAD') return null
 
@@ -56,7 +57,7 @@ export function tryServeSsgIsrBun(opts: ServeSsgIsrBunOptions): Response | null 
     }
     if (isStale(mtimeMs, revalidate)) {
       regenLock.run(pathname, async () => {
-        const page = await renderSsgPage(routes, pathname, appHtml, { clientEntry })
+        const page = await renderSsgPage(routes, pathname, appHtml, { clientEntry, clientCss })
         if (!page) return
         writeHtmlAtomic(file, page.html)
       })

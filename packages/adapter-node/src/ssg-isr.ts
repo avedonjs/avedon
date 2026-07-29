@@ -28,6 +28,7 @@ export type ServeSsgIsrOptions = {
   routes: Routes
   appHtml: string
   clientEntry?: string
+  clientCss?: string[]
 }
 
 /**
@@ -36,7 +37,7 @@ export type ServeSsgIsrOptions = {
  * @returns true if the request was handled (static or ISR).
  */
 export function tryServeSsgIsr(opts: ServeSsgIsrOptions): boolean {
-  const { req, res, clientDir, pathname, routes, appHtml, clientEntry } = opts
+  const { req, res, clientDir, pathname, routes, appHtml, clientEntry, clientCss } = opts
   if (req.method !== 'GET' && req.method !== 'HEAD') return false
 
   const file = ssgHtmlPathSafe(clientDir, pathname)
@@ -56,7 +57,7 @@ export function tryServeSsgIsr(opts: ServeSsgIsrOptions): boolean {
     }
     if (isStale(mtimeMs, revalidate)) {
       regenLock.run(pathname, async () => {
-        const page = await renderSsgPage(routes, pathname, appHtml, { clientEntry })
+        const page = await renderSsgPage(routes, pathname, appHtml, { clientEntry, clientCss })
         if (!page) return
         writeHtmlAtomic(file, page.html)
       })

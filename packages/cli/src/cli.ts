@@ -140,7 +140,8 @@ async function cmdBuild() {
   const serverMod = await import(pathToFileURL(serverEntryPath).href)
   const routes: Routes = serverMod.routes ?? serverMod.default
 
-  const ssgPages = await buildSsgPages(routes, appHtml)
+  const clientCss = listClientCssHrefs(path.join(outDir, 'client', 'assets'))
+  const ssgPages = await buildSsgPages(routes, appHtml, { clientCss })
 
   const builder: Builder = {
     getClientDirectory: () => path.join(outDir, 'client'),
@@ -177,6 +178,16 @@ function copyDir(src: string, dest: string) {
     if (entry.isDirectory()) copyDir(s, d)
     else fs.copyFileSync(s, d)
   }
+}
+
+/** Collect Vite-emitted CSS under `assets/` as absolute hrefs for `<link rel="stylesheet">`. */
+function listClientCssHrefs(assetsDir: string): string[] {
+  if (!fs.existsSync(assetsDir)) return []
+  return fs
+    .readdirSync(assetsDir)
+    .filter((name) => name.endsWith('.css'))
+    .sort()
+    .map((name) => `/assets/${name}`)
 }
 
 async function cmdPreview() {

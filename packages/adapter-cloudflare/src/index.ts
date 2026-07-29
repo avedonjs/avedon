@@ -47,10 +47,20 @@ export function cloudflareAdapter(options: CloudflareAdapterOptions = {}): Adapt
         )
       }
 
-      builder.writeFile(path.join(outDir, 'worker.js'), workerSource())
+      const clientCss = listClientCssHrefs(path.join(clientDir, 'assets'))
+      builder.writeFile(path.join(outDir, 'worker.js'), workerSource(clientCss))
       builder.writeFile(path.join(outDir, 'wrangler.jsonc'), wranglerSource(name))
     },
   }
+}
+
+function listClientCssHrefs(assetsDir: string): string[] {
+  if (!fs.existsSync(assetsDir)) return []
+  return fs
+    .readdirSync(assetsDir)
+    .filter((name) => name.endsWith('.css'))
+    .sort()
+    .map((name) => `/assets/${name}`)
 }
 
 export function ssgHtmlPath(clientDir: string, routePath: string): string {
@@ -64,13 +74,14 @@ export function ssgHtmlPath(clientDir: string, routePath: string): string {
   return path.join(clientDir, ...parts, 'index.html')
 }
 
-function workerSource(): string {
+function workerSource(clientCss: string[]): string {
   return `import { createHandler } from '@avedon/server';
 import * as serverApp from './server/index.js';
 
 const routes = serverApp.routes ?? serverApp.default;
 const appHtml = serverApp.appHtml;
 const clientEntry = '/assets/client.js';
+const clientCss = ${JSON.stringify(clientCss)};
 
 function resolveSession(env) {
   const base = serverApp.session;
@@ -90,6 +101,7 @@ export default {
       errorComponent: serverApp.errorComponent,
       notFoundComponent: serverApp.notFoundComponent,
       clientEntry,
+      clientCss,
       session: resolveSession(env),
     });
     return handler(request);

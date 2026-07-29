@@ -12,6 +12,8 @@ export type SsgPage = { path: string; html: string }
 
 export type RenderSsgOptions = {
   clientEntry?: string
+  /** Vite-extracted CSS hrefs to link in `<head>` (e.g. `/assets/client-….css`). */
+  clientCss?: string[]
 }
 
 /** Render a single SSG pathname to HTML (build + ISR regen). */
@@ -72,7 +74,11 @@ export async function renderSsgPage(
   const htmlP = streamToString(ctrl.stream)
   const head = data.head && typeof data.head === 'object' ? (data.head as HeadMeta) : undefined
   ctrl.enqueueHtml(
-    renderShellPrefix(appHtml, { css: cssParts.filter(Boolean).join('\n'), head }),
+    renderShellPrefix(appHtml, {
+      css: cssParts.filter(Boolean).join('\n'),
+      head,
+      clientCss: options.clientCss,
+    }),
   )
   await writeBody(ctrl)
   await ctrl.waitPending()
@@ -87,7 +93,11 @@ export async function renderSsgPage(
 }
 
 /** Expand SSG routes (including `getStaticPaths` / `entries`) into HTML pages. */
-export async function buildSsgPages(routes: Routes, appHtml: string): Promise<SsgPage[]> {
+export async function buildSsgPages(
+  routes: Routes,
+  appHtml: string,
+  options: RenderSsgOptions = {},
+): Promise<SsgPage[]> {
   const ssgPages: SsgPage[] = []
   for (const route of flattenRoutes(routes)) {
     if ((route.render ?? 'ssr') !== 'ssg') continue
@@ -95,7 +105,7 @@ export async function buildSsgPages(routes: Routes, appHtml: string): Promise<Ss
     const paths = listFn != null ? await listFn() : [route.path.includes(':') ? null : route.path]
     for (const p of paths) {
       if (!p) continue
-      const page = await renderSsgPage(routes, p, appHtml)
+      const page = await renderSsgPage(routes, p, appHtml, options)
       if (page) ssgPages.push(page)
     }
   }

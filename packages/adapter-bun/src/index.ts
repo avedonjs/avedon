@@ -1,4 +1,5 @@
 import type { AdapterBuilder, AdapterInterface } from '@avedon/shared'
+import fs from 'node:fs'
 import path from 'node:path'
 
 export type { AdapterBuilder, AdapterInterface }
@@ -34,9 +35,19 @@ export function bunAdapter(options: BunAdapterOptions = {}): AdapterInterface {
 
       const serverPath = path.join(outDir, 'server.js')
       const serverEntry = builder.getServerEntry()
-      builder.writeFile(serverPath, bunServerSource(serverEntry, outDir))
+      const clientCss = listClientCssHrefs(path.join(outDir, 'client', 'assets'))
+      builder.writeFile(serverPath, bunServerSource(serverEntry, outDir, clientCss))
     },
   }
+}
+
+function listClientCssHrefs(assetsDir: string): string[] {
+  if (!fs.existsSync(assetsDir)) return []
+  return fs
+    .readdirSync(assetsDir)
+    .filter((name) => name.endsWith('.css'))
+    .sort()
+    .map((name) => `/assets/${name}`)
 }
 
 function pathToImport(serverEntry: string, outDir: string): string {
@@ -45,7 +56,7 @@ function pathToImport(serverEntry: string, outDir: string): string {
   return rel
 }
 
-function bunServerSource(serverEntry: string, outDir: string): string {
+function bunServerSource(serverEntry: string, outDir: string, clientCss: string[]): string {
   return `import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,6 +70,7 @@ const clientDir = path.join(__dirname, 'client');
 const routes = serverApp.routes ?? serverApp.default;
 const appHtml = serverApp.appHtml;
 const clientEntry = '/assets/client.js';
+const clientCss = ${JSON.stringify(clientCss)};
 
 const handler = createHandler({
   routes,
@@ -67,6 +79,7 @@ const handler = createHandler({
   errorComponent: serverApp.errorComponent,
   notFoundComponent: serverApp.notFoundComponent,
   clientEntry,
+  clientCss,
   session: serverApp.session,
 });
 
@@ -108,6 +121,7 @@ Bun.serve({
         routes,
         appHtml,
         clientEntry,
+        clientCss,
       });
       if (isr) return isr;
 

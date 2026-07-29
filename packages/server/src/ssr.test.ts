@@ -48,6 +48,14 @@ describe('shell head', () => {
     expect(out).not.toContain('base')
   })
 
+  it('links Vite client CSS hrefs in the head', () => {
+    const out = renderShellPrefix(noTitle, {
+      clientCss: ['/assets/client-abc.css', '/assets/other.css'],
+    })
+    expect(out).toContain('<link rel="stylesheet" href="/assets/client-abc.css" />')
+    expect(out).toContain('<link rel="stylesheet" href="/assets/other.css" />')
+  })
+
   it('replaces a description meta with leading attributes and single quotes', () => {
     const app =
       `<!doctype html><html><head><meta charset="utf-8" /><meta data-x name='description' content='old' />%avedon.head%</head><body><div id="app">`

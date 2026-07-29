@@ -122,6 +122,8 @@ export interface HandlerOptions {
   errorComponent?: AvedonComponentModule
   notFoundComponent?: AvedonComponentModule
   clientEntry?: string
+  /** Vite-extracted CSS hrefs linked in `<head>` (e.g. `/assets/client-….css`). */
+  clientCss?: string[]
   getCss?: () => string
   /** CSRF for form `actions` (default: Origin/Referer check). Set `false` to disable. */
   csrf?: CsrfOptions

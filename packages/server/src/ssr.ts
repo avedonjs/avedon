@@ -8,12 +8,18 @@ export function renderShell(
     body: string
     head?: HeadMeta
     css?: string
+    /** Absolute hrefs for Vite-extracted client CSS (e.g. `/assets/client-abc.css`). */
+    clientCss?: string[]
     props?: Record<string, unknown>
     clientEntry?: string
   },
 ): string {
   return (
-    renderShellPrefix(appHtml, { head: options.head, css: options.css }) +
+    renderShellPrefix(appHtml, {
+      head: options.head,
+      css: options.css,
+      clientCss: options.clientCss,
+    }) +
     options.body +
     renderShellSuffixFromTemplate(appHtml, {
       props: options.props,
@@ -25,7 +31,7 @@ export function renderShell(
 /** HTML through opening `<div id="app">` (body not closed). */
 export function renderShellPrefix(
   appHtml: string,
-  options: { head?: HeadMeta; css?: string } = {},
+  options: { head?: HeadMeta; css?: string; clientCss?: string[] } = {},
 ): string {
   let html = appHtml
   const extra: string[] = []
@@ -36,6 +42,10 @@ export function renderShellPrefix(
     extra.push(...applied.extra)
   }
   if (options.css) extra.push(`<style data-avedon-css>${options.css}</style>`)
+  for (const href of options.clientCss ?? []) {
+    if (!href) continue
+    extra.push(`<link rel="stylesheet" href="${escapeHtml(href)}" />`)
+  }
 
   const head = extra.filter(Boolean).join('\n')
 

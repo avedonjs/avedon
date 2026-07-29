@@ -379,6 +379,7 @@ async function renderPage(
       css: cssParts.filter(Boolean).join('\n'),
       props: data,
       clientEntry: options.clientEntry,
+      clientCss: options.clientCss,
     })
     return new Response(html, {
       status: 200,
@@ -413,6 +414,7 @@ async function renderPage(
       css,
       props: data,
       clientEntry: options.clientEntry,
+      clientCss: options.clientCss,
     })
     return new Response(html, {
       status: 200,
@@ -421,7 +423,11 @@ async function renderPage(
   }
 
   const prefixFor = (data?: Record<string, unknown>) =>
-    renderShellPrefix(options.appHtml, { css, head: headOf(data) })
+    renderShellPrefix(options.appHtml, {
+      css,
+      head: headOf(data),
+      clientCss: options.clientCss,
+    })
 
   const buildWriters = (data: Record<string, unknown>) => {
     let writeBody: (ctrl: RenderStreamController) => Promise<void> = async (ctrl) => {

@@ -32,9 +32,19 @@ export function nodeAdapter(options: { out?: string } = {}): AdapterInterface {
       const serverPath = path.join(outDir, 'server.js')
       const serverEntry = builder.getServerEntry()
       const manifest = JSON.stringify(builder.getManifest(), null, 2)
-      builder.writeFile(serverPath, nodeServerSource(serverEntry, outDir, manifest))
+      const clientCss = listClientCssHrefs(path.join(outDir, 'client', 'assets'))
+      builder.writeFile(serverPath, nodeServerSource(serverEntry, outDir, manifest, clientCss))
     },
   }
+}
+
+function listClientCssHrefs(assetsDir: string): string[] {
+  if (!fs.existsSync(assetsDir)) return []
+  return fs
+    .readdirSync(assetsDir)
+    .filter((name) => name.endsWith('.css'))
+    .sort()
+    .map((name) => `/assets/${name}`)
 }
 
 function pathToImport(serverEntry: string, outDir: string): string {
@@ -43,7 +53,12 @@ function pathToImport(serverEntry: string, outDir: string): string {
   return rel
 }
 
-function nodeServerSource(serverEntry: string, outDir: string, manifest: string): string {
+function nodeServerSource(
+  serverEntry: string,
+  outDir: string,
+  manifest: string,
+  clientCss: string[],
+): string {
   return `import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -61,6 +76,7 @@ void manifest;
 const routes = serverApp.routes ?? serverApp.default;
 const appHtml = serverApp.appHtml;
 const clientEntry = '/assets/client.js';
+const clientCss = ${JSON.stringify(clientCss)};
 
 const handler = createHandler({
   routes,
@@ -69,6 +85,7 @@ const handler = createHandler({
   errorComponent: serverApp.errorComponent,
   notFoundComponent: serverApp.notFoundComponent,
   clientEntry,
+  clientCss,
   session: serverApp.session,
 });
 
@@ -118,6 +135,7 @@ const server = createServer(async (req, res) => {
         routes,
         appHtml,
         clientEntry,
+        clientCss,
       })
     ) {
       return;
