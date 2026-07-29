@@ -1,5 +1,11 @@
 # @avedon/adapter-cloudflare
 
+## 0.2.3
+
+### Patch Changes
+
+- @avedon/server@0.2.2
+
 ## 0.2.2
 
 ### Patch Changes

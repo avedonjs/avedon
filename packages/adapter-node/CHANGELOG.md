@@ -1,5 +1,11 @@
 # @avedon/adapter-node
 
+## 0.1.5
+
+### Patch Changes
+
+- @avedon/server@0.2.2
+
 ## 0.1.4
 
 ### Patch Changes
