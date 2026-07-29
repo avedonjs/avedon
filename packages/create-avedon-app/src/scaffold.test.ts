@@ -29,6 +29,11 @@ describe('scaffoldApp', () => {
 
     const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
     expect(pkg.name).toBe('demo-app')
+    // Compiler 0.4+ emits __contextBegin; runtime ^0.1.x lacks it (Vite import error).
+    // Inside the monorepo, scaffold rewrites deps to file: links.
+    expect(pkg.dependencies['@avedon/runtime']).toMatch(/^(\^0\.2\.|file:)/)
+    expect(pkg.dependencies['@avedon/server']).toMatch(/^(\^0\.2\.|file:)/)
+    expect(pkg.dependencies.avedon).toMatch(/^(\^0\.1\.|file:)/)
 
     const entry = fs.readFileSync(path.join(app, 'src/server-entry.ts'), 'utf8')
     expect(entry).toContain('errorComponent')
@@ -69,7 +74,7 @@ describe('scaffoldApp', () => {
     expect(cfg).toContain('cloudflareAdapter')
     expect(cfg).toContain('name: "cf-app"')
     const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
-    expect(pkg.dependencies['@avedon/adapter-cloudflare']).toBeTruthy()
+    expect(pkg.dependencies['@avedon/adapter-cloudflare']).toMatch(/^(\^0\.2\.|file:)/)
     expect(pkg.dependencies['@avedon/adapter-node']).toBeUndefined()
     expect(pkg.devDependencies.wrangler).toBeTruthy()
     expect(pkg.scripts.start).toBe('cd build && wrangler deploy')
@@ -85,7 +90,7 @@ describe('scaffoldApp', () => {
     expect(cfg).toContain("from '@avedon/adapter-bun'")
     expect(cfg).toContain('bunAdapter')
     const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
-    expect(pkg.dependencies['@avedon/adapter-bun']).toBeTruthy()
+    expect(pkg.dependencies['@avedon/adapter-bun']).toMatch(/^(\^0\.2\.|file:)/)
     expect(pkg.dependencies['@avedon/adapter-node']).toBeUndefined()
     expect(pkg.scripts.start).toBe('bun run build/server.js')
     expect(pkg.scripts.preview).toBe('bun run build/server.js')

@@ -2,7 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { AdapterChoice } from './types.js'
 
-const AVEDON_DEP = '^0.1.0'
+/** Match current npm majors: cloudflare/bun are 0.2.x. */
+const ADAPTER_EDGE_RANGE = '^0.2.4'
 const WRANGLER_DEP = '^4.113.0'
 
 export function applyAdapter(
@@ -25,7 +26,7 @@ export function applyAdapter(
   delete pkg.dependencies['@avedon/adapter-node']
 
   if (adapter === 'cloudflare') {
-    pkg.dependencies['@avedon/adapter-cloudflare'] = AVEDON_DEP
+    pkg.dependencies['@avedon/adapter-cloudflare'] = ADAPTER_EDGE_RANGE
     pkg.devDependencies.wrangler = WRANGLER_DEP
     pkg.scripts.start = 'cd build && wrangler deploy'
     pkg.scripts.deploy = 'cd build && wrangler deploy'
@@ -37,7 +38,7 @@ export function applyAdapter(
         `}\n`,
     )
   } else {
-    pkg.dependencies['@avedon/adapter-bun'] = AVEDON_DEP
+    pkg.dependencies['@avedon/adapter-bun'] = ADAPTER_EDGE_RANGE
     pkg.scripts.start = 'bun run build/server.js'
     pkg.scripts.preview = 'bun run build/server.js'
     fs.writeFileSync(
