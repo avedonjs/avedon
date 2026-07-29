@@ -89,6 +89,14 @@ By default SSG HTML is immutable until the next `avedon build`. Set `revalidate`
 
 Client-side rendering skips server HTML for the page body beyond the application shell. Guards still apply when configured. Use for app-like surfaces or auth-gated views that are not meant for public HTML snapshots.
 
+## Hydration and client navigation
+
+After SSR/SSG HTML reaches the browser, avedon **soft-hydrates**: it remounts the page into a temporary holder and swaps via `replaceChildren`, so the shell does not flash empty. This is not DOM-reuse hydration — event listeners and component instances are created fresh. Soft hydrate **restores form control values** (inputs, textareas, selects, checkbox/radio checked state), then **`<details>` / `<dialog>` open**, then **scroll offsets** (scrollable elements under the hydrate root plus `window` scroll), then **focus** (and text selection when applicable) captured from the SSR tree before the swap.
+
+Child UI components always use `.mount()` on the client (including during hydrate). Client navigation moves `#app` children from the fetched document via `replaceChildren` (no `innerHTML` round-trip), then hydrates the new tree.
+
+True progressive hydration / DOM reuse remains a post-v1 goal.
+
 ## Mixing modes
 
 One `routes.ts` can mix `ssg`, `ssr`, and `csr`. Choose per route.

@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { vendorSignal } from '@avedon/runtime'
+
+  const vendor = vendorSignal()
+
+  function label() {
+    const s = vendor.get()
+    return s ? s : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>vendor lab</h1>
+    <p data-vendor>{label()}</p>
+  </main>
+</template>

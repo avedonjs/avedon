@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>slide lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-slide-target transition:slide={{ duration: 50 }}>Slides in</p>
+    {/if}
+  </main>
+</template>

@@ -1,0 +1,15 @@
+<script lang="ts">
+  let readyState = -1
+</script>
+
+<template>
+  <main>
+    <h1>media readyState lab</h1>
+    <audio
+      data-media-ready
+      bind:readyState={readyState}
+      src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+    ></audio>
+    <p data-ready-state>{readyState}</p>
+  </main>
+</template>

@@ -1,0 +1,34 @@
+<script lang="ts">
+  let choice = 'a'
+  let tags: string[] = ['x']
+</script>
+
+<template>
+  <main>
+    <h1>bind:group lab</h1>
+    <fieldset>
+      <legend>Radio</legend>
+      <label>
+        <input data-group-a type="radio" name="lab" value="a" bind:group={choice} />
+        A
+      </label>
+      <label>
+        <input data-group-b type="radio" name="lab" value="b" bind:group={choice} />
+        B
+      </label>
+      <p data-group-state>{choice}</p>
+    </fieldset>
+    <fieldset>
+      <legend>Checkbox</legend>
+      <label>
+        <input data-group-x type="checkbox" value="x" bind:group={tags} />
+        X
+      </label>
+      <label>
+        <input data-group-y type="checkbox" value="y" bind:group={tags} />
+        Y
+      </label>
+      <p data-group-tags>{tags.join(',')}</p>
+    </fieldset>
+  </main>
+</template>

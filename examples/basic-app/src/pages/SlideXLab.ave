@@ -1,0 +1,19 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>slideX lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-slidex-target transition:slideX={{ duration: 50 }} style="display:inline-block;white-space:nowrap">
+        Slides sideways
+      </p>
+    {/if}
+  </main>
+</template>

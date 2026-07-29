@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>spin lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-spin-target transition:spin={{ degrees: 90, duration: 50 }}>Spun in</p>
+    {/if}
+  </main>
+</template>

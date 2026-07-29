@@ -1,0 +1,32 @@
+<script lang="ts">
+  import { captureOpenState, onMount, restoreOpenState, signal } from '@avedon/runtime'
+
+  const status = signal('pending')
+
+  onMount(() => {
+    const root = document.querySelector('[data-open-root]')
+    const details = document.querySelector('[data-open-details]') as HTMLDetailsElement | null
+    if (!root || !details) {
+      status.set('missing')
+      return
+    }
+    details.open = true
+    const snap = captureOpenState(root)
+    details.open = false
+    restoreOpenState(root, snap)
+    status.set(details.open ? 'ok' : 'fail')
+  })
+</script>
+
+<template>
+  <main>
+    <h1>soft hydrate open lab</h1>
+    <div data-open-root>
+      <details data-open-details>
+        <summary>more</summary>
+        <p>body</p>
+      </details>
+    </div>
+    <p data-open-status>{status}</p>
+  </main>
+</template>

@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { prefersContrast } from '@avedon/runtime'
+
+  const more = prefersContrast()
+</script>
+
+<template>
+  <main>
+    <h1>prefers contrast lab</h1>
+    <p data-pc>{more.get() ? 'more' : 'no-preference'}</p>
+  </main>
+</template>

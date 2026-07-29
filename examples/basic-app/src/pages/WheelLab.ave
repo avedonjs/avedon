@@ -1,0 +1,23 @@
+<script lang="ts">
+  import { signal, wheel } from '@avedon/runtime'
+
+  const delta = signal(0)
+
+  function onWheel(event: WheelEvent) {
+    delta.set(Math.round(event.deltaY))
+  }
+</script>
+
+<template>
+  <main>
+    <h1>wheel lab</h1>
+    <div
+      data-wheel
+      use:wheel={onWheel}
+      style="height: 120px; overflow: auto; border: 1px solid #888"
+    >
+      <p style="height: 240px">Scroll over this box</p>
+    </div>
+    <p data-delta>{delta.get()}</p>
+  </main>
+</template>

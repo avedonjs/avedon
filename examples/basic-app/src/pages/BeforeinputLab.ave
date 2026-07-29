@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { beforeinput, signal } from '@avedon/runtime'
+
+  const last = signal('idle')
+
+  function onBefore(event: InputEvent) {
+    const data = event.data != null ? event.data : ''
+    const type = event.inputType ? event.inputType : 'unknown'
+    last.set(type + ':' + (data ? data : '-'))
+  }
+</script>
+
+<template>
+  <main>
+    <h1>beforeinput lab</h1>
+    <input data-beforeinput type="text" use:beforeinput={onBefore} />
+    <p data-last>{last.get()}</p>
+  </main>
+</template>

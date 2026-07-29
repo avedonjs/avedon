@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { signal, trimEnd } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>trimEnd lab</h1>
+    <input data-trim-end type="text" use:trimEnd on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>
+

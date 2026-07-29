@@ -1,0 +1,21 @@
+<script lang="ts">
+  import { signal, tick } from '@avedon/runtime'
+
+  let n = 0
+  const seen = signal('before')
+
+  async function bump() {
+    n = 1
+    await tick()
+    seen.set(document.querySelector('[data-n]')?.textContent ?? 'missing')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>tick lab</h1>
+    <button type="button" on:click={bump}>Bump</button>
+    <p data-n>{n}</p>
+    <p data-seen>{seen}</p>
+  </main>
+</template>

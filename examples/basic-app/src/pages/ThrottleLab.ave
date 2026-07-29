@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { signal, throttle } from '@avedon/runtime'
+
+  const out = signal('idle')
+  const opts = {
+    wait: 50,
+    handler: (value: string) => out.set(value ? value : 'empty'),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>throttle lab</h1>
+    <input data-throttle type="text" use:throttle={opts} />
+    <p data-throttle-out>{out}</p>
+  </main>
+</template>

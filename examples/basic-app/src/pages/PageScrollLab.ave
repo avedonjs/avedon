@@ -1,0 +1,14 @@
+<script lang="ts">
+  import { pageScroll } from '@avedon/runtime'
+
+  const scroll = pageScroll()
+</script>
+
+<template>
+  <main>
+    <h1>page scroll lab</h1>
+    <p data-scroll-x>{scroll.get().x}</p>
+    <p data-scroll-y>{scroll.get().y}</p>
+    <div style="height: 2000px" aria-hidden="true"></div>
+  </main>
+</template>

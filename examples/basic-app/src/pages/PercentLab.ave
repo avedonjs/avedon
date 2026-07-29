@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { percent, signal } from '@avedon/runtime'
+
+  const out = signal('')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>percent lab</h1>
+    <input data-percent type="text" use:percent on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

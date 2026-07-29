@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const locked = signal(true)
+
+  function toggle() {
+    locked.set(!locked.get())
+  }
+</script>
+
+<template>
+  <main>
+    <h1>boolean attrs lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    <button type="button" disabled={locked.get()} data-bool-target>Action</button>
+  </main>
+</template>

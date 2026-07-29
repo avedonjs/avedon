@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { dotCase, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>dotCase lab</h1>
+    <input data-dot-case type="text" use:dotCase on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>
+

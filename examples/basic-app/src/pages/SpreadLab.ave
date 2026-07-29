@@ -1,0 +1,17 @@
+<script lang="ts">
+  let title = 'hello'
+  let attrs = { 'data-spread': 'a', title: 'hello' }
+
+  function bump() {
+    title = title === 'hello' ? 'world' : 'hello'
+    attrs = { 'data-spread': title === 'hello' ? 'a' : 'b', title }
+  }
+</script>
+
+<template>
+  <main>
+    <h1>spread lab</h1>
+    <button type="button" on:click={bump}>Bump</button>
+    <p {...attrs}>Spread target</p>
+  </main>
+</template>

@@ -1,0 +1,15 @@
+<script lang="ts">
+  const p =
+    typeof window === 'undefined'
+      ? Promise.resolve('ssr')
+      : Promise.resolve('ready')
+</script>
+
+<template>
+  <main>
+    <h1>await then shorthand lab</h1>
+    {#await p then value}
+      <p data-await-then-short>{value}</p>
+    {/await}
+  </main>
+</template>

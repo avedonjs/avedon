@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>pulse lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-pulse-target transition:pulse={{ start: 1.2, duration: 50 }}>Pulsed in</p>
+    {/if}
+  </main>
+</template>

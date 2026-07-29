@@ -1,0 +1,23 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const accent = signal('rgb(0, 128, 0)')
+
+  function toggle() {
+    accent.set(accent.get() === 'rgb(0, 128, 0)' ? 'rgb(0, 0, 255)' : 'rgb(0, 128, 0)')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>style css var lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    <p
+      data-css-var-target
+      style:--accent={accent}
+      style="color: var(--accent)"
+    >
+      Target
+    </p>
+  </main>
+</template>

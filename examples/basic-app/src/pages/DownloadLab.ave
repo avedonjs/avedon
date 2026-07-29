@@ -1,0 +1,16 @@
+<script lang="ts">
+  import { download } from '@avedon/runtime'
+
+  const opts = {
+    filename: 'avedon-download.txt',
+    data: 'hello-download',
+    type: 'text/plain',
+  }
+</script>
+
+<template>
+  <main>
+    <h1>download lab</h1>
+    <button type="button" data-dl use:download={opts}>Download</button>
+  </main>
+</template>

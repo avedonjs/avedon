@@ -1,0 +1,32 @@
+<script lang="ts">
+  import { batch, effect, onMount, signal } from '@avedon/runtime'
+
+  const a = signal(0)
+  const b = signal(0)
+  const runs = signal(0)
+  const status = signal('pending')
+
+  effect(() => {
+    a.get()
+    b.get()
+    runs.update((n) => n + 1)
+  })
+
+  onMount(() => {
+    const before = runs.get()
+    batch(() => {
+      a.set(1)
+      b.set(2)
+    })
+    // initial effect + one batched re-run (not two)
+    status.set(runs.get() === before + 1 && a.get() + b.get() === 3 ? 'ok' : 'fail')
+  })
+</script>
+
+<template>
+  <main>
+    <h1>batch lab</h1>
+    <p data-batch-runs>{runs}</p>
+    <p data-batch-status>{status}</p>
+  </main>
+</template>

@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { dblclick, signal } from '@avedon/runtime'
+
+  const count = signal(0)
+
+  function onDbl() {
+    count.update((n) => n + 1)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>dblclick lab</h1>
+    <button type="button" data-dblclick use:dblclick={onDbl}>Double-click me</button>
+    <p data-count>{count.get()}</p>
+  </main>
+</template>

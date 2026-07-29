@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>fly lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-fly-target transition:fly={{ y: 16, duration: 50 }}>Lifted in</p>
+    {/if}
+  </main>
+</template>

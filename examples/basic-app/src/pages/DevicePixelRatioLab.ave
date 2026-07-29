@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { devicePixelRatio } from '@avedon/runtime'
+
+  const dpr = devicePixelRatio()
+</script>
+
+<template>
+  <main>
+    <h1>device pixel ratio lab</h1>
+    <p data-dpr>{dpr}</p>
+  </main>
+</template>

@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { htmlLangSignal } from '@avedon/runtime'
+
+  const lang = htmlLangSignal()
+
+  function setEn() {
+    lang.set('en')
+  }
+
+  function setTr() {
+    lang.set('tr')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>html-lang signal lab</h1>
+    <button type="button" data-lang-en on:click={setEn}>EN</button>
+    <button type="button" data-lang-tr on:click={setTr}>TR</button>
+    <p data-html-lang>{lang.get()}</p>
+  </main>
+</template>

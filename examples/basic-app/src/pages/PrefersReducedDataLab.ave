@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { prefersReducedData } from '@avedon/runtime'
+
+  const reduced = prefersReducedData()
+</script>
+
+<template>
+  <main>
+    <h1>prefers reduced data lab</h1>
+    <p data-prd>{reduced.get() ? 'reduce' : 'no-preference'}</p>
+  </main>
+</template>

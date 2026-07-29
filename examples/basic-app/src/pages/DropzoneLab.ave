@@ -1,0 +1,44 @@
+<script lang="ts">
+  import { dropzone, signal } from '@avedon/runtime'
+
+  const names = signal('none')
+  const active = signal(false)
+
+  function onDrop(files: File[]) {
+    names.set(files.map((f) => f.name).join(',') || 'none')
+  }
+
+  function onActive(v: boolean) {
+    active.set(v)
+  }
+
+  const zone = { handler: onDrop, onActive }
+</script>
+
+<style scoped>
+  .zone {
+    width: 220px;
+    height: 100px;
+    border: 2px dashed #666;
+    display: grid;
+    place-items: center;
+  }
+  .zone[data-active='true'] {
+    border-color: #06b6d4;
+  }
+</style>
+
+<template>
+  <main>
+    <h1>dropzone lab</h1>
+    <div
+      class="zone"
+      data-drop
+      data-active={active.get() ? 'true' : 'false'}
+      use:dropzone={zone}
+    >
+      Drop files
+    </div>
+    <p data-drop-names>{names.get()}</p>
+  </main>
+</template>

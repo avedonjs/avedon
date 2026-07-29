@@ -1,0 +1,13 @@
+<script lang="ts">
+  import { pageTitle } from '@avedon/runtime'
+
+  pageTitle('avedon-page-title-lab')
+</script>
+
+<template>
+  <main>
+    <h1>page title lab</h1>
+    <p data-pt>ready</p>
+    <a href="/lifecycle-lab" data-pt-nav>Lifecycle</a>
+  </main>
+</template>

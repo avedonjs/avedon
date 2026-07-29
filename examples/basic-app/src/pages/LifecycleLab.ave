@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { onMount } from '@avedon/runtime'
+
+  let box: HTMLElement | null = null
+
+  onMount(() => {
+    box?.setAttribute('data-life-status', 'mounted')
+    return () => {
+      box?.setAttribute('data-life-status', 'cleaned')
+    }
+  })
+</script>
+
+<template>
+  <main>
+    <h1>Lifecycle lab</h1>
+    <p bind:this={box} data-life-status="pending" data-life-target>waiting</p>
+  </main>
+</template>

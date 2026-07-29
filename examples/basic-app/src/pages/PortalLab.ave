@@ -1,0 +1,11 @@
+<script lang="ts">
+  import { portal } from '@avedon/runtime'
+</script>
+
+<template>
+  <main>
+    <h1>portal lab</h1>
+    <div data-portal-host id="portal-host"></div>
+    <p data-portaled use:portal={'#portal-host'}>ported</p>
+  </main>
+</template>

@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { documentTitleSignal } from '@avedon/runtime'
+
+  const title = documentTitleSignal()
+
+  function setAlpha() {
+    title.set('Alpha Title')
+  }
+
+  function setBeta() {
+    title.set('Beta Title')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>document-title signal lab</h1>
+    <button type="button" data-alpha on:click={setAlpha}>Alpha</button>
+    <button type="button" data-beta on:click={setBeta}>Beta</button>
+    <p data-doc-title>{title.get()}</p>
+  </main>
+</template>

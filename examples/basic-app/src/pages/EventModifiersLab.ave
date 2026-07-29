@@ -1,0 +1,57 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const log = signal('idle')
+  const outer = signal('no')
+  const inner = signal('no')
+  const wheel = signal('idle')
+
+  function save() {
+    log.set('saved')
+  }
+
+  function onOuter() {
+    outer.set('yes')
+  }
+
+  function onInner() {
+    inner.set('yes')
+  }
+
+  function onWheel(event: WheelEvent) {
+    event.preventDefault()
+    wheel.set('wheel')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>event modifiers lab</h1>
+    <form
+      action="/event-modifiers-lab"
+      method="GET"
+      on:submit|preventDefault={save}
+      data-mod-form
+    >
+      <button type="submit">Save</button>
+    </form>
+    <p data-mod-log>{log.get()}</p>
+
+    <div data-mod-outer on:click={onOuter}>
+      <button type="button" data-mod-inner on:click|stopImmediatePropagation={onInner}>
+        Inner
+      </button>
+    </div>
+    <p data-mod-outer-flag>{outer.get()}</p>
+    <p data-mod-inner-flag>{inner.get()}</p>
+
+    <div
+      data-mod-wheel
+      style="height: 40px; overflow: auto; border: 1px solid currentColor"
+      on:wheel|nonpassive={onWheel}
+    >
+      scroll me
+    </div>
+    <p data-mod-wheel-log>{wheel.get()}</p>
+  </main>
+</template>

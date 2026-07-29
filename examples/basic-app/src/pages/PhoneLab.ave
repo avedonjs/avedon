@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { phone, signal } from '@avedon/runtime'
+
+  const out = signal('')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>phone lab</h1>
+    <input data-phone type="text" use:phone on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

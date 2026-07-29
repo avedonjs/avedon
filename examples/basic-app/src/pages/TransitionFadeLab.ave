@@ -1,0 +1,6 @@
+<template>
+  <main>
+    <h1>transition:fade lab</h1>
+    <p data-fade-target transition:fade={{ duration: 50 }}>Faded in</p>
+  </main>
+</template>

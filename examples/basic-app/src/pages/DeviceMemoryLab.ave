@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { deviceMemorySignal } from '@avedon/runtime'
+
+  const mem = deviceMemorySignal()
+
+  function label() {
+    const n = mem.get()
+    return n > 0 ? String(n) : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>device memory lab</h1>
+    <p data-memory>{label()}</p>
+  </main>
+</template>

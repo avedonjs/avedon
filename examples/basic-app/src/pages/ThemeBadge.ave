@@ -1,0 +1,9 @@
+<script lang="ts">
+  import { getContext } from '@avedon/runtime'
+
+  const theme = getContext<string>('avedon-theme')
+</script>
+
+<template>
+  <span data-theme-badge>{theme}</span>
+</template>

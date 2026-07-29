@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { connectionDownlink } from '@avedon/runtime'
+
+  const down = connectionDownlink()
+</script>
+
+<template>
+  <main>
+    <h1>connection downlink lab</h1>
+    <p data-conn-downlink>{down}</p>
+  </main>
+</template>

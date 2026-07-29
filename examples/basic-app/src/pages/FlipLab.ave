@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>flip lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-flip-target transition:flip={{ degrees: 90, duration: 50 }}>Flipped in</p>
+    {/if}
+  </main>
+</template>

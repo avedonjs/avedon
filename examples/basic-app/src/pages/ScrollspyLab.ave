@@ -1,0 +1,24 @@
+<script lang="ts">
+  import { scrollspy, signal } from '@avedon/runtime'
+
+  const active = signal('none')
+  const spy = {
+    sections: ['sec-a', 'sec-b', 'sec-c'],
+    handler: (id: string | null) => active.set(id ?? 'none'),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>scrollspy lab</h1>
+    <p data-scrollspy-active>{active}</p>
+    <nav use:scrollspy={spy}>
+      <a href="#sec-a">A</a>
+      <a href="#sec-b">B</a>
+      <a href="#sec-c">C</a>
+    </nav>
+    <section id="sec-a" data-sec="a" style="height: 800px; padding-top: 40px">Section A</section>
+    <section id="sec-b" data-sec="b" style="height: 800px; padding-top: 40px">Section B</section>
+    <section id="sec-c" data-sec="c" style="height: 800px; padding-top: 40px">Section C</section>
+  </main>
+</template>

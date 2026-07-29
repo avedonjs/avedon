@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { tweened } from '@avedon/runtime'
+
+  const n = tweened(0, { duration: 60 })
+
+  function go() {
+    n.set(100)
+  }
+
+  function snap() {
+    n.set(0, { duration: 0 })
+  }
+</script>
+
+<template>
+  <main>
+    <h1>tweened lab</h1>
+    <button type="button" data-go on:click={go}>Go</button>
+    <button type="button" data-snap on:click={snap}>Snap</button>
+    <p data-tween>{Math.round(n.get())}</p>
+  </main>
+</template>

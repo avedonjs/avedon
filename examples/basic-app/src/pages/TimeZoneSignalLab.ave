@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { timeZoneSignal } from '@avedon/runtime'
+
+  const timeZone = timeZoneSignal()
+
+  function label() {
+    const v = timeZone.get()
+    return v ? v : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>time zone signal lab</h1>
+    <p data-timezone>{label()}</p>
+  </main>
+</template>

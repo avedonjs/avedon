@@ -1,0 +1,23 @@
+<script lang="ts">
+  import { infiniteScroll, signal } from '@avedon/runtime'
+
+  const loads = signal(0)
+  const opts = {
+    offset: 40,
+    handler: () => loads.update((n) => n + 1),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>infinite-scroll lab</h1>
+    <p data-inf-loads>{loads}</p>
+    <div
+      data-inf-scroll
+      use:infiniteScroll={opts}
+      style="height: 160px; overflow: auto; border: 1px solid #888"
+    >
+      <div style="height: 600px">tall content</div>
+    </div>
+  </main>
+</template>

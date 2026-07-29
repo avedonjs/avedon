@@ -1,0 +1,10 @@
+<script lang="ts">
+  import { copy } from '@avedon/runtime'
+</script>
+
+<template>
+  <main>
+    <h1>copy lab</h1>
+    <button type="button" data-copy use:copy={'avedon-copy-ok'}>Copy</button>
+  </main>
+</template>

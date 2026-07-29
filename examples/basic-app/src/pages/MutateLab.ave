@@ -1,0 +1,26 @@
+<script lang="ts">
+  import { mutate, signal } from '@avedon/runtime'
+
+  const count = signal(0)
+  let host: HTMLElement | null = null
+
+  function onMutate(records: MutationRecord[]) {
+    count.update((n) => n + records.length)
+  }
+
+  function addChild() {
+    if (!host) return
+    const el = document.createElement('span')
+    el.textContent = 'x'
+    host.appendChild(el)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>mutate lab</h1>
+    <button type="button" data-add on:click={addChild}>Add</button>
+    <div data-mutate-host bind:this={host} use:mutate={onMutate}></div>
+    <p data-mutate-count>{count.get()}</p>
+  </main>
+</template>

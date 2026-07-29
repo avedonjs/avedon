@@ -1,0 +1,16 @@
+<script lang="ts">
+  import { paste, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+  const opts = {
+    handler: (text: string) => out.set(text ? text : 'empty'),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>paste lab</h1>
+    <textarea data-paste use:paste={opts} rows="3" cols="40"></textarea>
+    <p data-paste-out>{out}</p>
+  </main>
+</template>

@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>blur lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-blur-target transition:blur={{ amount: 6, duration: 50 }}>Blurred in</p>
+    {/if}
+  </main>
+</template>

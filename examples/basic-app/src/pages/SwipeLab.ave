@@ -1,0 +1,27 @@
+<script lang="ts">
+  import { signal, swipe } from '@avedon/runtime'
+
+  const dir = signal('none')
+
+  function onSwipe(info: { direction: string }) {
+    dir.set(info.direction)
+  }
+</script>
+
+<style scoped>
+  .pad {
+    width: 200px;
+    height: 120px;
+    border: 1px solid #333;
+    display: grid;
+    place-items: center;
+  }
+</style>
+
+<template>
+  <main>
+    <h1>swipe lab</h1>
+    <div class="pad" data-swipe use:swipe={{ handler: onSwipe, threshold: 20 }}>Swipe</div>
+    <p data-swipe-dir>{dir.get()}</p>
+  </main>
+</template>

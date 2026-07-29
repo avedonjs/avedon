@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { connectionEffectiveType } from '@avedon/runtime'
+
+  const type = connectionEffectiveType()
+
+  function label() {
+    const t = type.get()
+    return t ? t : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>connection effective-type lab</h1>
+    <p data-conn-type>{label()}</p>
+  </main>
+</template>

@@ -1,0 +1,11 @@
+<script lang="ts">
+  import { createEventDispatcher } from '@avedon/runtime'
+
+  const dispatch = createEventDispatcher()
+</script>
+
+<template>
+  <button type="button" data-dispatch-btn on:click={() => dispatch('ping', { ok: true })}>
+    Ping
+  </button>
+</template>

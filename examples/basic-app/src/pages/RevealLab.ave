@@ -1,0 +1,21 @@
+<script lang="ts">
+  import { reveal } from '@avedon/runtime'
+</script>
+
+<style scoped>
+  .box {
+    opacity: 0.2;
+    transition: opacity 80ms ease;
+  }
+  .box.revealed {
+    opacity: 1;
+  }
+</style>
+
+<template>
+  <main>
+    <h1>reveal lab</h1>
+    <div style="height: 1200px" aria-hidden="true"></div>
+    <p class="box" data-reveal use:reveal>Reveal me</p>
+  </main>
+</template>

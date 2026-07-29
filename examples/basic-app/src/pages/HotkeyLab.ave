@@ -1,0 +1,21 @@
+<script lang="ts">
+  import { hotkey, signal } from '@avedon/runtime'
+
+  const n = signal(0)
+
+  const shortcut = {
+    key: 'k',
+    handler() {
+      n.update((v) => v + 1)
+    },
+  }
+</script>
+
+<template>
+  <main>
+    <h1>hotkey lab</h1>
+    <div data-hotkey-root use:hotkey={shortcut}>
+      <p data-hotkey-count>{n}</p>
+    </div>
+  </main>
+</template>

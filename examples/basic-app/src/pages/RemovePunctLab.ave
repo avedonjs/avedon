@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { removePunct, signal } from '@avedon/runtime'
+
+  const out = signal('')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>removePunct lab</h1>
+    <input data-remove-punct type="text" use:removePunct on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>
+

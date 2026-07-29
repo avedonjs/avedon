@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { lazy } from '@avedon/runtime'
+</script>
+
+<template>
+  <main>
+    <h1>lazy lab</h1>
+    <div style="height: 1200px" aria-hidden="true"></div>
+    <img
+      data-lazy
+      data-src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+      alt="lazy"
+      width="1"
+      height="1"
+      use:lazy
+    />
+  </main>
+</template>

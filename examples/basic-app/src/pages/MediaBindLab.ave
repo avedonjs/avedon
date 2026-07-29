@@ -1,0 +1,36 @@
+<script lang="ts">
+  let muted = false
+  let volume = 0.4
+  let rate = 1
+
+  function toggle() {
+    muted = !muted
+  }
+
+  function louder() {
+    volume = 0.9
+  }
+
+  function faster() {
+    rate = 1.5
+  }
+</script>
+
+<template>
+  <main>
+    <h1>media bind lab</h1>
+    <button type="button" on:click={toggle}>Toggle mute</button>
+    <button type="button" on:click={louder}>Louder</button>
+    <button type="button" on:click={faster}>Faster</button>
+    <audio
+      data-media
+      bind:muted={muted}
+      bind:volume={volume}
+      bind:playbackRate={rate}
+      src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+    ></audio>
+    <p data-muted-flag>{muted ? 'yes' : 'no'}</p>
+    <p data-volume>{volume}</p>
+    <p data-rate>{rate}</p>
+  </main>
+</template>

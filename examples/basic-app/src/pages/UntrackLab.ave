@@ -1,0 +1,28 @@
+<script lang="ts">
+  import { effect, signal, untrack } from '@avedon/runtime'
+
+  const a = signal(1)
+  const b = signal(10)
+  const log = signal('')
+
+  effect(() => {
+    log.set(`a=${a.get()} b=${untrack(() => b.get())}`)
+  })
+
+  function bumpA() {
+    a.set(a.get() + 1)
+  }
+
+  function bumpB() {
+    b.set(b.get() + 1)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>untrack lab</h1>
+    <button type="button" on:click={bumpA}>Bump A</button>
+    <button type="button" on:click={bumpB}>Bump B</button>
+    <p data-untrack-log>{log}</p>
+  </main>
+</template>

@@ -1,0 +1,14 @@
+<script lang="ts">
+  import { focusTrap } from '@avedon/runtime'
+</script>
+
+<template>
+  <main>
+    <h1>focus trap lab</h1>
+    <button type="button" data-before>Before</button>
+    <div data-trap use:focusTrap>
+      <button type="button" data-trap-a>A</button>
+      <button type="button" data-trap-b>B</button>
+    </div>
+  </main>
+</template>

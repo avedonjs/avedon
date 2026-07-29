@@ -1,0 +1,7 @@
+<template>
+  <main>
+    <h1>soft hydrate focus lab</h1>
+    <input data-other type="text" value="other" />
+    <input data-focus-target type="text" value="hello" autofocus />
+  </main>
+</template>

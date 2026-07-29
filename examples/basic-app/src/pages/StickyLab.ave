@@ -1,0 +1,35 @@
+<script lang="ts">
+  import { signal, sticky } from '@avedon/runtime'
+
+  const stuck = signal(false)
+
+  function onSticky(v: boolean) {
+    stuck.set(v)
+  }
+</script>
+
+<style scoped>
+  .spacer {
+    height: 400px;
+  }
+  .bar {
+    position: sticky;
+    top: 0;
+    background: #0e7490;
+    color: #fff;
+    padding: 8px;
+  }
+  .tail {
+    height: 800px;
+  }
+</style>
+
+<template>
+  <main>
+    <h1>sticky lab</h1>
+    <div class="spacer"></div>
+    <div class="bar" data-sticky use:sticky={onSticky}>Sticky bar</div>
+    <p data-sticky-state>{stuck.get() ? 'stuck' : 'free'}</p>
+    <div class="tail"></div>
+  </main>
+</template>

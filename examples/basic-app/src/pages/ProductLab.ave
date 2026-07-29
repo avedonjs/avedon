@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { productSignal } from '@avedon/runtime'
+
+  const product = productSignal()
+
+  function label() {
+    const s = product.get()
+    return s ? s : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>product lab</h1>
+    <p data-product>{label()}</p>
+  </main>
+</template>

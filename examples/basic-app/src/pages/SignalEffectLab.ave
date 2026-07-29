@@ -1,0 +1,16 @@
+<script lang="ts">
+  import { onMount, signal } from '@avedon/runtime'
+
+  const n = signal(0)
+
+  onMount(() => {
+    n.set(7)
+  })
+</script>
+
+<template>
+  <main>
+    <h1>Signal effect lab</h1>
+    <p data-sig-effect>{n}</p>
+  </main>
+</template>

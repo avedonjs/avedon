@@ -15,6 +15,7 @@ export interface RenderStreamController {
     thenRender: BoundaryRender,
     catchRender?: BoundaryRender,
     enqueue?: EnqueueHtml,
+    pendingHtml?: string,
   ): void
   pipeChildren(children: unknown): Promise<void>
   waitPending(): Promise<void>
@@ -46,9 +47,15 @@ export function createRenderStream(): RenderStreamController {
     thenRender: BoundaryRender,
     catchRender?: BoundaryRender,
     enqueue: EnqueueHtml = enqueueHtml,
+    pendingHtml = '',
   ) {
     const id = `b${++idSeq}`
-    enqueue(`<div hidden id="avedon-b-${id}"></div>`)
+    const pendingContent = pendingHtml || ''
+    if (pendingContent) {
+      enqueue(`<div id="avedon-b-${id}">${pendingContent}</div>`)
+    } else {
+      enqueue(`<div hidden id="avedon-b-${id}"></div>`)
+    }
 
     const task = Promise.resolve(promise).then(
       async (value) => {

@@ -1,0 +1,23 @@
+<script lang="ts">
+  import { scroll, signal } from '@avedon/runtime'
+
+  const y = signal(0)
+
+  function onScroll(pos: { x: number; y: number }) {
+    y.set(Math.round(pos.y))
+  }
+</script>
+
+<template>
+  <main>
+    <h1>scroll lab</h1>
+    <div
+      data-scroll
+      use:scroll={onScroll}
+      style="height: 100px; overflow: auto; border: 1px solid #888"
+    >
+      <p style="height: 300px">Tall content</p>
+    </div>
+    <p data-y>{y.get()}</p>
+  </main>
+</template>

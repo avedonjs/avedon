@@ -1,0 +1,25 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const items = signal([
+    { id: 1, price: 12.5 },
+    { id: 2, price: 7 },
+  ])
+
+  function bump() {
+    items.set(items.get().map((it) => ({ ...it, price: it.price + 1 })))
+  }
+</script>
+
+<template>
+  <main>
+    <h1>const lab</h1>
+    <button type="button" on:click={bump}>Bump</button>
+    <ul data-const-list>
+      {#each items.get() as item (item.id)}
+        {@const total = item.price * 2}
+        <li data-const-row={item.id}>{total}</li>
+      {/each}
+    </ul>
+  </main>
+</template>

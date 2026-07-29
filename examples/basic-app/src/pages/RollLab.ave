@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>roll lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-roll-target transition:roll={{ degrees: 90, duration: 50 }}>Rolled in</p>
+    {/if}
+  </main>
+</template>

@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { camelCase, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>camelCase lab</h1>
+    <input data-camel-case type="text" use:camelCase on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>
+

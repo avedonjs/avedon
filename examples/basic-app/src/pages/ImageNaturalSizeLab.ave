@@ -1,0 +1,19 @@
+<script lang="ts">
+  let naturalWidth = 0
+  let naturalHeight = 0
+</script>
+
+<template>
+  <main>
+    <h1>image natural size lab</h1>
+    <img
+      data-img-natural
+      alt=""
+      bind:naturalWidth={naturalWidth}
+      bind:naturalHeight={naturalHeight}
+      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+    />
+    <p data-nat-w>{naturalWidth}</p>
+    <p data-nat-h>{naturalHeight}</p>
+  </main>
+</template>

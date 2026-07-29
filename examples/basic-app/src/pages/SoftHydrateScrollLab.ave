@@ -1,0 +1,36 @@
+<script lang="ts">
+  import { captureScrollState, onMount, restoreScrollState, signal } from '@avedon/runtime'
+
+  const status = signal('pending')
+
+  onMount(() => {
+    const root = document.querySelector('[data-scroll-root]')
+    const pane = document.querySelector('[data-scroll-pane]') as HTMLElement | null
+    if (!root || !pane) {
+      status.set('missing')
+      return
+    }
+    pane.scrollTop = 120
+    pane.scrollLeft = 40
+    const snap = captureScrollState(root)
+    pane.scrollTop = 0
+    pane.scrollLeft = 0
+    restoreScrollState(root, snap)
+    status.set(pane.scrollTop === 120 && pane.scrollLeft === 40 ? 'ok' : 'fail')
+  })
+</script>
+
+<template>
+  <main>
+    <h1>soft hydrate scroll lab</h1>
+    <div data-scroll-root>
+      <div
+        data-scroll-pane
+        style="height: 80px; width: 120px; overflow: auto"
+      >
+        <div style="height: 400px; width: 400px">tall</div>
+      </div>
+    </div>
+    <p data-scroll-status>{status}</p>
+  </main>
+</template>

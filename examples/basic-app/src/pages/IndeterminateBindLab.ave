@@ -1,0 +1,16 @@
+<script lang="ts">
+  let mid = true
+
+  function toggle() {
+    mid = !mid
+  }
+</script>
+
+<template>
+  <main>
+    <h1>indeterminate lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    <input data-indeterminate type="checkbox" bind:indeterminate={mid} />
+    <p data-indeterminate-flag>{mid ? 'yes' : 'no'}</p>
+  </main>
+</template>

@@ -1,0 +1,27 @@
+<script lang="ts">
+  import { htmlDirSignal } from '@avedon/runtime'
+
+  const dir = htmlDirSignal()
+
+  function setLtr() {
+    dir.set('ltr')
+  }
+
+  function setRtl() {
+    dir.set('rtl')
+  }
+
+  function label() {
+    const d = dir.get()
+    return d ? d : 'none'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>html-dir signal lab</h1>
+    <button type="button" data-dir-ltr on:click={setLtr}>LTR</button>
+    <button type="button" data-dir-rtl on:click={setRtl}>RTL</button>
+    <p data-html-dir>{label()}</p>
+  </main>
+</template>

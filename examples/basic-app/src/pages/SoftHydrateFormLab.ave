@@ -1,0 +1,29 @@
+<script lang="ts">
+  import { captureFormState, onMount, restoreFormState, signal } from '@avedon/runtime'
+
+  const status = signal('pending')
+
+  onMount(() => {
+    const root = document.querySelector('[data-form-root]')
+    const input = document.querySelector('[data-form-input]') as HTMLInputElement | null
+    if (!root || !input) {
+      status.set('missing')
+      return
+    }
+    input.value = 'typed-before-swap'
+    const snap = captureFormState(root)
+    input.value = ''
+    restoreFormState(root, snap)
+    status.set(input.value === 'typed-before-swap' ? 'ok' : 'fail')
+  })
+</script>
+
+<template>
+  <main>
+    <h1>soft hydrate form lab</h1>
+    <div data-form-root>
+      <input data-form-input type="text" value="ssr" />
+    </div>
+    <p data-form-status>{status}</p>
+  </main>
+</template>

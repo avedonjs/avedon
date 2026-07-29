@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { selectionchange, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onSel(info: { start: number; end: number; text: string }) {
+    out.set(info.start + '-' + info.end + ':' + (info.text ? info.text : '-'))
+  }
+</script>
+
+<template>
+  <main>
+    <h1>selectionchange lab</h1>
+    <input data-selectionchange type="text" value="abcdef" use:selectionchange={onSel} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

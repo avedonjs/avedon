@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { hover, signal } from '@avedon/runtime'
+
+  const over = signal(false)
+
+  function onHover(hovered: boolean) {
+    over.set(hovered)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>hover lab</h1>
+    <button type="button" data-hover use:hover={onHover}>Target</button>
+    <p data-hover-state>{over.get() ? 'in' : 'out'}</p>
+  </main>
+</template>

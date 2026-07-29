@@ -1,0 +1,17 @@
+<script lang="ts">
+  import SpreadChild from './SpreadChild.ave'
+
+  let props = { label: 'alpha', tone: 'ok' }
+
+  function bump() {
+    props = { label: 'beta', tone: 'warn' }
+  }
+</script>
+
+<template>
+  <main>
+    <h1>component spread lab</h1>
+    <button type="button" on:click={bump}>Bump</button>
+    <SpreadChild {...props} />
+  </main>
+</template>

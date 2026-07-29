@@ -1,0 +1,16 @@
+<script lang="ts">
+  let text = 'hello'
+
+  function shout() {
+    text = 'HELLO'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>innerText lab</h1>
+    <button type="button" on:click={shout}>Shout</button>
+    <div data-editable contenteditable="true" bind:innerText={text}></div>
+    <p data-text>{text}</p>
+  </main>
+</template>

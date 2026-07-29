@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { longPress, signal } from '@avedon/runtime'
+
+  const count = signal(0)
+
+  function onLong() {
+    count.update((n) => n + 1)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>long press lab</h1>
+    <button type="button" data-lp use:longPress={{ handler: onLong, duration: 80 }}>
+      Hold me
+    </button>
+    <p data-lp-count>{count.get()}</p>
+  </main>
+</template>

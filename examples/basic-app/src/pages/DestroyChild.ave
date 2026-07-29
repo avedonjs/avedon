@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { onDestroy } from '@avedon/runtime'
+
+  onDestroy(() => {
+    const el = document.querySelector('[data-destroy-log]')
+    if (el) el.textContent = 'cleaned'
+  })
+</script>
+
+<template>
+  <p data-child>alive</p>
+</template>

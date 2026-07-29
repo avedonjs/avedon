@@ -7,6 +7,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { build as viteBuild, createServer } from 'vite'
 import { printDevBanner, shouldPrintDevBanner } from './banner.js'
+import { prepareBuildDirs } from './prepare-build-dirs.js'
 import { buildSsgPages, flattenRoutes } from './ssg.js'
 
 async function main() {
@@ -89,9 +90,12 @@ async function cmdDev() {
 }
 
 async function cmdBuild() {
-  const { adapter, root } = await loadConfig()
+  const root = process.cwd()
+  // Remove stale `build/` before Vite starts so dep-scan does not race closed
+  // servers against previous SSG HTML (noisy "Request is outdated" errors).
+  prepareBuildDirs(root)
+  const { adapter } = await loadConfig(root)
   const outDir = path.join(root, '.avedon')
-  fs.rmSync(outDir, { recursive: true, force: true })
   fs.mkdirSync(path.join(outDir, 'server'), { recursive: true })
   fs.mkdirSync(path.join(outDir, 'client'), { recursive: true })
 

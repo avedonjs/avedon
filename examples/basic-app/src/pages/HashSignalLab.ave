@@ -1,0 +1,27 @@
+<script lang="ts">
+  import { hashSignal } from '@avedon/runtime'
+
+  const hash = hashSignal()
+
+  function goA() {
+    hash.set('#a')
+  }
+
+  function goB() {
+    hash.set('#b')
+  }
+
+  function label() {
+    const h = hash.get()
+    return h ? h : 'none'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>hash signal lab</h1>
+    <button type="button" data-go-a on:click={goA}>A</button>
+    <button type="button" data-go-b on:click={goB}>B</button>
+    <p data-hash>{label()}</p>
+  </main>
+</template>

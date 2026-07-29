@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>scale lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-scale-target transition:scale={{ start: 0.5, duration: 50 }}>Scaled in</p>
+    {/if}
+  </main>
+</template>

@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { creditCard, signal } from '@avedon/runtime'
+
+  const out = signal('')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>creditCard lab</h1>
+    <input data-credit-card type="text" use:creditCard on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

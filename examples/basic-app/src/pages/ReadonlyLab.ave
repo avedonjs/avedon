@@ -1,0 +1,26 @@
+<script lang="ts">
+  import { onMount, readonly, signal } from '@avedon/runtime'
+
+  const count = signal(0)
+  const view = readonly(count)
+  const status = signal('pending')
+
+  onMount(() => {
+    let rejected = false
+    try {
+      view.set(99)
+    } catch {
+      rejected = true
+    }
+    count.set(3)
+    status.set(rejected && view.get() === 3 ? 'ok' : 'fail')
+  })
+</script>
+
+<template>
+  <main>
+    <h1>readonly lab</h1>
+    <p data-ro-view>{view}</p>
+    <p data-ro-status>{status}</p>
+  </main>
+</template>

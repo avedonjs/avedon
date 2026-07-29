@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>wipe lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-wipe-target transition:wipe={{ axis: 'left', duration: 50 }}>Wiped in</p>
+    {/if}
+  </main>
+</template>

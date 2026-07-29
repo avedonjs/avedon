@@ -1,0 +1,20 @@
+<script lang="ts">
+  import { focusWithin, signal } from '@avedon/runtime'
+
+  const inside = signal(false)
+
+  function onFocus(focused: boolean) {
+    inside.set(focused)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>focus within lab</h1>
+    <button type="button" data-outside>Outside</button>
+    <div data-fw use:focusWithin={onFocus}>
+      <button type="button" data-inside>Inside</button>
+    </div>
+    <p data-fw-state>{inside.get() ? 'in' : 'out'}</p>
+  </main>
+</template>

@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { pathCase, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>pathCase lab</h1>
+    <input data-path-case type="text" use:pathCase on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>
+

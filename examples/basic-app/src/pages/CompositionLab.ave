@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { composition, signal } from '@avedon/runtime'
+
+  const last = signal('idle')
+
+  function onComposition(info: { phase: string; data: string }) {
+    last.set(info.phase + ':' + (info.data ? info.data : '-'))
+  }
+</script>
+
+<template>
+  <main>
+    <h1>composition lab</h1>
+    <input data-composition type="text" use:composition={onComposition} />
+    <p data-last>{last.get()}</p>
+  </main>
+</template>

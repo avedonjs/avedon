@@ -1,0 +1,8 @@
+<template>
+  <main>
+    <h1>comments lab</h1>
+    <!-- should not appear in the DOM -->
+    <p data-comment-lab>visible</p>
+    <!-- trailing -->
+  </main>
+</template>

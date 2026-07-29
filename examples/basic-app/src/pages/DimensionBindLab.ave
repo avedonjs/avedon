@@ -1,0 +1,19 @@
+<script lang="ts">
+  let w = 0
+</script>
+
+<style scoped>
+  .box {
+    width: 200px;
+    height: 40px;
+    background: #06b6d4;
+  }
+</style>
+
+<template>
+  <main>
+    <h1>dimension lab</h1>
+    <div class="box" data-dim-box bind:clientWidth={w}></div>
+    <p data-dim-width>{w}</p>
+  </main>
+</template>

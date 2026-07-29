@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { appCodeNameSignal } from '@avedon/runtime'
+
+  const code = appCodeNameSignal()
+
+  function label() {
+    const s = code.get()
+    return s ? s : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>app code name lab</h1>
+    <p data-app-code-name>{label()}</p>
+  </main>
+</template>

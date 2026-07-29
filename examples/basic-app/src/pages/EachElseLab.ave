@@ -1,0 +1,23 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const items = signal<string[]>([])
+
+  function toggle() {
+    items.set(items.get().length ? [] : ['alpha', 'beta'])
+  }
+</script>
+
+<template>
+  <main>
+    <h1>each else lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    <ul data-each-else>
+      {#each items.get() as item}
+        <li data-item>{item}</li>
+      {:else}
+        <li data-empty>empty</li>
+      {/each}
+    </ul>
+  </main>
+</template>

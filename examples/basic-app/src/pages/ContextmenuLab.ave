@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { contextmenu, signal } from '@avedon/runtime'
+
+  const count = signal(0)
+
+  function onMenu() {
+    count.update((n) => n + 1)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>contextmenu lab</h1>
+    <button type="button" data-contextmenu use:contextmenu={onMenu}>Right-click me</button>
+    <p data-count>{count.get()}</p>
+  </main>
+</template>

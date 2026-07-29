@@ -1,0 +1,34 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const label = signal('alpha')
+
+  function mark(node: HTMLElement) {
+    node.setAttribute('data-use-applied', '1')
+    return () => node.removeAttribute('data-use-applied')
+  }
+
+  function setLabel(node: HTMLElement, text: string) {
+    node.setAttribute('data-use-label', text)
+    return {
+      update(next: string) {
+        node.setAttribute('data-use-label', next)
+      },
+      destroy() {
+        node.removeAttribute('data-use-label')
+      },
+    }
+  }
+
+  function flip() {
+    label.set(label.get() === 'alpha' ? 'beta' : 'alpha')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>use: action lab</h1>
+    <button type="button" on:click={flip}>Flip</button>
+    <p data-use-target use:mark use:setLabel={label.get()}>Target</p>
+  </main>
+</template>

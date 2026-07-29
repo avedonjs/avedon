@@ -1,0 +1,24 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const big = signal(false)
+
+  function toggle() {
+    big.set(!big.get())
+  }
+</script>
+
+<template>
+  <main>
+    <h1>style: directive lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    <p
+      data-style-target
+      style="display:inline-block"
+      style:opacity={big.get() ? '1' : '0.4'}
+      style:font-size={big.get() ? '24px' : '14px'}
+    >
+      Target
+    </p>
+  </main>
+</template>

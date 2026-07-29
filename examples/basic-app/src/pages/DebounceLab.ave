@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { debounce, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+  const opts = {
+    wait: 80,
+    handler: (value: string) => out.set(value ? value : 'empty'),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>debounce lab</h1>
+    <input data-debounce type="text" use:debounce={opts} />
+    <p data-debounce-out>{out}</p>
+  </main>
+</template>

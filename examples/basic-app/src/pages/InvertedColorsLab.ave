@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { invertedColors } from '@avedon/runtime'
+
+  const inverted = invertedColors()
+</script>
+
+<template>
+  <main>
+    <h1>inverted colors lab</h1>
+    <p data-ic>{inverted.get() ? 'inverted' : 'none'}</p>
+  </main>
+</template>

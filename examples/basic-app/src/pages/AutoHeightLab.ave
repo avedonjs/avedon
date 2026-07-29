@@ -1,0 +1,15 @@
+<script lang="ts">
+  import { autoHeight } from '@avedon/runtime'
+</script>
+
+<template>
+  <main>
+    <h1>auto-height lab</h1>
+    <textarea
+      data-auto-height
+      use:autoHeight
+      rows="1"
+      style="overflow: hidden; width: 240px; font: 16px/1.4 monospace"
+    >line1</textarea>
+  </main>
+</template>

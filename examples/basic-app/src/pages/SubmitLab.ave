@@ -1,0 +1,21 @@
+<script lang="ts">
+  import { signal, submit } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onSubmit(data: FormData) {
+    const name = data.get('name')
+    out.set(typeof name === 'string' && name ? name : 'empty')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>submit lab</h1>
+    <form data-submit use:submit={onSubmit}>
+      <input name="name" type="text" value="avedon" />
+      <button type="submit">Send</button>
+    </form>
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

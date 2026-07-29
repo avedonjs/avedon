@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { snap } from '@avedon/runtime'
+</script>
+
+<template>
+  <main>
+    <h1>snap lab</h1>
+    <div
+      data-snap
+      use:snap={{ axis: 'x', align: 'start', type: 'mandatory' }}
+      style="display: flex; width: 200px; height: 80px"
+    >
+      <div data-snap-child style="flex: 0 0 200px; height: 80px; background: #ccc">A</div>
+      <div style="flex: 0 0 200px; height: 80px; background: #999">B</div>
+    </div>
+  </main>
+</template>

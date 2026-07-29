@@ -1,0 +1,21 @@
+<script lang="ts">
+  import { change, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onChange(value: string) {
+    out.set(value ? value : 'empty')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>change lab</h1>
+    <select data-change use:change={onChange}>
+      <option value="">Choose</option>
+      <option value="alpha">Alpha</option>
+      <option value="beta">Beta</option>
+    </select>
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

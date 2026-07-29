@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { nowSignal } from '@avedon/runtime'
+
+  const now = nowSignal({ interval: 50 })
+</script>
+
+<template>
+  <main>
+    <h1>now signal lab</h1>
+    <p data-now>{now}</p>
+  </main>
+</template>

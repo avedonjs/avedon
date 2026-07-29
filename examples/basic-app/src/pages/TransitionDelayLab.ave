@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = false
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>transition delay lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-delay-target transition:fade={{ delay: 120, duration: 40 }}>Delayed fade</p>
+    {/if}
+  </main>
+</template>

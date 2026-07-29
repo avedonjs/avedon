@@ -1,0 +1,25 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const items = signal([
+    { id: 1, label: 'one' },
+    { id: 2, label: 'two' },
+    { id: 3, label: 'three' },
+  ])
+
+  function reverse() {
+    items.set([...items.get()].reverse())
+  }
+</script>
+
+<template>
+  <main>
+    <h1>Keyed each lab</h1>
+    <button type="button" on:click={reverse}>Reverse</button>
+    <ol data-keyed-list>
+      {#each items.get() as item (item.id)}
+        <li data-item-id={item.id}>{item.label}</li>
+      {/each}
+    </ol>
+  </main>
+</template>

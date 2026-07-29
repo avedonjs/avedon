@@ -1,0 +1,31 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const on = signal(true)
+
+  function toggle() {
+    on.set(!on.get())
+  }
+</script>
+
+<template>
+  <main>
+    <h1>class: directive lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    <p data-class-target class="card" class:active={on.get()} class:idle={!on.get()}>
+      Target
+    </p>
+  </main>
+</template>
+
+<style>
+  .card {
+    padding: 0.5rem 1rem;
+  }
+  .active {
+    font-weight: 700;
+  }
+  .idle {
+    opacity: 0.5;
+  }
+</style>

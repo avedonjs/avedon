@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { spring } from '@avedon/runtime'
+
+  const n = spring(0, { stiffness: 0.35, damping: 0.65 })
+
+  function go() {
+    n.set(100)
+  }
+
+  function snap() {
+    n.set(0, { hard: true })
+  }
+</script>
+
+<template>
+  <main>
+    <h1>spring lab</h1>
+    <button type="button" data-go on:click={go}>Go</button>
+    <button type="button" data-snap on:click={snap}>Snap</button>
+    <p data-spring>{Math.round(n.get())}</p>
+  </main>
+</template>

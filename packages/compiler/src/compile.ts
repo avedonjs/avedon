@@ -43,7 +43,7 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
     : ''
 
   // Client codegen never interpolates serverScript — physical exclusion (not tree-shake).
-  const code = `import { escapeHtml as __escape${hmrImport} } from '@avedon/runtime';
+  const code = `import { escapeHtml as __escape, __lifecycleBegin, __lifecycleEnd, __contextBegin, __updateHooksBegin, __updateHooksEnd, captureFocus as __captureFocus, restoreFocus as __restoreFocus, captureFormState as __captureFormState, restoreFormState as __restoreFormState, captureScrollState as __captureScrollState, restoreScrollState as __restoreScrollState, captureOpenState as __captureOpenState, restoreOpenState as __restoreOpenState, transitionMs as __transitionMs, effect as __effect${hmrImport} } from '@avedon/runtime';
 ${clientImports}
 
 export const css = ${cssExportExpr(css, componentsUsed)};
@@ -55,19 +55,64 @@ ${ssrRenderBody(clientBody, ssrExpr)}
 
 export function mount(target, __props = {}) {
   const __effects = [];
+  const __cleanups = [];
+  const __beforeUpdate = [];
+  const __afterUpdate = [];
+  __lifecycleBegin(__cleanups);
+  const __contextEnd = __contextBegin();
+  __cleanups.push(__contextEnd);
+  __updateHooksBegin(__beforeUpdate, __afterUpdate);
   let __scheduled = false;
+  let __updateReady = false;
   function __invalidate() {
     if (__scheduled) return;
     __scheduled = true;
     queueMicrotask(() => {
       __scheduled = false;
+      for (const __b of __beforeUpdate) { try { __b(); } catch {} }
       for (const fn of __effects) fn();
+      for (const __a of __afterUpdate) { try { __a(); } catch {} }
     });
   }
+  function __runOutro(nodes, done) {
+    const list = nodes || [];
+    const tasks = [];
+    for (const n of list) {
+      if (n && n.nodeType === 1 && typeof n.__avedonOutro === 'function') {
+        tasks.push(new Promise((resolve) => {
+          try { n.__avedonOutro(resolve); } catch { resolve(); }
+        }));
+      }
+    }
+    const finish = () => {
+      for (const n of list) { try { n.remove(); } catch {} }
+      done();
+    };
+    if (tasks.length) Promise.all(tasks).then(finish);
+    else finish();
+  }
 ${hmr ? '  const __signalBag = __hmrBeginSignalBag();\n' : ''}${clientMountBody(clientBody, clientBuild, hmr)}${hmr ? '\n  __hmrEndSignalBag();' : ''}
-  for (const fn of __effects) fn();
+  __updateHooksEnd();
+  __lifecycleEnd();
+  for (const fn of __effects) {
+    __cleanups.push(__effect(() => {
+      if (__updateReady) {
+        for (const __b of __beforeUpdate) { try { __b(); } catch {} }
+      }
+      fn();
+      if (__updateReady) {
+        for (const __a of __afterUpdate) { try { __a(); } catch {} }
+      }
+    }));
+  }
+  for (const __a of __afterUpdate) { try { __a(); } catch {} }
+  __updateReady = true;
   return {
-    destroy() { target.textContent = ''; },
+    destroy() {
+      for (const __c of __cleanups) { try { __c(); } catch {} }
+      __cleanups.length = 0;
+      target.textContent = '';
+    },
     update(next = {}) {
       Object.assign(__props, next);
 ${assignProps(clientBody)}
@@ -82,13 +127,21 @@ export function hydrate(target, __props = {}) {
     target.textContent = '';
     return mount(target, __props);
   }
+  const __focus = __captureFocus(target);
+  const __form = __captureFormState(target);
+  const __open = __captureOpenState(target);
+  const __scroll = __captureScrollState(target);
   const holder = document.createElement('div');
   const inst = mount(holder, __props);
   const frag = document.createDocumentFragment();
   while (holder.firstChild) frag.appendChild(holder.firstChild);
   target.replaceChildren(frag);
+  __restoreFormState(target, __form);
+  __restoreOpenState(target, __open);
+  __restoreScrollState(target, __scroll);
+  __restoreFocus(target, __focus);
   return {
-    destroy() { target.textContent = ''; },
+    destroy() { inst.destroy(); },
     update(next = {}) { inst.update(next); },${hmr ? `\n    getHmrState: inst.getHmrState,` : ''}
   };
 }
@@ -147,7 +200,7 @@ export function compileSsr(
             .join('\n')}\n})();\n`
         : ''
 
-  const code = `import { escapeHtml as __escape, createRenderStream } from '@avedon/runtime';
+  const code = `import { escapeHtml as __escape, createRenderStream, __contextBegin } from '@avedon/runtime';
 ${clientImports}
 
 ${stripTypeScript(parsed.serverScript)}
@@ -349,32 +402,42 @@ function collectAuxTypeAliases(serverScript: string, dataType: string): string {
 
 function ssrRenderBody(clientScript: string, ssrExpr: string): string {
   const lines: string[] = []
+  lines.push(`  const __contextEnd = __contextBegin();`)
+  lines.push(`  try {`)
   const script = stripTypeScript(clientScript)
   const exported = extractExportLets(script)
   for (const p of exported) {
-    lines.push(`  let ${p} = __props.${p};`)
+    lines.push(`    let ${p} = __props.${p};`)
   }
-  const body = stripExportLets(script, exported)
-  if (body.trim()) lines.push(indent(body, 2))
-  lines.push(`  return ${ssrExpr};`)
+  const body = wireEventDispatcher(stripExportLets(script, exported))
+  if (body.trim()) lines.push(indent(body, 4))
+  lines.push(`    return ${ssrExpr};`)
+  lines.push(`  } finally {`)
+  lines.push(`    __contextEnd();`)
+  lines.push(`  }`)
   return lines.join('\n')
 }
 
 function ssrStreamBody(clientScript: string, ssrStream: string): string {
   const lines: string[] = []
+  lines.push(`  const __contextEnd = __contextBegin();`)
+  lines.push(`  try {`)
   const script = stripTypeScript(clientScript)
   const exported = extractExportLets(script)
   for (const p of exported) {
-    lines.push(`  let ${p} = __props.${p};`)
+    lines.push(`    let ${p} = __props.${p};`)
   }
-  const body = stripExportLets(script, exported)
-  if (body.trim()) lines.push(indent(body, 2))
-  lines.push(`  const __enqueue = (html) => __ctrl.enqueueHtml(html);`)
+  const body = wireEventDispatcher(stripExportLets(script, exported))
+  if (body.trim()) lines.push(indent(body, 4))
+  lines.push(`    const __enqueue = (html) => __ctrl.enqueueHtml(html);`)
   lines.push(
-    `  const __awaitBoundary = (p, t, c) => __ctrl.enqueueBoundary(p, t, c, __enqueue);`,
+    `    const __awaitBoundary = (p, t, c, e, pend) => __ctrl.enqueueBoundary(p, t, c, e ?? __enqueue, pend);`,
   )
-  lines.push(`  const __pipeChildren = (ch) => __ctrl.pipeChildren(ch);`)
-  if (ssrStream.trim()) lines.push(indent(ssrStream, 2))
+  lines.push(`    const __pipeChildren = (ch) => __ctrl.pipeChildren(ch);`)
+  if (ssrStream.trim()) lines.push(indent(ssrStream, 4))
+  lines.push(`  } finally {`)
+  lines.push(`    __contextEnd();`)
+  lines.push(`  }`)
   return lines.join('\n')
 }
 
@@ -385,11 +448,16 @@ function clientMountBody(clientScript: string, clientBuild: string, hmr = false)
   for (const p of exported) {
     lines.push(`  let ${p} = __props.${p};`)
   }
-  const body = stripExportLets(script, exported)
+  const body = wireEventDispatcher(stripExportLets(script, exported))
   const prepared = hmr ? injectSignalHmrKeys(body) : body
   if (prepared.trim()) lines.push(indent(prepared, 2))
   lines.push(indent(clientBuild, 2))
   return lines.join('\n')
+}
+
+/** `createEventDispatcher()` → `createEventDispatcher(__props)` so handlers stay live across update(). */
+function wireEventDispatcher(script: string): string {
+  return script.replace(/\bcreateEventDispatcher\s*\(\s*\)/g, 'createEventDispatcher(__props)')
 }
 
 /**

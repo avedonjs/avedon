@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { autofocus, signal } from '@avedon/runtime'
+
+  const show = signal(false)
+
+  function open() {
+    show.set(true)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>autofocus lab</h1>
+    <button type="button" data-open on:click={open}>Open</button>
+    {#if show.get()}
+      <input data-af use:autofocus />
+    {/if}
+  </main>
+</template>

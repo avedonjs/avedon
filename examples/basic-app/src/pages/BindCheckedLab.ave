@@ -1,0 +1,14 @@
+<script lang="ts">
+  let on = true
+</script>
+
+<template>
+  <main>
+    <h1>bind:checked lab</h1>
+    <label>
+      <input data-bind-checked type="checkbox" bind:checked={on} />
+      Enabled
+    </label>
+    <p data-bind-state>{on ? 'on' : 'off'}</p>
+  </main>
+</template>

@@ -1,0 +1,18 @@
+<script lang="ts">
+  let ended = false
+  let seeking = false
+</script>
+
+<template>
+  <main>
+    <h1>media ended lab</h1>
+    <audio
+      data-media-ended
+      bind:ended={ended}
+      bind:seeking={seeking}
+      src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+    ></audio>
+    <p data-ended-flag>{ended ? 'yes' : 'no'}</p>
+    <p data-seeking-flag>{seeking ? 'yes' : 'no'}</p>
+  </main>
+</template>

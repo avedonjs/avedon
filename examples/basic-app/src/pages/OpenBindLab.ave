@@ -1,0 +1,24 @@
+<script lang="ts">
+  let show = false
+
+  function openIt() {
+    show = true
+  }
+
+  function closeIt() {
+    show = false
+  }
+</script>
+
+<template>
+  <main>
+    <h1>open lab</h1>
+    <button type="button" on:click={openIt}>Open</button>
+    <button type="button" on:click={closeIt}>Close</button>
+    <details data-open-details bind:open={show}>
+      <summary>More</summary>
+      <p>Hidden body</p>
+    </details>
+    <p data-open-flag>{show ? 'yes' : 'no'}</p>
+  </main>
+</template>

@@ -1,0 +1,20 @@
+<script lang="ts">
+  import { scrollIntoView, signal } from '@avedon/runtime'
+
+  const go = signal(false)
+
+  function jump() {
+    go.set(true)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>scroll-into-view lab</h1>
+    <button type="button" data-siv-jump on:click={jump}>Jump</button>
+    <div style="height: 1200px" aria-hidden="true"></div>
+    {#if go.get()}
+      <p data-siv-target use:scrollIntoView={{ behavior: 'auto', block: 'center' }}>target</p>
+    {/if}
+  </main>
+</template>

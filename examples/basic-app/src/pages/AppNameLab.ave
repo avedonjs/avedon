@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { appNameSignal } from '@avedon/runtime'
+
+  const name = appNameSignal()
+
+  function label() {
+    const s = name.get()
+    return s ? s : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>app name lab</h1>
+    <p data-app-name>{label()}</p>
+  </main>
+</template>

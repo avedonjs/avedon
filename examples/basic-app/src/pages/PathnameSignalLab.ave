@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { pathnameSignal } from '@avedon/runtime'
+
+  const path = pathnameSignal()
+
+  function goExtra() {
+    path.set('/pathname-signal-lab/x')
+  }
+
+  function goLab() {
+    path.set('/pathname-signal-lab')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>pathname signal lab</h1>
+    <button type="button" data-extra on:click={goExtra}>Extra</button>
+    <button type="button" data-lab on:click={goLab}>Lab</button>
+    <p data-path>{path.get()}</p>
+  </main>
+</template>

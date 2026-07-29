@@ -1,0 +1,32 @@
+<script lang="ts">
+  import { searchParamsSignal } from '@avedon/runtime'
+
+  const search = searchParamsSignal()
+
+  function setQ() {
+    search.set('q=avedon')
+  }
+
+  function clear() {
+    search.set('')
+  }
+
+  function fromHistory() {
+    history.replaceState(history.state, '', '?from=history')
+  }
+
+  function label() {
+    const s = search.get()
+    return s ? s : 'none'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>search params lab</h1>
+    <button type="button" data-set on:click={setQ}>Set</button>
+    <button type="button" data-clear on:click={clear}>Clear</button>
+    <button type="button" data-history on:click={fromHistory}>History</button>
+    <p data-search>{label()}</p>
+  </main>
+</template>

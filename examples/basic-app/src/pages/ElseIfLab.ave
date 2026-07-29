@@ -1,0 +1,24 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const mode = signal<'a' | 'b' | 'c'>('a')
+
+  function cycle() {
+    const cur = mode.get()
+    mode.set(cur === 'a' ? 'b' : cur === 'b' ? 'c' : 'a')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>else if lab</h1>
+    <button type="button" on:click={cycle}>Cycle</button>
+    {#if mode.get() === 'a'}
+      <p data-elseif>alpha</p>
+    {:else if mode.get() === 'b'}
+      <p data-elseif>beta</p>
+    {:else}
+      <p data-elseif>gamma</p>
+    {/if}
+  </main>
+</template>

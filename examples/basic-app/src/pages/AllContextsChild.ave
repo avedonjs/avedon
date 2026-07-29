@@ -1,0 +1,13 @@
+<script lang="ts">
+  import { getAllContexts } from '@avedon/runtime'
+
+  const all = getAllContexts()
+  const summary = Array.from(all.entries())
+    .map(([k, v]) => `${String(k)}=${String(v)}`)
+    .sort()
+    .join(',')
+</script>
+
+<template>
+  <p data-all-ctx>{summary}</p>
+</template>

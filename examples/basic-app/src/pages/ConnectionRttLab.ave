@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { connectionRtt } from '@avedon/runtime'
+
+  const rtt = connectionRtt()
+</script>
+
+<template>
+  <main>
+    <h1>connection rtt lab</h1>
+    <p data-conn-rtt>{rtt}</p>
+  </main>
+</template>

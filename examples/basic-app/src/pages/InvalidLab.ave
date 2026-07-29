@@ -1,0 +1,20 @@
+<script lang="ts">
+  import { invalid, signal } from '@avedon/runtime'
+
+  const msg = signal('ok')
+
+  function onInvalid() {
+    msg.set('invalid')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>invalid lab</h1>
+    <form data-form>
+      <input data-invalid type="email" required use:invalid={onInvalid} />
+      <button type="submit">Send</button>
+    </form>
+    <p data-msg>{msg.get()}</p>
+  </main>
+</template>

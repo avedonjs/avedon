@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { pdfViewerEnabledSignal } from '@avedon/runtime'
+
+  const pdf = pdfViewerEnabledSignal()
+</script>
+
+<template>
+  <main>
+    <h1>pdf viewer enabled lab</h1>
+    <p data-pdf>{pdf.get() ? 'yes' : 'no'}</p>
+  </main>
+</template>

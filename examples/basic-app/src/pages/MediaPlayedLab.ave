@@ -1,0 +1,18 @@
+<script lang="ts">
+  let played = 0
+  let buffered = 0
+</script>
+
+<template>
+  <main>
+    <h1>media played lab</h1>
+    <audio
+      data-media-played
+      bind:played={played}
+      bind:buffered={buffered}
+      src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+    ></audio>
+    <p data-played-end>{played}</p>
+    <p data-buffered-end>{buffered}</p>
+  </main>
+</template>

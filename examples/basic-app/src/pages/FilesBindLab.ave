@@ -1,0 +1,15 @@
+<script lang="ts">
+  let picked: FileList | null = null
+
+  function name() {
+    return picked && picked.length ? picked[0]!.name : '(none)'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>files lab</h1>
+    <input data-file-input type="file" bind:files={picked} />
+    <p data-file-name>{name()}</p>
+  </main>
+</template>

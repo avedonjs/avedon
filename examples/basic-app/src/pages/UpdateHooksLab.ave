@@ -1,0 +1,27 @@
+<script lang="ts">
+  import { afterUpdate, beforeUpdate } from '@avedon/runtime'
+
+  let n = 0
+  let logEl: HTMLParagraphElement | null = null
+
+  beforeUpdate(() => {
+    if (logEl) logEl.textContent = (logEl.textContent || '') + 'B'
+  })
+
+  afterUpdate(() => {
+    if (logEl) logEl.textContent = (logEl.textContent || '') + 'A'
+  })
+
+  function bump() {
+    n += 1
+  }
+</script>
+
+<template>
+  <main>
+    <h1>update hooks lab</h1>
+    <button type="button" on:click={bump}>Bump</button>
+    <p data-n>{n}</p>
+    <p data-update-log bind:this={logEl}></p>
+  </main>
+</template>

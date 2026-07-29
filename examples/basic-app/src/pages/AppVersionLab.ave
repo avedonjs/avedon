@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { appVersionSignal } from '@avedon/runtime'
+
+  const ver = appVersionSignal()
+
+  function label() {
+    const s = ver.get()
+    return s ? s : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>app version lab</h1>
+    <p data-app-version>{label()}</p>
+  </main>
+</template>

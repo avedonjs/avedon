@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { pascalCase, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>pascalCase lab</h1>
+    <input data-pascal-case type="text" use:pascalCase on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>
+

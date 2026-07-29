@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { localeSignal } from '@avedon/runtime'
+
+  const locale = localeSignal()
+
+  function label() {
+    const v = locale.get()
+    return v ? v : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>locale signal lab</h1>
+    <p data-locale>{label()}</p>
+  </main>
+</template>

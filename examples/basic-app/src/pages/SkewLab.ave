@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>skew lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-skew-target transition:skew={{ x: 20, duration: 50 }}>Skewed in</p>
+    {/if}
+  </main>
+</template>

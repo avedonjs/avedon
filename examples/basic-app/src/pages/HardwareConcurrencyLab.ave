@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { hardwareConcurrencySignal } from '@avedon/runtime'
+
+  const cores = hardwareConcurrencySignal()
+
+  function label() {
+    const n = cores.get()
+    return n > 0 ? String(n) : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>hardware concurrency lab</h1>
+    <p data-cores>{label()}</p>
+  </main>
+</template>

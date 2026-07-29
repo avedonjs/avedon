@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { lockScroll, signal } from '@avedon/runtime'
+
+  const locked = signal(true)
+
+  function toggle() {
+    locked.set(!locked.get())
+  }
+</script>
+
+<template>
+  <main>
+    <h1>lock scroll lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    <div data-lock-scroll use:lockScroll={locked.get()}></div>
+    <p data-lock-status>{locked.get() ? 'locked' : 'unlocked'}</p>
+  </main>
+</template>

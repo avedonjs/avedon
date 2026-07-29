@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { focus, signal } from '@avedon/runtime'
+
+  const on = signal(false)
+
+  function onFocus(focused: boolean) {
+    on.set(focused)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>focus lab</h1>
+    <button type="button" data-outside>Outside</button>
+    <button type="button" data-focus use:focus={onFocus}>Target</button>
+    <p data-focus-state>{on.get() ? 'in' : 'out'}</p>
+  </main>
+</template>

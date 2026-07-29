@@ -21,18 +21,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       # Trusted publishing (OIDC) needs Node ≥22.14 and npm ≥11.5.1
       # No registry-url: setup-node would write an auth .npmrc that blocks OIDC.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
+          package-manager-cache: false
 
       # Trusted publishing needs npm ≥11.5.1. Do NOT use npm@latest (12+):
       # pnpm 9 forwards --git-checks to npm publish; npm 12 throws EUNKNOWNCONFIG.

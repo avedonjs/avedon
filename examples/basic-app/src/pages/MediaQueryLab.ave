@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { mediaQuery } from '@avedon/runtime'
+
+  const narrow = mediaQuery('(max-width: 700px)')
+</script>
+
+<template>
+  <main>
+    <h1>media query lab</h1>
+    <p data-mq>{narrow.get() ? 'narrow' : 'wide'}</p>
+  </main>
+</template>

@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import type { IncomingMessage } from 'node:http'
 import type { ModuleNode, Plugin, ViteDevServer } from 'vite'
+import { collectRouteAvePaths, isRouteAveModule } from './routeModules.js'
 import { shouldSkip } from './shouldSkip.js'
 
 export interface AvedonPluginOptions {
@@ -21,6 +22,31 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
   /** Previous `.ave` source for block-diff HMR. */
   const prevAvedonSource = new Map<string, string>()
   let isDev = false
+  let routeAvePaths: Set<string> | null = null
+
+  const routesFileAbs = (): string => {
+    if (options.routesId) {
+      const id = options.routesId.replace(/^\//, '')
+      return path.isAbsolute(id) ? id : path.join(root, id)
+    }
+    return path.join(root, 'src/routes.ts')
+  }
+
+  const loadRouteAvePaths = (): Set<string> => {
+    if (routeAvePaths) return routeAvePaths
+    const routesFile = routesFileAbs()
+    const set = new Set<string>()
+    if (fs.existsSync(routesFile)) {
+      const src = fs.readFileSync(routesFile, 'utf8')
+      for (const p of collectRouteAvePaths(src, path.dirname(routesFile))) set.add(p)
+    }
+    routeAvePaths = set
+    return set
+  }
+
+  const invalidateRouteAvePaths = (file: string) => {
+    if (path.resolve(file) === path.resolve(routesFileAbs())) routeAvePaths = null
+  }
 
   return {
     name: 'avedon',
@@ -31,8 +57,10 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
       // Drop HMR source cache entries when `.ave` files are removed/renamed.
       const prune = (file: string) => {
         if (file.endsWith('.ave')) prevAvedonSource.delete(file)
+        invalidateRouteAvePaths(file)
       }
       devServer.watcher.on('unlink', prune)
+      devServer.watcher.on('change', invalidateRouteAvePaths)
       devServer.watcher.on('unlinkDir', (dir) => {
         for (const key of prevAvedonSource.keys()) {
           if (key === dir || key.startsWith(dir + path.sep)) prevAvedonSource.delete(key)
@@ -101,9 +129,15 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
       if (!cleanId.endsWith('.ave')) return null
       if (!prevAvedonSource.has(cleanId)) prevAvedonSource.set(cleanId, code)
       const filename = path.basename(cleanId)
+      const asUiComponent = !isRouteAveModule(cleanId, loadRouteAvePaths(), root)
       const result = opts?.ssr
-        ? compileSsr(code, { filename })
-        : compile(code, { filename, generate: 'client', hmr: isDev && !opts?.ssr })
+        ? compileSsr(code, { filename, asUiComponent })
+        : compile(code, {
+            filename,
+            generate: 'client',
+            hmr: isDev && !opts?.ssr,
+            asUiComponent,
+          })
       if (writeDts && result.dts) {
         const dtsPath = cleanId + '.d.ts'
         try {
@@ -115,6 +149,7 @@ export function avedon(options: AvedonPluginOptions = {}): Plugin {
       return { code: result.code, map: null }
     },
     async handleHotUpdate(ctx) {
+      invalidateRouteAvePaths(ctx.file)
       if (!ctx.file.endsWith('.ave')) return
       const next = await ctx.read()
       const prev = prevAvedonSource.get(ctx.file) ?? next

@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { prefersReducedTransparency } from '@avedon/runtime'
+
+  const reduced = prefersReducedTransparency()
+</script>
+
+<template>
+  <main>
+    <h1>prefers reduced transparency lab</h1>
+    <p data-prt>{reduced.get() ? 'reduce' : 'no-preference'}</p>
+  </main>
+</template>

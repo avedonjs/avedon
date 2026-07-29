@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { userAgentSignal } from '@avedon/runtime'
+
+  const ua = userAgentSignal()
+
+  function label() {
+    const s = ua.get()
+    return s ? s : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>user agent lab</h1>
+    <p data-ua>{label()}</p>
+  </main>
+</template>

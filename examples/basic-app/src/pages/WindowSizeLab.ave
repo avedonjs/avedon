@@ -1,0 +1,13 @@
+<script lang="ts">
+  import { windowSize } from '@avedon/runtime'
+
+  const size = windowSize()
+</script>
+
+<template>
+  <main>
+    <h1>window size lab</h1>
+    <p data-win-w>{size.get().width}</p>
+    <p data-win-h>{size.get().height}</p>
+  </main>
+</template>

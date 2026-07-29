@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { idleSignal } from '@avedon/runtime'
+
+  const idle = idleSignal({ timeout: 80 })
+</script>
+
+<template>
+  <main>
+    <h1>idle signal lab</h1>
+    <p data-idle>{idle.get() ? 'idle' : 'active'}</p>
+  </main>
+</template>

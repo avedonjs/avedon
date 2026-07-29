@@ -1,0 +1,18 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>in/out lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-in-only in:fade={{ duration: 50 }}>In only</p>
+      <p data-out-only out:fade={{ duration: 50 }}>Out only</p>
+    {/if}
+  </main>
+</template>

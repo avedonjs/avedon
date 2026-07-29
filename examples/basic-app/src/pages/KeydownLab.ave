@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { keydown, signal } from '@avedon/runtime'
+
+  const n = signal(0)
+  const shortcut = {
+    key: 'Enter',
+    handler() {
+      n.update((v) => v + 1)
+    },
+  }
+</script>
+
+<template>
+  <main>
+    <h1>keydown lab</h1>
+    <input data-keydown type="text" use:keydown={shortcut} />
+    <p data-keydown-count>{n}</p>
+  </main>
+</template>

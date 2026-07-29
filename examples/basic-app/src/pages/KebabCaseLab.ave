@@ -1,0 +1,19 @@
+<script lang="ts">
+  import { kebabCase, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>kebabCase lab</h1>
+    <input data-kebab-case type="text" use:kebabCase on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>
+

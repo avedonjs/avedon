@@ -1,0 +1,13 @@
+<script>
+  import NamedSlotCard from './NamedSlotCard.ave'
+</script>
+
+<template>
+  <main>
+    <h1>Named slots lab</h1>
+    <NamedSlotCard>
+      <strong slot="header">Header slot</strong>
+      <p data-card-default>Default body</p>
+    </NamedSlotCard>
+  </main>
+</template>

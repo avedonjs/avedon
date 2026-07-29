@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { webdriverSignal } from '@avedon/runtime'
+
+  const webdriver = webdriverSignal()
+</script>
+
+<template>
+  <main>
+    <h1>webdriver lab</h1>
+    <p data-webdriver>{webdriver.get() ? 'yes' : 'no'}</p>
+  </main>
+</template>

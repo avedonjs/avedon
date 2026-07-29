@@ -1,0 +1,14 @@
+<script lang="ts">
+  import { activeElement } from '@avedon/runtime'
+
+  const focused = activeElement()
+</script>
+
+<template>
+  <main>
+    <h1>active element lab</h1>
+    <button type="button" data-focus="a">A</button>
+    <button type="button" data-focus="b">B</button>
+    <p data-active>{focused.get()?.getAttribute('data-focus') ?? 'none'}</p>
+  </main>
+</template>

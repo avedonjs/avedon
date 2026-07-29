@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { holdRepeat, signal } from '@avedon/runtime'
+
+  const n = signal(0)
+  const opts = {
+    delay: 80,
+    interval: 40,
+    handler: () => n.update((v) => v + 1),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>hold-repeat lab</h1>
+    <button type="button" data-hold-repeat use:holdRepeat={opts}>+</button>
+    <p data-hold-count>{n}</p>
+  </main>
+</template>

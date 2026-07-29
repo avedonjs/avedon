@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { onlineSignal } from '@avedon/runtime'
+
+  const online = onlineSignal()
+</script>
+
+<template>
+  <main>
+    <h1>online signal lab</h1>
+    <p data-online>{online.get() ? 'online' : 'offline'}</p>
+  </main>
+</template>

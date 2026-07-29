@@ -1,0 +1,31 @@
+<script lang="ts">
+  import { drag, signal } from '@avedon/runtime'
+
+  const label = signal('0,0')
+
+  function onDrag(info: { phase: string; dx: number; dy: number }) {
+    if (info.phase === 'move' || info.phase === 'end') {
+      label.set(`${info.dx},${info.dy}`)
+    }
+  }
+</script>
+
+<style scoped>
+  .pad {
+    width: 200px;
+    height: 120px;
+    border: 1px solid #333;
+    display: grid;
+    place-items: center;
+    touch-action: none;
+    user-select: none;
+  }
+</style>
+
+<template>
+  <main>
+    <h1>drag lab</h1>
+    <div class="pad" data-drag use:drag={onDrag}>Drag me</div>
+    <p data-drag-delta>{label.get()}</p>
+  </main>
+</template>

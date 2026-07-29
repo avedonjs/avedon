@@ -1,0 +1,15 @@
+<script lang="ts">
+  let choice = 'b'
+</script>
+
+<template>
+  <main>
+    <h1>select bind lab</h1>
+    <select bind:value={choice} data-select>
+      <option value="a">Alpha</option>
+      <option value="b">Beta</option>
+      <option value="c">Gamma</option>
+    </select>
+    <p data-select-value>{choice}</p>
+  </main>
+</template>

@@ -1,0 +1,20 @@
+<script lang="ts">
+  import { reset, signal } from '@avedon/runtime'
+
+  const count = signal(0)
+
+  function onReset() {
+    count.update((n) => n + 1)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>reset lab</h1>
+    <form data-reset use:reset={onReset}>
+      <input name="q" type="text" value="hello" />
+      <button type="reset">Clear</button>
+    </form>
+    <p data-count>{count.get()}</p>
+  </main>
+</template>

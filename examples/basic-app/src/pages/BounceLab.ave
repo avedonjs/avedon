@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>bounce lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-bounce-target transition:bounce={{ start: 0.4, duration: 50 }}>Bounced in</p>
+    {/if}
+  </main>
+</template>

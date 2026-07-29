@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { selectOnFocus, signal } from '@avedon/runtime'
+
+  const selected = signal('no')
+
+  function onSelect() {
+    selected.set('yes')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>select-on-focus lab</h1>
+    <input
+      data-sof
+      value="hello-select"
+      use:selectOnFocus
+      on:select={onSelect}
+    />
+    <p data-sof-state>{selected}</p>
+  </main>
+</template>

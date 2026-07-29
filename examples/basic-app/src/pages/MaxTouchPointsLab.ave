@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { maxTouchPointsSignal } from '@avedon/runtime'
+
+  const points = maxTouchPointsSignal()
+</script>
+
+<template>
+  <main>
+    <h1>max touch points lab</h1>
+    <p data-points>{points.get()}</p>
+  </main>
+</template>

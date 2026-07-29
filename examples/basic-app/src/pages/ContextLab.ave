@@ -1,0 +1,13 @@
+<script lang="ts">
+  import { setContext } from '@avedon/runtime'
+  import ThemeBadge from './ThemeBadge.ave'
+
+  setContext('avedon-theme', 'dark')
+</script>
+
+<template>
+  <main>
+    <h1>context lab</h1>
+    <ThemeBadge />
+  </main>
+</template>

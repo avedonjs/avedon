@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { forcedColors } from '@avedon/runtime'
+
+  const forced = forcedColors()
+</script>
+
+<template>
+  <main>
+    <h1>forced colors lab</h1>
+    <p data-fc>{forced.get() ? 'active' : 'none'}</p>
+  </main>
+</template>

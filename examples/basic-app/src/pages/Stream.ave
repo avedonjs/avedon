@@ -29,6 +29,7 @@
     <h1>{data.headline}</h1>
     <p>Shell and this paragraph flush before the slow block resolves.</p>
     {#await late}
+      <p data-stream-pending>Waiting for late chunk…</p>
       {:then value}
         <p data-stream-late>{value.msg}</p>
       {:catch err}

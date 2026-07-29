@@ -1,0 +1,25 @@
+<script lang="ts">
+  let picked: string[] = ['b', 'c']
+
+  function clear() {
+    picked = []
+  }
+
+  function pickAll() {
+    picked = ['a', 'b', 'c']
+  }
+</script>
+
+<template>
+  <main>
+    <h1>multi select bind lab</h1>
+    <select multiple bind:value={picked} data-multi size="3">
+      <option value="a">Alpha</option>
+      <option value="b">Beta</option>
+      <option value="c">Gamma</option>
+    </select>
+    <p data-multi-value>{picked.join(',')}</p>
+    <button type="button" on:click={clear}>Clear</button>
+    <button type="button" on:click={pickAll}>All</button>
+  </main>
+</template>

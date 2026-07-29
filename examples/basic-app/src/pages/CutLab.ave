@@ -1,0 +1,16 @@
+<script lang="ts">
+  import { cut, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+  const opts = {
+    handler: (text: string) => out.set(text ? text : 'empty'),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>cut lab</h1>
+    <textarea data-cut use:cut={opts} rows="3" cols="40">cut-me-please</textarea>
+    <p data-cut-out>{out}</p>
+  </main>
+</template>

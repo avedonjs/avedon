@@ -1,0 +1,21 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+  import DestroyChild from './DestroyChild.ave'
+
+  const show = signal(true)
+
+  function hide() {
+    show.set(false)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>component destroy lab</h1>
+    <button type="button" data-hide on:click={hide}>Hide</button>
+    <p data-destroy-log>pending</p>
+    {#if show.get()}
+      <DestroyChild />
+    {/if}
+  </main>
+</template>

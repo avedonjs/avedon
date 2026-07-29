@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { visibilitySignal } from '@avedon/runtime'
+
+  const visibility = visibilitySignal()
+</script>
+
+<template>
+  <main>
+    <h1>visibility signal lab</h1>
+    <p data-visibility>{visibility}</p>
+  </main>
+</template>

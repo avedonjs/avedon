@@ -1,0 +1,26 @@
+<script lang="ts">
+  let resolve!: (v: string) => void
+  // SSR must settle (bufferHtml/stream waitPending); browser stays pending until Finish.
+  const p =
+    typeof window === 'undefined'
+      ? Promise.resolve('__ssr__')
+      : new Promise<string>((r) => {
+          resolve = r
+        })
+
+  function finish() {
+    resolve('ready')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>await pending lab</h1>
+    <button type="button" on:click={finish}>Finish</button>
+    {#await p}
+      <p data-await-pending>loading</p>
+    {:then value}
+      <p data-await-then>{value}</p>
+    {/await}
+  </main>
+</template>

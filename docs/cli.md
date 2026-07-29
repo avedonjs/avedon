@@ -8,7 +8,7 @@ The `avedon` package provides the commands you use inside an app. Scaffolding is
 |---------|-------------|
 | `avedon create [name]` | Scaffold a new app (same as `pnpm create avedon-app`) |
 | `avedon dev` | Development server (Vite + avedon middleware) |
-| `avedon build` | Client + server bundles, SSG pages, adapter output |
+| `avedon build` | Client + server bundles, SSG pages, adapter output. Clears stale `.avedon/` and `build/` first so Vite does not dep-scan previous SSG HTML. |
 | `avedon start` | Run the production Node server (`preview` is an alias) |
 
 In a scaffolded app these map to `pnpm dev`, `pnpm build`, and `pnpm start`.

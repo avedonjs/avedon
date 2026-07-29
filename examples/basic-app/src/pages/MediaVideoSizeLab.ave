@@ -1,0 +1,17 @@
+<script lang="ts">
+  let videoWidth = 0
+  let videoHeight = 0
+</script>
+
+<template>
+  <main>
+    <h1>media video size lab</h1>
+    <video
+      data-media-video
+      bind:videoWidth={videoWidth}
+      bind:videoHeight={videoHeight}
+    ></video>
+    <p data-video-w>{videoWidth}</p>
+    <p data-video-h>{videoHeight}</p>
+  </main>
+</template>

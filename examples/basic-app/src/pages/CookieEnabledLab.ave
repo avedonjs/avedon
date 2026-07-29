@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { cookieEnabledSignal } from '@avedon/runtime'
+
+  const cookies = cookieEnabledSignal()
+</script>
+
+<template>
+  <main>
+    <h1>cookie enabled lab</h1>
+    <p data-cookies>{cookies.get() ? 'yes' : 'no'}</p>
+  </main>
+</template>

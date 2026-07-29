@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { saveDataSignal } from '@avedon/runtime'
+
+  const save = saveDataSignal()
+</script>
+
+<template>
+  <main>
+    <h1>save-data signal lab</h1>
+    <p data-save-data>{save.get() ? 'on' : 'off'}</p>
+  </main>
+</template>

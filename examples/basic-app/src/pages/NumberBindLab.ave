@@ -1,0 +1,28 @@
+<script lang="ts">
+  let n: number | undefined = 3
+  let r = 5
+
+  function bump() {
+    n = (n ?? 0) + 1
+  }
+</script>
+
+<template>
+  <main>
+    <h1>number bind lab</h1>
+    <label>
+      number
+      <input data-num type="number" bind:value={n} />
+    </label>
+    <p data-num-val>{n}</p>
+    <p data-num-type>{typeof n}</p>
+    <button type="button" on:click={bump}>Bump</button>
+
+    <label>
+      range
+      <input data-range type="range" min="0" max="10" bind:value={r} />
+    </label>
+    <p data-range-val>{r}</p>
+    <p data-range-type>{typeof r}</p>
+  </main>
+</template>

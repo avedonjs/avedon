@@ -1,0 +1,16 @@
+<script lang="ts">
+  import { focusVisible, signal } from '@avedon/runtime'
+
+  const visible = signal(false)
+  const opts = {
+    handler: (v: boolean) => visible.set(v),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>focus-visible lab</h1>
+    <button type="button" data-focus-visible use:focusVisible={opts}>Target</button>
+    <p data-focus-visible-state>{visible.get() ? 'visible' : 'hidden'}</p>
+  </main>
+</template>

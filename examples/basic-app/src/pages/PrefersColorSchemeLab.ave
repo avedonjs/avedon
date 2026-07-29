@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { prefersColorScheme } from '@avedon/runtime'
+
+  const scheme = prefersColorScheme()
+</script>
+
+<template>
+  <main>
+    <h1>prefers color scheme lab</h1>
+    <p data-pcs>{scheme.get()}</p>
+  </main>
+</template>

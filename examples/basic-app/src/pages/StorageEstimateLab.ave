@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { storageEstimateSignal } from '@avedon/runtime'
+
+  const estimate = storageEstimateSignal()
+
+  function label() {
+    const v = estimate.get()
+    if (!v) return 'pending'
+    return v.usage + '/' + v.quota
+  }
+</script>
+
+<template>
+  <main>
+    <h1>storage estimate lab</h1>
+    <p data-estimate>{label()}</p>
+  </main>
+</template>

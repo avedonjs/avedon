@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { inView, signal } from '@avedon/runtime'
+
+  const visible = signal(false)
+
+  function onView(detail: { isIntersecting: boolean }) {
+    visible.set(detail.isIntersecting)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>in view lab</h1>
+    <p data-in-view-status>{visible.get() ? 'visible' : 'hidden'}</p>
+    <div style="height: 1200px" aria-hidden="true"></div>
+    <p data-in-view-target use:inView={onView}>target</p>
+  </main>
+</template>

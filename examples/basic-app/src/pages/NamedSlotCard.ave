@@ -1,0 +1,14 @@
+<script>
+  export let title = 'Card'
+</script>
+
+<template>
+  <section data-named-card>
+    <header data-card-header>
+      <slot name="header">{title}</slot>
+    </header>
+    <div data-card-body>
+      <slot />
+    </div>
+  </section>
+</template>

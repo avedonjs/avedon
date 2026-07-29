@@ -1,0 +1,10 @@
+<script lang="ts">
+  import { tooltip } from '@avedon/runtime'
+</script>
+
+<template>
+  <main>
+    <h1>tooltip lab</h1>
+    <button type="button" data-tip use:tooltip={'Save draft'}>Hover me</button>
+  </main>
+</template>

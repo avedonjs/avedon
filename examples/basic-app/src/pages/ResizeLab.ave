@@ -1,0 +1,25 @@
+<script lang="ts">
+  import { resize, signal } from '@avedon/runtime'
+
+  const width = signal(0)
+
+  function onResize(entry: ResizeObserverEntry) {
+    width.set(Math.round(entry.contentRect.width))
+  }
+</script>
+
+<style scoped>
+  .box {
+    width: 180px;
+    height: 40px;
+    background: #0e7490;
+  }
+</style>
+
+<template>
+  <main>
+    <h1>resize lab</h1>
+    <div class="box" data-rz-box use:resize={onResize}></div>
+    <p data-rz-width>{width.get()}</p>
+  </main>
+</template>

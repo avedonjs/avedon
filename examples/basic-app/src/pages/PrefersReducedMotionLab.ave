@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { prefersReducedMotion } from '@avedon/runtime'
+
+  const reduced = prefersReducedMotion()
+</script>
+
+<template>
+  <main>
+    <h1>prefers reduced motion lab</h1>
+    <p data-prm>{reduced.get() ? 'reduce' : 'no-preference'}</p>
+  </main>
+</template>

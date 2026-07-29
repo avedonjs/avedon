@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { input, signal } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(value: string) {
+    out.set(value ? value : 'empty')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>input lab</h1>
+    <input data-input type="text" use:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

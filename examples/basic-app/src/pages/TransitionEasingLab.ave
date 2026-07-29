@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = false
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>transition easing lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-ease-target transition:fade={{ easing: 'linear', duration: 200 }}>Linear fade</p>
+    {/if}
+  </main>
+</template>

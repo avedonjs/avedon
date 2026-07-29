@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { storagePersistedSignal } from '@avedon/runtime'
+
+  const persisted = storagePersistedSignal()
+
+  function label() {
+    const v = persisted.get()
+    if (v == null) return 'pending'
+    return v ? 'yes' : 'no'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>storage persisted lab</h1>
+    <p data-persisted>{label()}</p>
+  </main>
+</template>

@@ -1,0 +1,17 @@
+<script lang="ts">
+  import { platformSignal } from '@avedon/runtime'
+
+  const platform = platformSignal()
+
+  function label() {
+    const s = platform.get()
+    return s ? s : 'unknown'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>platform lab</h1>
+    <p data-platform>{label()}</p>
+  </main>
+</template>

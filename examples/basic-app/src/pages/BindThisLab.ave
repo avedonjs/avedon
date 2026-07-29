@@ -1,0 +1,18 @@
+<script lang="ts">
+  let inputEl: HTMLInputElement | null = null
+  let focused = false
+
+  function focusIt() {
+    inputEl?.focus()
+    focused = document.activeElement === inputEl
+  }
+</script>
+
+<template>
+  <main>
+    <h1>bind:this lab</h1>
+    <input data-bind-this type="text" bind:this={inputEl} />
+    <button type="button" on:click={focusIt}>Focus</button>
+    <p data-bind-this-state>{focused ? 'focused' : 'idle'}</p>
+  </main>
+</template>

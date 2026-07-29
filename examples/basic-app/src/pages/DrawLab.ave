@@ -1,0 +1,26 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>draw lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <svg width="120" height="40" viewBox="0 0 120 40" aria-label="draw path">
+        <path
+          data-draw-target
+          transition:draw={{ duration: 50 }}
+          d="M10 20 L110 20"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+        />
+      </svg>
+    {/if}
+  </main>
+</template>

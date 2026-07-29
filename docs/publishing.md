@@ -99,7 +99,12 @@ pnpm changeset publish --otp=XXXXXX
 
 ### Version Packages PR (org may block Actions PRs)
 
-If GitHub Actions cannot create PRs (org “Allow GitHub Actions to create and approve pull requests” locked off), the Release job may push `changeset-release/main` and fail on PR creation. Open the PR yourself:
+If GitHub Actions cannot create PRs, the Release job may push `changeset-release/main` and fail on PR creation. Typical causes:
+
+1. Org setting: **Actions → General → Workflow permissions** keeps the default token **read-only** (repo cannot elevate to write — `409 Write permissions for workflows are disabled by the organization`).
+2. Checkbox **Allow GitHub Actions to create and approve pull requests** is off.
+
+Until an org admin enables write (or the PR checkbox), open the PR yourself:
 
 ```bash
 gh pr create -R avedonjs/avedon --base main --head changeset-release/main \

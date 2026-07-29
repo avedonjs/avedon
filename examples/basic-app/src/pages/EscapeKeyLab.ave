@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { escapeKey, signal } from '@avedon/runtime'
+
+  const open = signal(true)
+
+  function close() {
+    open.set(false)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>escape key lab</h1>
+    <div data-escape-panel use:escapeKey={close}>
+      <p data-escape-status>{open.get() ? 'open' : 'closed'}</p>
+    </div>
+  </main>
+</template>

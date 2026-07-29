@@ -1,0 +1,12 @@
+<script lang="ts">
+  import { doNotTrackSignal } from '@avedon/runtime'
+
+  const dnt = doNotTrackSignal()
+</script>
+
+<template>
+  <main>
+    <h1>do not track lab</h1>
+    <p data-dnt>{dnt.get()}</p>
+  </main>
+</template>

@@ -1,0 +1,14 @@
+<script lang="ts">
+  import { setContext } from '@avedon/runtime'
+  import AllContextsChild from './AllContextsChild.ave'
+
+  setContext('theme', 'dark')
+  setContext('locale', 'tr')
+</script>
+
+<template>
+  <main>
+    <h1>getAllContexts lab</h1>
+    <AllContextsChild />
+  </main>
+</template>

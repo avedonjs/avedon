@@ -1,0 +1,22 @@
+<script lang="ts">
+  import { clickOutside, signal } from '@avedon/runtime'
+
+  const open = signal(true)
+
+  function close() {
+    open.set(false)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>click outside lab</h1>
+    <button type="button" data-outside>Outside</button>
+    {#if open}
+      <div data-panel use:clickOutside={close}>
+        <button type="button" data-inside>Inside</button>
+      </div>
+    {/if}
+    <p data-co-status>{open.get() ? 'open' : 'closed'}</p>
+  </main>
+</template>

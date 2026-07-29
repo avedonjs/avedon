@@ -42,6 +42,7 @@ describe('createRenderStream', () => {
       early += c
     }
     expect(early).toContain('id="avedon-b-b1"')
+    expect(early).toContain('hidden')
     expect(early).toContain('</main>')
     expect(early).not.toContain('avedon-r-b1')
 
@@ -58,6 +59,27 @@ describe('createRenderStream', () => {
     expect(rest).toContain('avedon-r-b1')
     expect(rest).toContain('<template id="avedon-r-b1">')
     expect(rest).toContain('<p>done</p>')
+  })
+
+  it('await pending html is visible in the placeholder', async () => {
+    const ctrl = createRenderStream()
+    const p = Promise.resolve('done')
+    ctrl.enqueueBoundary(
+      p,
+      (value, enqueue) => {
+        enqueue(`<p>${value}</p>`)
+      },
+      undefined,
+      undefined,
+      '<span data-pending>loading</span>',
+    )
+    await ctrl.waitPending()
+    ctrl.close()
+    const html = await streamToString(ctrl.stream)
+    expect(html).toContain('data-pending')
+    expect(html).toContain('loading')
+    expect(html).not.toMatch(/<div hidden id="avedon-b-/)
+    expect(html).toContain('avedon-r-b1')
   })
 
   it('pipeChildren accepts writer function', async () => {

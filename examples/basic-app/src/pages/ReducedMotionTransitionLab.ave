@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = false
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>reduced motion transition lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-rm-fade transition:fade={{ duration: 400 }}>Hello</p>
+    {/if}
+  </main>
+</template>

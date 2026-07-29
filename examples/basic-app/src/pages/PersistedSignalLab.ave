@@ -1,0 +1,30 @@
+<script lang="ts">
+  import { persistedSignal } from '@avedon/runtime'
+
+  const name = persistedSignal('avedon-persist-lab', 'guest')
+  const tab = persistedSignal('avedon-session-lab', 'fresh', { storage: 'session' })
+
+  function save() {
+    name.set('ada')
+  }
+
+  function reset() {
+    name.set('guest')
+  }
+
+  function saveTab() {
+    tab.set('sticky')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>persisted signal lab</h1>
+    <p data-persist-name>{name}</p>
+    <button type="button" on:click={save}>Save</button>
+    <button type="button" on:click={reset}>Reset</button>
+
+    <p data-session-name>{tab}</p>
+    <button type="button" on:click={saveTab}>Save tab</button>
+  </main>
+</template>

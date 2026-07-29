@@ -1,0 +1,22 @@
+<script lang="ts">
+  let items = [
+    { id: 1, label: 'one' },
+    { id: 2, label: 'two' },
+  ]
+
+  function drop() {
+    items = items.slice(0, 1)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>keyed outro lab</h1>
+    <button type="button" on:click={drop}>Drop</button>
+    <ul data-keyed-outro>
+      {#each items as item (item.id)}
+        <li data-item-id={item.id} transition:fade={{ duration: 40 }}>{item.label}</li>
+      {/each}
+    </ul>
+  </main>
+</template>

@@ -1,0 +1,18 @@
+<script lang="ts">
+  import { signal, slugify } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onInput(e: Event) {
+    const t = e.target as HTMLInputElement
+    out.set(t.value)
+  }
+</script>
+
+<template>
+  <main>
+    <h1>slugify lab</h1>
+    <input data-slugify type="text" value="Hello World" use:slugify on:input={onInput} />
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

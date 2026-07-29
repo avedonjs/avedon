@@ -1,0 +1,25 @@
+<script lang="ts">
+  import { formdata, signal, submit } from '@avedon/runtime'
+
+  const out = signal('idle')
+
+  function onFormData(data: FormData) {
+    data.set('tag', 'formdata-ok')
+  }
+
+  function onSubmit(data: FormData) {
+    const tag = data.get('tag')
+    out.set(typeof tag === 'string' && tag ? tag : 'missing')
+  }
+</script>
+
+<template>
+  <main>
+    <h1>formdata lab</h1>
+    <form data-formdata use:formdata={onFormData} use:submit={onSubmit}>
+      <input name="name" type="text" value="avedon" />
+      <button type="submit">Send</button>
+    </form>
+    <p data-out>{out.get()}</p>
+  </main>
+</template>

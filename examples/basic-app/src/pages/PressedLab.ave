@@ -1,0 +1,16 @@
+<script lang="ts">
+  import { pressed, signal } from '@avedon/runtime'
+
+  const down = signal(false)
+  const opts = {
+    handler: (v: boolean) => down.set(v),
+  }
+</script>
+
+<template>
+  <main>
+    <h1>pressed lab</h1>
+    <button type="button" data-pressed use:pressed={opts}>Hold</button>
+    <p data-pressed-state>{down.get() ? 'down' : 'up'}</p>
+  </main>
+</template>

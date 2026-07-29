@@ -1,0 +1,17 @@
+<script lang="ts">
+  import DispatchButton from './DispatchButton.ave'
+
+  let last = 'none'
+
+  function onPing(e: { type: string; detail: { ok: boolean } }) {
+    last = e.detail.ok ? 'pong' : 'fail'
+  }
+</script>
+
+<template>
+  <main>
+    <h1>Event dispatcher lab</h1>
+    <DispatchButton on:ping={onPing} />
+    <p data-dispatch-result>{last}</p>
+  </main>
+</template>

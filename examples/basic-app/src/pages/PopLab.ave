@@ -1,0 +1,17 @@
+<script lang="ts">
+  let show = true
+
+  function toggle() {
+    show = !show
+  }
+</script>
+
+<template>
+  <main>
+    <h1>pop lab</h1>
+    <button type="button" on:click={toggle}>Toggle</button>
+    {#if show}
+      <p data-pop-target transition:pop={{ start: 0.8, y: -8, duration: 50 }}>Popped in</p>
+    {/if}
+  </main>
+</template>

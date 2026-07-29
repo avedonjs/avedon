@@ -1,0 +1,15 @@
+<script lang="ts">
+  let networkState = -1
+</script>
+
+<template>
+  <main>
+    <h1>media network state lab</h1>
+    <audio
+      data-media-network
+      bind:networkState={networkState}
+      src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="
+    ></audio>
+    <p data-network-state>{networkState}</p>
+  </main>
+</template>
