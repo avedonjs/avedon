@@ -4,23 +4,7 @@
  * The worker replies with { type: 'result', id, code, css } or { type: 'error', id, message }.
  */
 
-import { compile } from '@avedon/compiler'
-
-function extractServerScript(source: string): string {
-  const re = /<script\s+server\b[^>]*>([\s\S]*?)<\/script>/gi
-  const parts: string[] = []
-  for (;;) {
-    const m = re.exec(source)
-    if (!m) break
-    parts.push(m[1] ?? '')
-  }
-  return parts.join('\n').trim()
-}
-
-function stripServerScriptBlocks(source: string): string {
-  const re = /<script\s+server\b[^>]*>[\s\S]*?<\/script>/gi
-  return source.replace(re, '').trim()
-}
+import { compile, parse } from '@avedon/compiler'
 
 self.addEventListener('message', (event: MessageEvent) => {
   const { type, id, source } = event.data as {
@@ -31,9 +15,9 @@ self.addEventListener('message', (event: MessageEvent) => {
   if (type !== 'compile') return
 
   try {
-    const serverScript = extractServerScript(source)
-    const clientSource = stripServerScriptBlocks(source)
-    const { code, css } = compile(clientSource, {
+    // compile() already excludes <script server> from the client bundle via parse().
+    const { serverScript } = parse(source)
+    const { code, css } = compile(source, {
       filename: 'Playground.ave',
       generate: 'client',
     })

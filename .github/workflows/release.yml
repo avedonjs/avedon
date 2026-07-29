@@ -48,7 +48,7 @@ jobs:
       - name: Create Release Pull Request or publish to npm
         uses: changesets/action@v1
         with:
-          version: pnpm changeset version
+          version: pnpm changeset:version
           publish: pnpm changeset publish
           commit: 'chore: version packages'
           title: 'chore: version packages'

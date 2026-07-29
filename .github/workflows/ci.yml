@@ -112,6 +112,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Check create-app dependency sync
+        run: node scripts/sync-create-app-deps.mjs --check
+
       - name: Build (test dependency)
         run: pnpm build
 

@@ -27,6 +27,26 @@ describe('slugify', () => {
     expect(listeners.get('blur')?.size ?? 0).toBe(0)
   })
 
+  it('trims leading and trailing hyphen runs from noisy input', () => {
+    const listeners = new Map<string, Set<() => void>>()
+    const el = {
+      value: '---Hello---World---',
+      addEventListener: (type: string, cb: () => void) => {
+        let set = listeners.get(type)
+        if (!set) {
+          set = new Set()
+          listeners.set(type, set)
+        }
+        set.add(cb)
+      },
+      removeEventListener: () => {},
+      dispatchEvent: vi.fn(),
+    }
+    slugify(el as never)
+    for (const cb of listeners.get('blur') ?? []) cb()
+    expect(el.value).toBe('hello-world')
+  })
+
   it('skips when disabled', () => {
     const listeners = new Map<string, Set<() => void>>()
     const el = {

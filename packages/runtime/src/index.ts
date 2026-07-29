@@ -4139,11 +4139,16 @@ export function alphanumeric(node: Element, enabled: boolean | null | undefined 
 }
 
 function toSlug(value: string): string {
-  return value
+  const core = value
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+  // Trim leading/trailing hyphens without /^-+|-+$/ (polynomial ReDoS on long '-' runs).
+  let start = 0
+  let end = core.length
+  while (start < end && core.charCodeAt(start) === 45 /* - */) start++
+  while (end > start && core.charCodeAt(end - 1) === 45) end--
+  return core.slice(start, end)
 }
 
 /**
