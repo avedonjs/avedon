@@ -1048,7 +1048,8 @@ function parseIfChain(
   start: number,
 ): { token: Extract<Token, { type: 'if' }>; next: number } {
   let i = start
-  const { body, rest } = readBlock(input.slice(i), ['{:else', '{/if}'])
+  const { body, rest: restRaw } = readBlock(input.slice(i), ['{:else', '{/if}'])
+  const rest = restRaw ?? '{/if}'
   i += body.consumed
   const then = tokenize(body.raw)
   let elseBody: Token[] | undefined
