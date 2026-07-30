@@ -1,5 +1,11 @@
 # @avedon/runtime
 
+## 0.3.0
+
+### Minor Changes
+
+- 427e102: Client router preloads same-origin page HTML on hover/tap/viewport (`data-avedon-preload`), with Save-Data opt-out and a shared cache for `navigate()`.
+
 ## 0.2.2
 
 ### Patch Changes
