@@ -105,7 +105,33 @@ Provide global `error.ave` / `not-found.ave` (scaffold includes both) and option
 
 ## Client navigation
 
-`@avedon/runtime` installs client-side navigation for same-origin links after the first load.
+`@avedon/runtime` installs client-side navigation for same-origin links after the first load. Clicking an internal `<a>` fetches the next page’s HTML, swaps `#app`, and boots the client — no full document reload.
+
+### Preloading
+
+By default, hovering (or focusing) a same-origin link **preloads** that page’s HTML into an in-memory cache so the click often does not wait on the network. This mirrors SvelteKit’s hover preload.
+
+Control it with `data-avedon-preload` on the link or any ancestor (`html` / `body` / …). Closest attribute wins; if none is set, the mode is `hover`.
+
+| Value | Behavior |
+|-------|----------|
+| `hover` (default) | Prefetch after ~20ms on pointer over / focus; also on `touchstart` |
+| `tap` | Prefetch on touch / pointer down only |
+| `viewport` | Prefetch once when the link enters the viewport |
+| `off` | No prefetch |
+
+```html
+<body data-avedon-preload="hover">
+  <a href="/docs">Docs</a>
+  <a href="/admin" data-avedon-preload="off">Admin</a>
+</body>
+```
+
+Programmatic: `preload('/docs/intro')` from `@avedon/runtime` (same cache as the router).
+
+**Save-Data:** when `navigator.connection.saveData` is true or `(prefers-reduced-data: reduce)` matches, all preloading is skipped. Click navigation still works.
+
+**Skipped links:** external origins, `download`, `target="_blank"`, hash-only `href`, and the current `pathname+search`. Form `enhance` submissions do not use the preload cache.
 
 ## See also
 

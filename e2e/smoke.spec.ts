@@ -32,6 +32,62 @@ test('client nav does not full-reload', async ({ page }) => {
   expect(marker).toBe(1)
 })
 
+test('hover preloads next page; click reuses cache', async ({ page }) => {
+  await page.goto('/posts/1')
+  await expect(page.locator('h1')).toHaveText('Hello avedon')
+
+  let docsFetches = 0
+  await page.route('**/docs/intro', async (route) => {
+    const req = route.request()
+    if (req.method() === 'GET' && (req.headers()['accept'] ?? '').includes('text/html')) {
+      docsFetches++
+    }
+    await route.continue()
+  })
+
+  await page.evaluate(() => {
+    const a = document.createElement('a')
+    a.href = '/docs/intro'
+    a.id = 'preload-hover-link'
+    a.textContent = 'docs-intro'
+    document.body.appendChild(a)
+  })
+
+  await page.locator('#preload-hover-link').hover()
+  await expect.poll(() => docsFetches, { timeout: 5_000 }).toBe(1)
+
+  await page.locator('#preload-hover-link').click()
+  await expect(page.getByText('Welcome to the docs')).toBeVisible()
+  expect(docsFetches).toBe(1)
+})
+
+test('data-avedon-preload=off skips hover prefetch', async ({ page }) => {
+  await page.goto('/posts/1')
+  await expect(page.locator('h1')).toHaveText('Hello avedon')
+
+  let docsFetches = 0
+  await page.route('**/docs/intro', async (route) => {
+    const req = route.request()
+    if (req.method() === 'GET' && (req.headers()['accept'] ?? '').includes('text/html')) {
+      docsFetches++
+    }
+    await route.continue()
+  })
+
+  await page.evaluate(() => {
+    const a = document.createElement('a')
+    a.href = '/docs/intro'
+    a.id = 'preload-off-link'
+    a.setAttribute('data-avedon-preload', 'off')
+    a.textContent = 'docs-intro'
+    document.body.appendChild(a)
+  })
+
+  await page.locator('#preload-off-link').hover()
+  await page.waitForTimeout(80)
+  expect(docsFetches).toBe(0)
+})
+
 test('form action like updates page', async ({ page }) => {
   await page.goto('/posts/1')
   await page.getByRole('button', { name: 'Like (server action)' }).click()

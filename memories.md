@@ -1,6 +1,14 @@
 # memories.md
 
-Updated: 2026-07-29
+Updated: 2026-07-30
+
+## Hover page preload (2026-07-30)
+
+- Spec: `docs/superpowers/specs/2026-07-30-hover-preload-design.md`
+- Runtime: `packages/runtime/src/preload.ts` + `installClientRouter` / `navigate` wire-up
+- Attr: `data-avedon-preload` = `hover` (default) | `tap` | `viewport` | `off`; Save-Data / reduced-data skips
+- Changeset: `.changeset/runtime-hover-preload.md` (`@avedon/runtime` minor)
+- Verified: preload unit + smoke Playwright (hover cache hit + off)
 
 ## Bug audit — fix notes (2026-07-29)
 
@@ -78,6 +86,7 @@ Updated: 2026-07-29
 - **www playground Tailwind (2026-07-29):** iframe loads local `/playground-tailwind.js` (`@tailwindcss/browser@4.1.11`); create-app `@theme` tokens; all presets utility-styled. Also fixed sandboxed iframe `postMessage` targetOrigin (`'*'`). Signal-script: do not unwrap args to `readonly()`. Spec/plan under `docs/superpowers/{specs,plans}/2026-07-29-playground-tailwind*`. **Published.**
 - **URGENT create-app runtime range (2026-07-29):** Template pinned `@avedon/runtime@^0.1.0` → npm 0.1.2 (no `__contextBegin`); compiler 0.4 emits it → Vite error. Fix: template `runtime ^0.2.1` + `server ^0.2.3`. Existing apps: `npm i @avedon/runtime@^0.2.1 @avedon/server@^0.2.3`.
 - **Code scanning open (2026-07-30):** Fixed #25 playground regex strip → `parse()`; #24 `toSlug` ReDoS → hyphen trim without `/^-+|-+$/`. Remaining historical alerts already `fixed`.
+- **Playground worker regression (2026-07-30):** Compiling full source (with `<script server>`) in browser worker threw `useCaseSensitiveFileNames`. Fix: rebuild client-only source from `parse()` then compile (`6c5c840`). Version PR #8 cherry-picked.
 - **www Product-stage Tailwind (2026-07-29):** Site chrome rebuilt with Tailwind v4 PostCSS; home no-scroll + mouse grid glow + install in hero. Deployed: https://github.com/avedonjs/avedon/actions/runs/30488921216 (`8a6d969`). Live: https://avedon.pages.dev/
 - **www home Counter specimen highlight (2026-07-29):** Hand-rolled `tok-*` → Shiki `highlightAve` → `.generated/home-specimen.json`. Deployed: https://github.com/avedonjs/avedon/actions/runs/30479712621 (`661a8df`).
 - **www home denser (2026-07-29):** denser home + Counter specimen. **Published with playground batch.**

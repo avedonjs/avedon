@@ -12,6 +12,15 @@ export type {
 
 import { settleAvedonStream } from './stream.js'
 import { moveChildNodes } from './document.js'
+import {
+  invalidatePreload,
+  preload,
+  preloadCacheKey,
+  resolvePreloadMode,
+  shouldPreloadHref,
+  shouldSkipPreload,
+  takeCachedHtml,
+} from './preload.js'
 
 export {
   moveChildNodes,
@@ -26,6 +35,18 @@ export {
   elementPath,
   elementFromPath,
 } from './document.js'
+export {
+  preload,
+  resolvePreloadMode,
+  shouldSkipPreload,
+  shouldPreloadHref,
+  invalidatePreload,
+  takeCachedHtml,
+  getCachedHtml,
+  preloadCacheKey,
+  __resetPreloadCache,
+} from './preload.js'
+export type { PreloadMode, PreloadHrefOptions } from './preload.js'
 export type {
   FocusSnapshot,
   FormSnapshot,
@@ -7672,12 +7693,17 @@ export async function navigate(href: string, opts: NavigateOptions = {}): Promis
     location.href = href
     return
   }
-  const res = await fetch(url.pathname + url.search, {
-    headers: { accept: 'text/html' },
-  })
-  const html = await res.text()
+  const key = preloadCacheKey(url.pathname, url.search)
+  let html = await takeCachedHtml(key)
+  if (html == null) {
+    const res = await fetch(key, {
+      headers: { accept: 'text/html' },
+    })
+    html = await res.text()
+  }
   abandonHandler?.()
   applyDocument(html)
+  invalidatePreload(key)
   if (opts.replace) history.replaceState({}, '', url.pathname + url.search + url.hash)
   else history.pushState({}, '', url.pathname + url.search + url.hash)
   await bootHandler?.(url.pathname)
@@ -7747,6 +7773,8 @@ export function enhance(form: HTMLFormElement): () => void {
   return () => form.removeEventListener('submit', onSubmit)
 }
 
+const PRELOAD_HOVER_MS = 20
+
 export function installClientRouter(root: ParentNode = document): () => void {
   const onClick = (event: Event) => {
     const e = event as MouseEvent
@@ -7761,6 +7789,82 @@ export function installClientRouter(root: ParentNode = document): () => void {
     void navigate(url.pathname + url.search + url.hash)
   }
 
+  let hoverTimer: ReturnType<typeof setTimeout> | null = null
+  const clearHoverTimer = () => {
+    if (hoverTimer != null) {
+      clearTimeout(hoverTimer)
+      hoverTimer = null
+    }
+  }
+
+  const tryPreloadAnchor = (a: HTMLAnchorElement | null, modes: Array<'hover' | 'tap'>) => {
+    if (!a || shouldSkipPreload()) return
+    const href = a.getAttribute('href')
+    if (!href || !shouldPreloadHref(href, { anchor: a })) return
+    const mode = resolvePreloadMode(a)
+    if (mode === 'off' || mode === 'viewport') return
+    if (!modes.includes(mode)) return
+    void preload(href, { anchor: a })
+  }
+
+  const onPointerOver = (event: Event) => {
+    const a = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+    if (!a || resolvePreloadMode(a) !== 'hover') return
+    clearHoverTimer()
+    hoverTimer = setTimeout(() => {
+      hoverTimer = null
+      tryPreloadAnchor(a, ['hover'])
+    }, PRELOAD_HOVER_MS)
+  }
+
+  const onFocusIn = (event: Event) => {
+    const a = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+    tryPreloadAnchor(a, ['hover'])
+  }
+
+  const onTouchStart = (event: Event) => {
+    const a = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+    tryPreloadAnchor(a, ['hover', 'tap'])
+  }
+
+  const onPointerDown = (event: Event) => {
+    const e = event as PointerEvent
+    if (e.pointerType === 'touch') return
+    const a = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+    tryPreloadAnchor(a, ['tap'])
+  }
+
+  const viewportObserved = new WeakSet<Element>()
+  let viewportIo: IntersectionObserver | null = null
+  const ensureViewportIo = () => {
+    if (viewportIo || typeof IntersectionObserver === 'undefined') return viewportIo
+    viewportIo = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue
+        const a = entry.target as HTMLAnchorElement
+        viewportIo?.unobserve(a)
+        if (shouldSkipPreload()) continue
+        const href = a.getAttribute('href')
+        if (!href || !shouldPreloadHref(href, { anchor: a })) continue
+        if (resolvePreloadMode(a) !== 'viewport') continue
+        void preload(href, { anchor: a })
+      }
+    })
+    return viewportIo
+  }
+
+  const scanViewportLinks = () => {
+    const io = ensureViewportIo()
+    if (!io) return
+    root.querySelectorAll('a[href]').forEach((node) => {
+      const a = node as HTMLAnchorElement
+      if (viewportObserved.has(a)) return
+      if (resolvePreloadMode(a) !== 'viewport') return
+      viewportObserved.add(a)
+      io.observe(a)
+    })
+  }
+
   const enhanced = new WeakSet<HTMLFormElement>()
   const scanForms = () => {
     root.querySelectorAll('form').forEach((form) => {
@@ -7770,19 +7874,35 @@ export function installClientRouter(root: ParentNode = document): () => void {
     })
   }
 
+  const scan = () => {
+    scanForms()
+    scanViewportLinks()
+  }
+
   const onPop = () => {
     void navigate(location.pathname + location.search, { replace: true })
   }
 
   document.addEventListener('click', onClick)
+  document.addEventListener('pointerover', onPointerOver)
+  document.addEventListener('focusin', onFocusIn)
+  document.addEventListener('touchstart', onTouchStart, { passive: true })
+  document.addEventListener('pointerdown', onPointerDown)
   window.addEventListener('popstate', onPop)
-  scanForms()
-  const mo = new MutationObserver(scanForms)
+  scan()
+  const mo = new MutationObserver(scan)
   mo.observe(document.documentElement, { childList: true, subtree: true })
 
   return () => {
+    clearHoverTimer()
     document.removeEventListener('click', onClick)
+    document.removeEventListener('pointerover', onPointerOver)
+    document.removeEventListener('focusin', onFocusIn)
+    document.removeEventListener('touchstart', onTouchStart)
+    document.removeEventListener('pointerdown', onPointerDown)
     window.removeEventListener('popstate', onPop)
     mo.disconnect()
+    viewportIo?.disconnect()
+    viewportIo = null
   }
 }
