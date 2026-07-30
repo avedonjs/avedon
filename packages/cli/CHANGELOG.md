@@ -1,5 +1,16 @@
 # avedon
 
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies [939005b]
+  - create-avedon-app@0.1.3
+  - @avedon/runtime@0.2.2
+  - @avedon/server@0.2.5
+  - @avedon/vite-plugin@0.1.8
+  - @avedon/adapter-node@0.1.8
+
 ## 0.1.8
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # create-avedon-app
 
+## 0.1.3
+
+### Patch Changes
+
+- 939005b: Add create-app dependency sync + pack-build smoke; fix CodeQL slugify ReDoS and playground script strip.
+
 ## 0.1.2
 
 ### Patch Changes
