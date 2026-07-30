@@ -116,7 +116,7 @@ Reusable template fragments within a single `.ave` file — like a local mini-co
 
 ## Status
 
-- **adapter-static (2026-07-30):** `@avedon/adapter-static` implemented — fail-closed SSG export; create-app `--adapter=static`; www dogfood; CLI `hasActions`/`hasApi`. Spec/plan under `docs/superpowers/{specs,plans}/2026-07-30-adapter-static*`. Uncommitted — commit when asked. npm Trusted Publisher for new package still needed before first publish.
+- **adapter-static (2026-07-30):** `@avedon/adapter-static@0.2.0` on npm (manual publish + Trusted Publisher for `release.yml`). Other bumps from same release also live. Spec/plan under `docs/superpowers/{specs,plans}/2026-07-30-adapter-static*`.
 - **Twitter/X OG card (2026-07-30):** Live had only `og:image` + `twitter:card`/`twitter:image` — missing `og:title`/`og:description` (X does **not** fall back to `meta name=description`). Fix: full OG suite in www `app.html` + `@avedon/server` mirrors `head.title`/`description` → `og:*`/`twitter:*`. Deployed: https://github.com/avedonjs/avedon/actions/runs/30555851471 (`7f88e40`). Live OG tags verified. Re-share with `?v=2` if X still shows old card.
 - **Playground CodeMirror empty on Pages (2026-07-29):** Vite extracts CM CSS to `/assets/client-*.css` but SSG HTML never linked it → black text on dark bg, no gutters. Fix: `clientCss` in shell prefix + CLI/adapters. **Uncommitted → shipping.**
 - **Published (2026-07-29 evening):** Playground+Tailwind+fixes — PR #7 merged; OIDC publish — `avedon@0.1.7`, `@avedon/compiler@0.4.0`, `@avedon/runtime@0.2.1`, `@avedon/server@0.2.3` (+ adapters/vite-plugin/cli bumps). Live: https://avedon.pages.dev/playground/ — Release: https://github.com/avedonjs/avedon/actions/runs/30466780448

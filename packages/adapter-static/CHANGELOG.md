@@ -1,5 +1,11 @@
 # @avedon/adapter-static
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix published dependency: replace `workspace:*` with `@avedon/shared` caret range (manual `npm publish` does not rewrite workspace protocol).
+
 ## 0.2.0
 
 ### Minor Changes
