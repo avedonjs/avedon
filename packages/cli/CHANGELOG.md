@@ -1,5 +1,17 @@
 # avedon
 
+## 0.1.11
+
+### Patch Changes
+
+- 3f0d5fe: Add `@avedon/adapter-static` for fail-closed SSG export (`build/client` only). Create-app gains `--adapter=static`; CLI manifest exposes `hasActions`/`hasApi` for the static gate.
+- Updated dependencies [3f0d5fe]
+- Updated dependencies [7f88e40]
+  - create-avedon-app@0.2.0
+  - @avedon/server@0.2.7
+  - @avedon/adapter-node@0.1.10
+  - @avedon/vite-plugin@0.1.10
+
 ## 0.1.10
 
 ### Patch Changes

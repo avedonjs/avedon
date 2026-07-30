@@ -1,5 +1,11 @@
 # @avedon/server
 
+## 0.2.7
+
+### Patch Changes
+
+- 7f88e40: Mirror `head.title` / `head.description` into `og:*` and `twitter:*` meta tags so social crawlers (especially X) get a complete card without relying on `<title>` / `meta name=description` fallbacks alone.
+
 ## 0.2.6
 
 ### Patch Changes

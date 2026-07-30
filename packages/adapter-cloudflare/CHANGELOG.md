@@ -1,5 +1,12 @@
 # @avedon/adapter-cloudflare
 
+## 0.2.8
+
+### Patch Changes
+
+- Updated dependencies [7f88e40]
+  - @avedon/server@0.2.7
+
 ## 0.2.7
 
 ### Patch Changes
