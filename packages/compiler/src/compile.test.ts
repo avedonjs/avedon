@@ -1223,6 +1223,59 @@ describe('{@const}', () => {
   })
 })
 
+describe('snippets', () => {
+  it('SSR inlines a parameterized snippet at each render site', () => {
+    const src = `<template>{#snippet row(item)}<li>{item}</li>{/snippet}<ul>{@render row('a')}{@render row('b')}</ul></template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
+    expect(out.code).toContain('((item) =>')
+    expect(out.code).toContain("__escape(item)")
+    expect(out.code).toContain("'a'")
+    expect(out.code).toContain("'b'")
+    expect(out.code).not.toContain('{#snippet')
+  })
+
+  it('client inlines snippet bodies with parameters', () => {
+    const src = `<template>{#snippet row(item)}<li>{item}</li>{/snippet}<ul>{@render row(x)}</ul></template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'client' })
+    expect(out.code).toContain('((item) =>')
+    expect(out.code).toContain('createElement("li")')
+    expect(out.code).toMatch(/String\(item/)
+  })
+
+  it('rejects unknown snippet render', () => {
+    expect(() =>
+      compile(`<template>{@render missing()}</template>`, { filename: 'T.ave', generate: 'ssr' }),
+    ).toThrow(/Unknown snippet/)
+  })
+
+  it('rejects nested snippet definitions', () => {
+    expect(() =>
+      compile(`<template>{#if ok}{#snippet inner}<i></i>{/snippet}{/if}</template>`, {
+        filename: 'T.ave',
+        generate: 'ssr',
+      }),
+    ).toThrow(/template root/)
+  })
+
+  it('rejects duplicate snippet names', () => {
+    expect(() =>
+      compile(
+        `<template>{#snippet a}<a></a>{/snippet}{#snippet a}<b></b>{/snippet}</template>`,
+        { filename: 'T.ave', generate: 'ssr' },
+      ),
+    ).toThrow(/Duplicate snippet/)
+  })
+
+  it('rejects render arity mismatch', () => {
+    expect(() =>
+      compile(`<template>{#snippet a(x)}<i>{x}</i>{/snippet}{@render a()}</template>`, {
+        filename: 'T.ave',
+        generate: 'ssr',
+      }),
+    ).toThrow(/expects 1 argument/)
+  })
+})
+
 describe('event modifiers', () => {
   it('client emits preventDefault and stopPropagation', () => {
     const src = `<template><form on:submit|preventDefault|stopPropagation={save}>x</form></template>`

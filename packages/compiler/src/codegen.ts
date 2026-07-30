@@ -3,6 +3,7 @@
 import { prepareSignalExpr } from './signal-script.js'
 
 let compileSignalNames: Set<string> = new Set()
+let compileSnippets: Map<string, Extract<Token, { type: 'snippet' }>> = new Map()
 
 function sigExpr(expr: string): string {
   if (compileSignalNames.size === 0) return expr
@@ -78,13 +79,22 @@ export function compileMarkup(
   signalNames: Set<string> = new Set(),
 ): CompiledTemplate {
   compileSignalNames = signalNames
-  const tokens = tokenize(markup)
-  validateTokens(tokens, components)
+  const rawTokens = tokenize(markup)
+  const { snippets, main: tokens } = partitionRootSnippets(rawTokens)
+  compileSnippets = snippets
+  validateTokens(tokens, components, snippets)
+  for (const sn of snippets.values()) {
+    validateTokens(sn.body, components, snippets)
+  }
+  const componentsUsed = collectComponentNames(tokens)
+  for (const sn of snippets.values()) {
+    collectComponentNames(sn.body, componentsUsed)
+  }
   return {
     ssrExpr: emitSsr(tokens, hash),
     ssrStream: emitSsrStream(tokens, hash),
     clientBuild: emitClient(tokens, hash),
-    componentsUsed: [...collectComponentNames(tokens)],
+    componentsUsed: [...componentsUsed],
   }
 }
 
@@ -93,6 +103,8 @@ type Token =
   | { type: 'expr'; value: string }
   | { type: 'html'; value: string }
   | { type: 'const'; name: string; value: string }
+  | { type: 'snippet'; name: string; params: string[]; body: Token[] }
+  | { type: 'render'; name: string; args: string[] }
   | { type: 'slot'; name?: string; fallback: Token[] }
   | { type: 'if'; cond: string; then: Token[]; else?: Token[] }
   | {
@@ -258,6 +270,26 @@ function tokenize(input: string): Token[] {
   }
 
   while (i < input.length) {
+    if (startsWith('{#snippet ')) {
+      i += 10
+      const { expr: headerRaw, end } = readBalancedJs(input, i)
+      const header = headerRaw.trim()
+      i = end + 1
+      const parsed = parseSnippetHeader(header)
+      const block = readBlock(input.slice(i), ['{/snippet}'])
+      if (block.rest !== '{/snippet}') {
+        throw new Error(`Unclosed {#snippet ${parsed.name}} — expected {/snippet}`)
+      }
+      i += block.body.consumed
+      tokens.push({
+        type: 'snippet',
+        name: parsed.name,
+        params: parsed.params,
+        body: tokenize(block.body.raw),
+      })
+      continue
+    }
+
     if (startsWith('{#if ')) {
       i += 5
       const { expr: condRaw, end: condEnd } = readBalancedJs(input, i)
@@ -393,6 +425,15 @@ function tokenize(input: string): Token[] {
       continue
     }
 
+    if (startsWith('{@render ')) {
+      i += '{@render '.length
+      const { expr: bodyRaw, end } = readBalancedJs(input, i)
+      const parsed = parseRenderRef(bodyRaw.trim())
+      tokens.push({ type: 'render', name: parsed.name, args: parsed.args })
+      i = end + 1
+      continue
+    }
+
     if (startsWith('{@const ')) {
       i += '{@const '.length
       const { expr: bodyRaw, end } = readBalancedJs(input, i)
@@ -496,6 +537,123 @@ function tokenize(input: string): Token[] {
   return tokens
 }
 
+function parseSnippetHeader(header: string): { name: string; params: string[] } {
+  const m = header.match(/^([A-Za-z_$][\w$]*)(?:\s*\(\s*([^)]*)\s*\))?$/)
+  if (!m) {
+    throw new Error(
+      `Invalid {#snippet} — expected \`{#snippet name}\` or \`{#snippet name(a, b)}\`, got {#snippet ${header}}`,
+    )
+  }
+  const name = m[1]!
+  const paramsStr = m[2]?.trim()
+  if (!paramsStr) return { name, params: [] }
+  const params = paramsStr.split(',').map((p) => p.trim()).filter(Boolean)
+  for (const p of params) {
+    if (!/^[A-Za-z_$][\w$]*$/.test(p)) {
+      throw new Error(`Invalid snippet parameter "${p}" — use simple identifiers`)
+    }
+  }
+  return { name, params }
+}
+
+function parseRenderRef(ref: string): { name: string; args: string[] } {
+  const m = ref.match(/^([A-Za-z_$][\w$]*)(?:\s*\(([\s\S]*)\))?$/)
+  if (!m) {
+    throw new Error(
+      `Invalid {@render} — expected \`{@render name}\` or \`{@render name(expr)}\`, got {@render ${ref}}`,
+    )
+  }
+  const name = m[1]!
+  const argsStr = m[2]?.trim()
+  if (!argsStr) return { name, args: [] }
+  return { name, args: splitCommaSeparatedExprs(argsStr) }
+}
+
+function splitCommaSeparatedExprs(input: string): string[] {
+  const out: string[] = []
+  let start = 0
+  let depth = 0
+  let quote: string | null = null
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]!
+    if (quote) {
+      if (ch === quote && input[i - 1] !== '\\') quote = null
+      continue
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      quote = ch
+      continue
+    }
+    if (ch === '(' || ch === '[' || ch === '{') {
+      depth++
+      continue
+    }
+    if (ch === ')' || ch === ']' || ch === '}') {
+      depth--
+      continue
+    }
+    if (ch === ',' && depth === 0) {
+      out.push(input.slice(start, i).trim())
+      start = i + 1
+    }
+  }
+  const last = input.slice(start).trim()
+  if (last) out.push(last)
+  return out
+}
+
+function partitionRootSnippets(tokens: Token[]): {
+  snippets: Map<string, Extract<Token, { type: 'snippet' }>>
+  main: Token[]
+} {
+  const snippets = new Map<string, Extract<Token, { type: 'snippet' }>>()
+  const main: Token[] = []
+  for (const t of tokens) {
+    if (t.type === 'snippet') {
+      if (snippets.has(t.name)) {
+        throw new Error(`Duplicate snippet "${t.name}"`)
+      }
+      snippets.set(t.name, t)
+    } else {
+      main.push(t)
+    }
+  }
+  return { snippets, main }
+}
+
+function emitSnippetBodySsr(sn: Extract<Token, { type: 'snippet' }>, args: string[], hash: string): string {
+  const body = emitSsr(sn.body, hash)
+  if (sn.params.length === 0) return `(${body})`
+  return `((${sn.params.join(', ')}) => (${body}))(${args.map(sigExpr).join(', ')})`
+}
+
+function emitSnippetBodyStream(
+  sn: Extract<Token, { type: 'snippet' }>,
+  args: string[],
+  hash: string,
+): string {
+  const body = emitSsrStream(sn.body, hash)
+  if (sn.params.length === 0) return body
+  return `{\n  ((${sn.params.join(', ')}) => {\n${indentStream(body)}\n  })(${args.map(sigExpr).join(', ')});\n}`
+}
+
+function emitSnippetBodyClient(
+  sn: Extract<Token, { type: 'snippet' }>,
+  args: string[],
+  hash: string,
+  parent: string,
+  effectsVar: string,
+  inSvg: boolean,
+): string {
+  const body = emitClientNodes(sn.body, hash, parent, effectsVar, inSvg)
+  if (sn.params.length === 0) return body
+  return `{
+    ((${sn.params.join(', ')}) => {
+      ${body}
+    })(${args.map(sigExpr).join(', ')});
+  }`
+}
+
 function collectComponentNames(tokens: Token[], out: Set<string> = new Set()): Set<string> {
   for (const t of tokens) {
     if (t.type === 'component') {
@@ -517,13 +675,33 @@ function collectComponentNames(tokens: Token[], out: Set<string> = new Set()): S
       if (t.pending) collectComponentNames(t.pending, out)
       collectComponentNames(t.thenBody, out)
       if (t.catchBody) collectComponentNames(t.catchBody, out)
+    } else if (t.type === 'snippet') {
+      collectComponentNames(t.body, out)
     }
   }
   return out
 }
 
-function validateTokens(tokens: Token[], components: Set<string>): void {
+function validateTokens(
+  tokens: Token[],
+  components: Set<string>,
+  snippets: Map<string, Extract<Token, { type: 'snippet' }>>,
+): void {
   for (const t of tokens) {
+    if (t.type === 'snippet') {
+      throw new Error(`{#snippet} definitions must be at the template root, not inside blocks`)
+    }
+    if (t.type === 'render') {
+      const sn = snippets.get(t.name)
+      if (!sn) {
+        throw new Error(`Unknown snippet "{@render ${t.name}}" — define {#snippet ${t.name}} first`)
+      }
+      if (t.args.length !== sn.params.length) {
+        throw new Error(
+          `{@render ${t.name}} expects ${sn.params.length} argument(s), got ${t.args.length}`,
+        )
+      }
+    }
     if (t.type === 'component') {
       if (!components.has(t.name)) {
         throw new Error(
@@ -531,24 +709,24 @@ function validateTokens(tokens: Token[], components: Set<string>): void {
         )
       }
       validateAttrs(t.attrs, { component: true, tag: t.name })
-      validateTokens(t.children, components)
+      validateTokens(t.children, components, snippets)
     } else if (t.type === 'element') {
       validateAttrs(t.attrs, { component: false, tag: t.tag })
-      validateTokens(t.children, components)
+      validateTokens(t.children, components, snippets)
     } else if (t.type === 'slot') {
-      validateTokens(t.fallback, components)
+      validateTokens(t.fallback, components, snippets)
     } else if (t.type === 'if') {
-      validateTokens(t.then, components)
-      if (t.else) validateTokens(t.else, components)
+      validateTokens(t.then, components, snippets)
+      if (t.else) validateTokens(t.else, components, snippets)
     } else if (t.type === 'each') {
-      validateTokens(t.body, components)
-      if (t.else) validateTokens(t.else, components)
+      validateTokens(t.body, components, snippets)
+      if (t.else) validateTokens(t.else, components, snippets)
     } else if (t.type === 'key') {
-      validateTokens(t.body, components)
+      validateTokens(t.body, components, snippets)
     } else if (t.type === 'await') {
-      if (t.pending) validateTokens(t.pending, components)
-      validateTokens(t.thenBody, components)
-      if (t.catchBody) validateTokens(t.catchBody, components)
+      if (t.pending) validateTokens(t.pending, components, snippets)
+      validateTokens(t.thenBody, components, snippets)
+      if (t.catchBody) validateTokens(t.catchBody, components, snippets)
     }
   }
 }
@@ -1301,6 +1479,7 @@ function readBlock(
   let depthEach = 0
   let depthAwait = 0
   let depthKey = 0
+  let depthSnippet = 0
   let i = 0
   while (i < input.length) {
     if (input.startsWith('{#if ', i)) {
@@ -1321,6 +1500,11 @@ function readBlock(
     if (input.startsWith('{#key ', i)) {
       depthKey++
       i += 6
+      continue
+    }
+    if (input.startsWith('{#snippet ', i)) {
+      depthSnippet++
+      i += 10
       continue
     }
     if (input.startsWith('{/if}', i)) {
@@ -1355,11 +1539,20 @@ function readBlock(
       i += 6
       continue
     }
+    if (input.startsWith('{/snippet}', i)) {
+      if (depthSnippet === 0 && terminators.includes('{/snippet}')) {
+        return { body: { raw: input.slice(0, i), consumed: i + 10 }, rest: '{/snippet}' }
+      }
+      depthSnippet--
+      i += 10
+      continue
+    }
     if (
       depthIf === 0 &&
       depthEach === 0 &&
       depthAwait === 0 &&
       depthKey === 0 &&
+      depthSnippet === 0 &&
       terminators.some((t) => input.startsWith(t, i))
     ) {
       const term = terminators.find((t) => input.startsWith(t, i))!
@@ -1550,6 +1743,10 @@ function emitSsr(tokens: Token[], hash: string): string {
       parts.push(emitSlotContentExpr(t, hash))
     } else if (t.type === 'html') {
       parts.push(`(${sigExpr(t.value)})`)
+    } else if (t.type === 'render') {
+      const sn = compileSnippets.get(t.name)
+      if (!sn) throw new Error(`Unknown snippet "{@render ${t.name}}"`)
+      parts.push(emitSnippetBodySsr(sn, t.args, hash))
     } else if (t.type === 'expr') {
       parts.push(`__escape(${sigExpr(t.value)})`)
     } else if (t.type === 'if') {
@@ -1603,6 +1800,10 @@ function emitSsrStream(tokens: Token[], hash: string): string {
       lines.push(`await __pipeChildren(${emitSlotContentExpr(t, hash)});`)
     } else if (t.type === 'html') {
       lines.push(`__enqueue(${sigExpr(t.value)});`)
+    } else if (t.type === 'render') {
+      const sn = compileSnippets.get(t.name)
+      if (!sn) throw new Error(`Unknown snippet "{@render ${t.name}}"`)
+      lines.push(emitSnippetBodyStream(sn, t.args, hash))
     } else if (t.type === 'expr') {
       lines.push(`__enqueue(__escape(${sigExpr(t.value)}));`)
     } else if (t.type === 'if') {
@@ -1954,6 +2155,10 @@ function emitClientNodes(
         ${id}.innerHTML = String(${sigExpr(t.value)} ?? '');
         ${parent}.appendChild(${id}.content);
       }`)
+    } else if (t.type === 'render') {
+      const sn = compileSnippets.get(t.name)
+      if (!sn) throw new Error(`Unknown snippet "{@render ${t.name}}"`)
+      lines.push(emitSnippetBodyClient(sn, t.args, hash, parent, effectsVar, inSvg))
     } else if (t.type === 'expr') {
       lines.push(`{
         const ${id} = document.createTextNode('');

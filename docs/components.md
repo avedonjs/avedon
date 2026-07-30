@@ -65,6 +65,7 @@ Supported patterns include:
 - HTML comments: `<!-- … -->` (stripped at compile time; never reach the DOM)
 - Trusted HTML: `{@html htmlString}` — unescaped; see [Security](./security.md)
 - Local bindings: `{@const name = expr}` — scoped to following siblings in the same block
+- Reusable template fragments: `{#snippet name(a, b)}…{/snippet}` at the template root, invoked with `{@render name(x, y)}` anywhere in the template (parameters are simple identifiers; shares outer scope)
 - Events: `on:click={handler}` or `on:click={() => …}`; modifiers `preventDefault`, `stopPropagation`, `stopImmediatePropagation`, `once`, `self`, `capture`, `passive`, `nonpassive` (e.g. `on:submit|preventDefault`, `on:wheel|nonpassive`)
 - Boolean attributes: `disabled={cond}`, `hidden={cond}`, `required={cond}`, … — omitted when falsy (not `disabled="false"`)
 - Spread attributes: `{...obj}` on elements (skips `on*` and `:` keys) and on components (merged into props via `Object.assign`, later wins)
@@ -144,6 +145,24 @@ Declare a local binding for following siblings in the same block (handy inside `
   <li>{item.name}: {total}</li>
 {/each}
 ```
+
+### Snippets
+
+Reusable template fragments in the same file — define once at the template root, render anywhere:
+
+```avedon
+{#snippet badge(label, tone)}
+  <span class="badge badge-{tone}">{label}</span>
+{/snippet}
+
+<ul>
+  {#each items as item}
+    <li>{@render badge(item.name, item.active ? 'ok' : 'muted')}</li>
+  {/each}
+</ul>
+```
+
+Snippet parameters are simple identifiers. The body can read outer scope (props, signals, `{@const}`). Definitions must sit at the template root (not inside `{#if}` / `{#each}`).
 
 ### `{#await}` pending
 

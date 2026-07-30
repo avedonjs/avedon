@@ -2,6 +2,34 @@
 
 Updated: 2026-07-30
 
+## Snippets (2026-07-30)
+
+Reusable template fragments within a single `.ave` file — like a local mini-component without a separate file.
+
+```avedon
+<template>
+  {#snippet row(item, i)}
+    <tr class:alt={i % 2 === 1}>
+      <td>{item.name}</td>
+      <td>{item.qty}</td>
+    </tr>
+  {/snippet}
+
+  <table>
+    <tbody>
+      {#each cart as item, i}
+        {@render row(item, i)}
+      {/each}
+    </tbody>
+  </table>
+</template>
+```
+
+- Define at the **template root** with `{#snippet name}` or `{#snippet name(a, b)}`
+- Invoke anywhere with `{@render name}` or `{@render name(expr1, expr2)}`
+- Parameters are simple identifiers; snippet bodies share the outer template scope (signals, props, `{@const}`, etc.)
+- Compile-time inlining — SSR, streaming SSR, and client all expand `{@render}` at each call site
+
 ## Hover page preload (2026-07-30)
 
 - Spec: `docs/superpowers/specs/2026-07-30-hover-preload-design.md`
