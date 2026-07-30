@@ -1,5 +1,16 @@
 # @avedon/compiler
 
+## 1.0.0
+
+### Minor Changes
+
+- 1d04a4d: Add `{#snippet}` / `{@render}` for reusable template fragments within a single `.ave` component.
+
+### Patch Changes
+
+- Updated dependencies [427e102]
+  - @avedon/runtime@0.3.0
+
 ## 0.4.1
 
 ### Patch Changes

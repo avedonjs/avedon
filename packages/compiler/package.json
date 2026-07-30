@@ -1,6 +1,6 @@
 {
   "name": "@avedon/compiler",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -36,6 +36,6 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@avedon/runtime": "^0.2.2"
+    "@avedon/runtime": "^0.3.0"
   }
 }

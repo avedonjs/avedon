@@ -3,7 +3,7 @@ import path from 'node:path'
 import type { AdapterChoice } from './types.js'
 
 /** Match current npm majors: cloudflare/bun are 0.2.x. */
-const ADAPTER_EDGE_RANGE = '^0.2.6'
+const ADAPTER_EDGE_RANGE = '^0.2.7'
 const WRANGLER_DEP = '^4.113.0'
 
 export function applyAdapter(
