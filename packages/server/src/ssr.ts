@@ -92,7 +92,22 @@ function replaceTitle(html: string, replacement: string): string | null {
  * Avoids backtracking regexes (ReDoS-safe) on the app.html template.
  */
 function replaceDescriptionMeta(html: string, replacement: string): string | null {
+  return replaceMetaByAttr(html, 'name', 'description', replacement)
+}
+
+/**
+ * Replace the first `<meta …>` whose `attr="value"` matches (case-insensitive attr/value).
+ * Linear scan — ReDoS-safe on app.html templates.
+ */
+function replaceMetaByAttr(
+  html: string,
+  attr: 'name' | 'property',
+  value: string,
+  replacement: string,
+): string | null {
   const lower = html.toLowerCase()
+  const attrNeedle = attr
+  const valueLower = value.toLowerCase()
   let from = 0
   for (;;) {
     const tagStart = lower.indexOf('<meta', from)
@@ -100,11 +115,31 @@ function replaceDescriptionMeta(html: string, replacement: string): string | nul
     const tagEnd = html.indexOf('>', tagStart)
     if (tagEnd < 0) return null
     const tag = lower.slice(tagStart, tagEnd)
-    if (/\bname\s*=\s*["']description["']/.test(tag)) {
+    const re = new RegExp(`\\b${attrNeedle}\\s*=\\s*["']${escapeRegExp(valueLower)}["']`)
+    if (re.test(tag)) {
       return html.slice(0, tagStart) + replacement + html.slice(tagEnd + 1)
     }
     from = tagEnd + 1
   }
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Replace-or-append a meta tag identified by name or property. */
+function upsertMeta(
+  html: string,
+  extra: string[],
+  attr: 'name' | 'property',
+  key: string,
+  content: string,
+): string {
+  const tag = `<meta ${attr}="${key}" content="${escapeHtml(content)}" />`
+  const replaced = replaceMetaByAttr(html, attr, key, tag)
+  if (replaced != null) return replaced
+  extra.push(tag)
+  return html
 }
 
 /** Replace title / description in the template when present; return leftovers to append. */
@@ -117,6 +152,9 @@ function applyHead(appHtml: string, head: HeadMeta): { html: string; extra: stri
     const replaced = replaceTitle(html, tag)
     if (replaced != null) html = replaced
     else extra.push(tag)
+    // X falls back twitter:title → og:title → <title>; keep OG/Twitter in sync for cards.
+    html = upsertMeta(html, extra, 'property', 'og:title', head.title)
+    html = upsertMeta(html, extra, 'name', 'twitter:title', head.title)
   }
 
   if (head.description != null) {
@@ -124,6 +162,9 @@ function applyHead(appHtml: string, head: HeadMeta): { html: string; extra: stri
     const replaced = replaceDescriptionMeta(html, tag)
     if (replaced != null) html = replaced
     else extra.push(tag)
+    // X does NOT fall back to <meta name="description"> — only twitter:/og:description.
+    html = upsertMeta(html, extra, 'property', 'og:description', head.description)
+    html = upsertMeta(html, extra, 'name', 'twitter:description', head.description)
   }
 
   if (head.html) extra.push(head.html)

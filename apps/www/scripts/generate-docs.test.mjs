@@ -105,13 +105,14 @@ test('getDocsOrigin defaults and strips trailing slash', () => {
   assert.equal(getDocsOrigin({ AVEDON_DOCS_ORIGIN: 'https://avedon.dev/' }), 'https://avedon.dev')
 })
 
-test('syncAppHtmlOrigin rewrites og and twitter image to absolute origin', () => {
+test('syncAppHtmlOrigin rewrites og/twitter image and og:url to absolute origin', () => {
   const tmp = path.join(outDir, 'app.html')
   fs.mkdirSync(outDir, { recursive: true })
   fs.writeFileSync(
     tmp,
     `<meta property="og:image" content="/og-image.png" />
 <meta name="twitter:image" content="https://old.example/og-image.png" />
+<meta property="og:url" content="https://old.example/" />
 `,
     'utf8',
   )
@@ -119,6 +120,7 @@ test('syncAppHtmlOrigin rewrites og and twitter image to absolute origin', () =>
   const html = fs.readFileSync(tmp, 'utf8')
   assert.match(html, /property="og:image" content="https:\/\/avedon\.dev\/og-image\.png"/)
   assert.match(html, /name="twitter:image" content="https:\/\/avedon\.dev\/og-image\.png"/)
+  assert.match(html, /property="og:url" content="https:\/\/avedon\.dev\/"/)
 })
 
 test('generateDocs writes sitemap for a custom origin', async () => {

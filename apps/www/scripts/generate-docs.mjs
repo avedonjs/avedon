@@ -34,6 +34,7 @@ export function syncAppHtmlOrigin(appHtmlPath, origin) {
   if (!fs.existsSync(appHtmlPath)) return
   let html = fs.readFileSync(appHtmlPath, 'utf8')
   const abs = `${origin}/og-image.png`
+  const siteUrl = `${origin}/`
   const next = html
     .replace(
       /(<meta\s+property="og:image"\s+content=")([^"]*)(")/,
@@ -42,6 +43,10 @@ export function syncAppHtmlOrigin(appHtmlPath, origin) {
     .replace(
       /(<meta\s+name="twitter:image"\s+content=")([^"]*)(")/,
       `$1${abs}$3`,
+    )
+    .replace(
+      /(<meta\s+property="og:url"\s+content=")([^"]*)(")/,
+      `$1${siteUrl}$3`,
     )
   if (next !== html) fs.writeFileSync(appHtmlPath, next, 'utf8')
 }

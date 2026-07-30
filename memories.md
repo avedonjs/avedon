@@ -2,6 +2,13 @@
 
 Updated: 2026-07-30
 
+## Published (2026-07-30)
+
+Version Packages PR #9 merged → OIDC publish succeeded.
+Release: https://github.com/avedonjs/avedon/actions/runs/30534754553
+Versions: `avedon@0.1.10`, `@avedon/compiler@1.0.0`, `@avedon/runtime@0.3.0`, `@avedon/server@0.2.6`, `@avedon/vite-plugin@0.1.9`, `create-avedon-app@0.1.4`, adapters node `0.1.9` / bun+cf `0.2.7`.
+Template sync OK: runtime `^0.3.0`, compiler peer `^0.3.0`.
+
 ## Snippets (2026-07-30)
 
 Reusable template fragments within a single `.ave` file — like a local mini-component without a separate file.
@@ -109,6 +116,7 @@ Reusable template fragments within a single `.ave` file — like a local mini-co
 
 ## Status
 
+- **Twitter/X OG card (2026-07-30):** Live `avedon.pages.dev` had only `og:image` + `twitter:card`/`twitter:image` — missing `og:title` / `og:description` (X does **not** fall back to `meta name=description`). Fix: full OG suite in `apps/www/src/app.html` + `@avedon/server` `applyHead` mirrors `head.title`/`description` → `og:*` + `twitter:*`. Changeset `server-og-twitter-mirror`. After deploy, re-share with `?v=2` or wait for X cache.
 - **Playground CodeMirror empty on Pages (2026-07-29):** Vite extracts CM CSS to `/assets/client-*.css` but SSG HTML never linked it → black text on dark bg, no gutters. Fix: `clientCss` in shell prefix + CLI/adapters. **Uncommitted → shipping.**
 - **Published (2026-07-29 evening):** Playground+Tailwind+fixes — PR #7 merged; OIDC publish — `avedon@0.1.7`, `@avedon/compiler@0.4.0`, `@avedon/runtime@0.2.1`, `@avedon/server@0.2.3` (+ adapters/vite-plugin/cli bumps). Live: https://avedon.pages.dev/playground/ — Release: https://github.com/avedonjs/avedon/actions/runs/30466780448
 - **www playground Tailwind (2026-07-29):** iframe loads local `/playground-tailwind.js` (`@tailwindcss/browser@4.1.11`); create-app `@theme` tokens; all presets utility-styled. Also fixed sandboxed iframe `postMessage` targetOrigin (`'*'`). Signal-script: do not unwrap args to `readonly()`. Spec/plan under `docs/superpowers/{specs,plans}/2026-07-29-playground-tailwind*`. **Published.**

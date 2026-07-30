@@ -72,6 +72,30 @@ describe('shell head', () => {
     expect(out).toContain('<meta property="og:type" content="article" />')
   })
 
+  it('mirrors title to og:title and twitter:title', () => {
+    const out = renderShellPrefix(withTitle, { head: { title: 'Post 1' } })
+    expect(out).toContain('<meta property="og:title" content="Post 1" />')
+    expect(out).toContain('<meta name="twitter:title" content="Post 1" />')
+  })
+
+  it('replaces existing og/twitter title tags when head.title is set', () => {
+    const app =
+      '<!doctype html><html><head><title>base</title>' +
+      '<meta property="og:title" content="old" />' +
+      '<meta name="twitter:title" content="old" />' +
+      '%avedon.head%</head><body><div id="app">'
+    const out = renderShellPrefix(app, { head: { title: 'Post 1' } })
+    expect(out).toContain('property="og:title" content="Post 1"')
+    expect(out).toContain('name="twitter:title" content="Post 1"')
+    expect(out).not.toContain('content="old"')
+  })
+
+  it('mirrors description to og:description and twitter:description', () => {
+    const out = renderShellPrefix(withTitle, { head: { description: 'excerpt' } })
+    expect(out).toContain('<meta property="og:description" content="excerpt" />')
+    expect(out).toContain('<meta name="twitter:description" content="excerpt" />')
+  })
+
   it('leaves the document unchanged without head', () => {
     const out = renderShellPrefix(withTitle)
     expect(out).toContain('<title>base</title>')
