@@ -1,5 +1,12 @@
 # @avedon/server
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [939005b]
+  - @avedon/runtime@0.2.2
+
 ## 0.2.4
 
 ### Patch Changes

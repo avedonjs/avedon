@@ -1,5 +1,13 @@
 # @avedon/compiler
 
+## 0.4.1
+
+### Patch Changes
+
+- 939005b: Add create-app dependency sync + pack-build smoke; fix CodeQL slugify ReDoS and playground script strip.
+- Updated dependencies [939005b]
+  - @avedon/runtime@0.2.2
+
 ## 0.4.0
 
 ### Minor Changes
