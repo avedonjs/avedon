@@ -10,7 +10,7 @@ export type ParsedCreateArgs = {
 }
 
 const ORMS = new Set<OrmChoice>(['none', 'drizzle', 'prisma'])
-const ADAPTERS = new Set<AdapterChoice>(['node', 'cloudflare', 'bun'])
+const ADAPTERS = new Set<AdapterChoice>(['node', 'cloudflare', 'bun', 'static'])
 
 export function parseCreateArgs(argv: string[]): ParsedCreateArgs {
   let name: string | undefined
@@ -35,7 +35,7 @@ export function parseCreateArgs(argv: string[]): ParsedCreateArgs {
     if (arg.startsWith('--adapter=')) {
       const value = arg.slice('--adapter='.length) as AdapterChoice
       if (!ADAPTERS.has(value)) {
-        throw new Error(`Invalid --adapter=${value} (expected node|cloudflare|bun)`)
+        throw new Error(`Invalid --adapter=${value} (expected node|cloudflare|bun|static)`)
       }
       adapter = value
       continue
@@ -96,6 +96,7 @@ export async function resolveCreateOptions(
         { value: 'node' as const, label: 'Node' },
         { value: 'cloudflare' as const, label: 'Cloudflare Workers' },
         { value: 'bun' as const, label: 'Bun' },
+        { value: 'static' as const, label: 'Static (SSG only)' },
       ],
       initialValue: 'node' as const,
     })

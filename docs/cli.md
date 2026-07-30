@@ -25,7 +25,7 @@ avedon create my-app --no-tailwind --orm=none
 | Flag | Description |
 |------|-------------|
 | `--yes` / `-y` | Non-interactive; defaults to Node adapter, no Tailwind, `orm=none` |
-| `--adapter=node\|cloudflare\|bun` | Production adapter (default `node`) |
+| `--adapter=node\|cloudflare\|bun\|static` | Production adapter (default `node`) |
 | `--tailwind` / `--no-tailwind` | Enable or disable Tailwind v4 conversion of starter styles |
 | `--orm=none\|drizzle\|prisma` | Add ORM dependencies and empty config (no models) |
 

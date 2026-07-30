@@ -1,4 +1,4 @@
-export type AdapterChoice = 'node' | 'cloudflare' | 'bun'
+export type AdapterChoice = 'node' | 'cloudflare' | 'bun' | 'static'
 
 export type OrmChoice = 'none' | 'drizzle' | 'prisma'
 

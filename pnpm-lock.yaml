@@ -36,9 +36,9 @@ importers:
 
   apps/www:
     dependencies:
-      '@avedon/adapter-node':
+      '@avedon/adapter-static':
         specifier: workspace:*
-        version: link:../../packages/adapter-node
+        version: link:../../packages/adapter-static
       '@avedon/compiler':
         specifier: workspace:*
         version: link:../../packages/compiler
@@ -100,6 +100,9 @@ importers:
       '@avedon/adapter-node':
         specifier: workspace:*
         version: link:../../packages/adapter-node
+      '@avedon/adapter-static':
+        specifier: workspace:*
+        version: link:../../packages/adapter-static
       '@avedon/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
@@ -173,6 +176,22 @@ importers:
       typescript:
         specifier: ^5.8.2
         version: 5.9.3
+
+  packages/adapter-static:
+    dependencies:
+      '@avedon/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.20)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.9
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)
 
   packages/cli:
     dependencies:

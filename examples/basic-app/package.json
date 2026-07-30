@@ -11,6 +11,7 @@
     "@avedon/adapter-bun": "workspace:*",
     "@avedon/adapter-cloudflare": "workspace:*",
     "@avedon/adapter-node": "workspace:*",
+    "@avedon/adapter-static": "workspace:*",
     "@avedon/runtime": "workspace:*",
     "@avedon/server": "workspace:*",
     "@avedon/vite-plugin": "workspace:*",

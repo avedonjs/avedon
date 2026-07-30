@@ -2,7 +2,7 @@
 
 Updated: 2026-07-30  
 **Status:** Approved for implementation (2026-07-30)  
-**Plan:** _(pending `docs/superpowers/plans/2026-07-30-adapter-static.md`)_  
+**Plan:** `docs/superpowers/plans/2026-07-30-adapter-static.md`  
 **Scope:** Ship a fail-closed static export adapter so `avedon build` emits only `out/client/` (assets + SSG HTML), wire `create-avedon-app --adapter=static`, and dogfood on `apps/www`.
 
 ## Goal

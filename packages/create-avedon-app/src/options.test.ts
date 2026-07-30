@@ -36,6 +36,7 @@ describe('parseCreateArgs', () => {
     expect(parseCreateArgs(['--adapter=node']).adapter).toBe('node')
     expect(parseCreateArgs(['--adapter=cloudflare']).adapter).toBe('cloudflare')
     expect(parseCreateArgs(['--adapter=bun']).adapter).toBe('bun')
+    expect(parseCreateArgs(['--adapter=static']).adapter).toBe('static')
   })
 
   it('rejects invalid --adapter', () => {

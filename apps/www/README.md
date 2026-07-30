@@ -18,7 +18,7 @@ pnpm -F www dev
 pnpm -F www build
 ```
 
-Output: `apps/www/build/client` (static SSG HTML + assets).
+Output: `apps/www/build/client` (static SSG HTML + assets via `@avedon/adapter-static`).
 
 ## Deploy (Cloudflare Pages)
 

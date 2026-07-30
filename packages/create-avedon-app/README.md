@@ -9,6 +9,7 @@ pnpm create avedon-app my-app
 pnpm create avedon-app my-app --yes
 pnpm create avedon-app my-app --adapter=cloudflare
 pnpm create avedon-app my-app --adapter=bun --yes
+pnpm create avedon-app my-app --adapter=static --yes
 pnpm create avedon-app my-app --tailwind --orm=drizzle
 # or
 npx create-avedon-app my-app --orm=prisma
@@ -18,6 +19,6 @@ avedon create my-app --no-tailwind --orm=none
 
 On a TTY, the CLI prompts for project name (if missing), production adapter, Tailwind, and ORM. Use `--yes` / `-y` to skip prompts (defaults: **Node** adapter, no Tailwind, no ORM). Non-TTY runs also use those defaults unless flags are set.
 
-- **Adapter:** `node` (default), `cloudflare` (Workers + Wrangler), or `bun` (`Bun.serve`).
+- **Adapter:** `node` (default), `cloudflare` (Workers + Wrangler), `bun` (`Bun.serve`), or `static` (SSG-only `build/client` export).
 - **Tailwind:** converts the starter home styles to Tailwind v4 (PostCSS) utilities.
 - **ORM:** adds Drizzle or Prisma dependencies and config stubs only — no schema models.

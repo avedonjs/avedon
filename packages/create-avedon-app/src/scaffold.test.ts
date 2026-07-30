@@ -96,6 +96,21 @@ describe('scaffoldApp', () => {
     expect(pkg.scripts.preview).toBe('bun run build/server.js')
   })
 
+  it('scaffolds static adapter config and deps', () => {
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
+    dirs.push(dest)
+    const app = path.join(dest, 'static-app')
+    scaffoldApp(app, { name: 'static-app', adapter: 'static' })
+    const cfg = fs.readFileSync(path.join(app, 'avedon.config.ts'), 'utf8')
+    expect(cfg).toContain("from '@avedon/adapter-static'")
+    expect(cfg).toContain('staticAdapter')
+    const pkg = JSON.parse(fs.readFileSync(path.join(app, 'package.json'), 'utf8'))
+    expect(pkg.dependencies['@avedon/adapter-static']).toMatch(/^(\^0\.1\.|file:)/)
+    expect(pkg.dependencies['@avedon/adapter-node']).toBeUndefined()
+    expect(pkg.scripts.start).toBeUndefined()
+    expect(pkg.scripts.preview).toBeUndefined()
+  })
+
   it('links file: cloudflare adapter when monorepo root is set', () => {
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-scaffold-'))
     dirs.push(dest)
@@ -227,6 +242,19 @@ describe('scaffoldApp', () => {
       orm: 'none',
     })
     expect(steps).toMatch(/bun run build\/server\.js/)
+  })
+
+  it('mentions static deploy next steps', () => {
+    const steps = formatNextSteps({
+      dest: '/tmp/x',
+      name: 'static-app',
+      packageManager: 'pnpm',
+      adapter: 'static',
+      tailwind: false,
+      orm: 'none',
+    })
+    expect(steps).toMatch(/build\/client/)
+    expect(steps).toMatch(/ssg/i)
   })
 
   it('refuses existing directories', () => {

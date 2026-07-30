@@ -4,6 +4,8 @@ import type { AdapterChoice } from './types.js'
 
 /** Match current npm majors: cloudflare/bun are 0.2.x. */
 const ADAPTER_EDGE_RANGE = '^0.2.7'
+/** First publish line for @avedon/adapter-static. */
+const ADAPTER_STATIC_RANGE = '^0.1.0'
 const WRANGLER_DEP = '^4.113.0'
 
 export function applyAdapter(
@@ -37,7 +39,7 @@ export function applyAdapter(
         `  adapter: cloudflareAdapter({ out: 'build', name: ${JSON.stringify(opts.name)} }),\n` +
         `}\n`,
     )
-  } else {
+  } else if (adapter === 'bun') {
     pkg.dependencies['@avedon/adapter-bun'] = ADAPTER_EDGE_RANGE
     pkg.scripts.start = 'bun run build/server.js'
     pkg.scripts.preview = 'bun run build/server.js'
@@ -46,6 +48,17 @@ export function applyAdapter(
       `import { bunAdapter } from '@avedon/adapter-bun'\n\n` +
         `export default {\n` +
         `  adapter: bunAdapter({ out: 'build' }),\n` +
+        `}\n`,
+    )
+  } else if (adapter === 'static') {
+    pkg.dependencies['@avedon/adapter-static'] = ADAPTER_STATIC_RANGE
+    delete pkg.scripts.start
+    delete pkg.scripts.preview
+    fs.writeFileSync(
+      path.join(appDir, 'avedon.config.ts'),
+      `import { staticAdapter } from '@avedon/adapter-static'\n\n` +
+        `export default {\n` +
+        `  adapter: staticAdapter({ out: 'build' }),\n` +
         `}\n`,
     )
   }

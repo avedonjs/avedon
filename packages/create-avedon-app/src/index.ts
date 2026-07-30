@@ -37,6 +37,7 @@ const LOCAL_PKG_DIRS: Record<string, string> = {
   '@avedon/adapter-node': 'adapter-node',
   '@avedon/adapter-cloudflare': 'adapter-cloudflare',
   '@avedon/adapter-bun': 'adapter-bun',
+  '@avedon/adapter-static': 'adapter-static',
   '@avedon/runtime': 'runtime',
   '@avedon/server': 'server',
   '@avedon/vite-plugin': 'vite-plugin',
@@ -197,6 +198,12 @@ export function formatNextSteps(result: ScaffoldResult): string {
   if (adapter === 'bun') {
     extra += '\n  Production: pnpm build && bun run build/server.js'
     extra += '\n  Requires Bun; set PORT to change listen port (default 3000)'
+  }
+  if (adapter === 'static') {
+    extra +=
+      '\n  Production: pnpm build — then deploy the build/client folder to any static host'
+    extra +=
+      "\n  Note: only render: 'ssg' routes are allowed (no SSR/CSR/actions/API/ISR)"
   }
 
   return `Created ${name}

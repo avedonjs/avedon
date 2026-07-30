@@ -1,5 +1,5 @@
-import { nodeAdapter } from '@avedon/adapter-node'
+import { staticAdapter } from '@avedon/adapter-static'
 
 export default {
-  adapter: nodeAdapter({ out: 'build' }),
+  adapter: staticAdapter({ out: 'build' }),
 }

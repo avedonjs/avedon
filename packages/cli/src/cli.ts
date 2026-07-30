@@ -143,16 +143,26 @@ async function cmdBuild() {
   const clientCss = listClientCssHrefs(path.join(outDir, 'client', 'assets'))
   const ssgPages = await buildSsgPages(routes, appHtml, { clientCss })
 
+  const flatRoutes = flattenRoutes(routes)
+  const manifestRoutes = await Promise.all(
+    flatRoutes.map(async (r) => {
+      const mod = await resolveComponentModule(r.component)
+      return {
+        path: r.path,
+        render: r.render ?? 'ssr',
+        revalidate: r.revalidate,
+        hasActions: moduleHasActions(mod),
+        hasApi: moduleHasApi(mod),
+      }
+    }),
+  )
+
   const builder: Builder = {
     getClientDirectory: () => path.join(outDir, 'client'),
     getServerEntry: () => serverEntryPath,
     getSsgPages: () => ssgPages,
     getManifest: () => ({
-      routes: flattenRoutes(routes).map((r) => ({
-        path: r.path,
-        render: r.render ?? 'ssr',
-        revalidate: r.revalidate,
-      })),
+      routes: manifestRoutes,
     }),
     writeClient(dest) {
       copyDir(path.join(outDir, 'client'), dest)
@@ -178,6 +188,43 @@ function copyDir(src: string, dest: string) {
     if (entry.isDirectory()) copyDir(s, d)
     else fs.copyFileSync(s, d)
   }
+}
+
+async function resolveComponentModule(
+  component: unknown,
+): Promise<Record<string, unknown> | null> {
+  if (component == null) return null
+  if (typeof component === 'function') {
+    try {
+      const loaded = await (component as () => Promise<unknown>)()
+      if (loaded != null && typeof loaded === 'object') {
+        return loaded as Record<string, unknown>
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+  if (typeof component === 'object') return component as Record<string, unknown>
+  return null
+}
+
+function moduleHasActions(mod: Record<string, unknown> | null): boolean {
+  if (!mod) return false
+  const actions = mod.actions
+  return actions != null && typeof actions === 'object' && Object.keys(actions).length > 0
+}
+
+function moduleHasApi(mod: Record<string, unknown> | null): boolean {
+  if (!mod) return false
+  const api = mod.api
+  if (api != null && typeof api === 'object' && Object.keys(api).length > 0) {
+    return true
+  }
+  for (const key of Object.keys(mod)) {
+    if (key.startsWith('api_') && mod[key] != null) return true
+  }
+  return false
 }
 
 /** Collect Vite-emitted CSS under `assets/` as absolute hrefs for `<link rel="stylesheet">`. */

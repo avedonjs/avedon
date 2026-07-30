@@ -1,8 +1,35 @@
 # Deployment
 
-Production targets **Node** (`@avedon/adapter-node`), **Cloudflare Workers** (`@avedon/adapter-cloudflare`), or **Bun** (`@avedon/adapter-bun`).
+Production targets **Node** (`@avedon/adapter-node`), **Static** (`@avedon/adapter-static`), **Cloudflare Workers** (`@avedon/adapter-cloudflare`), or **Bun** (`@avedon/adapter-bun`).
 
-Scaffold with `pnpm create avedon-app my-app --adapter=cloudflare` (or `bun`) to wire the matching adapter at create time — see [CLI](./cli.md).
+Scaffold with `pnpm create avedon-app my-app --adapter=static` (or `cloudflare` / `bun`) to wire the matching adapter at create time — see [CLI](./cli.md).
+
+## Static
+
+Use `@avedon/adapter-static` for fully static hosts (Cloudflare Pages, Netlify, GitHub Pages, S3/CDN).
+
+### Config
+
+```ts
+import { staticAdapter } from '@avedon/adapter-static'
+
+export default {
+  adapter: staticAdapter({ out: 'build' }),
+}
+```
+
+### Build and deploy
+
+```bash
+pnpm build
+# deploy the build/client directory
+wrangler pages deploy ./build/client --project-name=my-app
+```
+
+### Limits
+
+- **Only `render: 'ssg'`** — SSR, CSR, form `actions`, `api` / `api_*`, and `revalidate` cause a hard build failure.
+- No Node/Bun/Workers runtime; there is nothing to `avedon start`.
 
 ## Node
 
@@ -65,7 +92,7 @@ If your `server-entry` exports `session` without a `secret`, the generated Worke
 ### Limits (v1)
 
 - **ISR / `revalidate`:** not supported on Workers — SSG HTML is static until the next deploy. Prefer Node if you need stale-while-revalidate today.
-- This adapter targets **Workers + Assets**, not Pages Functions. Fully static SSG sites can still be published to Pages from client HTML alone (as with the public docs site).
+- This adapter targets **Workers + Assets**, not Pages Functions. Prefer `@avedon/adapter-static` for fully static SSG sites on Pages.
 
 ## Bun
 

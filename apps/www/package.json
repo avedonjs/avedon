@@ -13,7 +13,7 @@
     "test:generate": "node --test ./scripts/generate-docs.test.mjs"
   },
   "dependencies": {
-    "@avedon/adapter-node": "workspace:*",
+    "@avedon/adapter-static": "workspace:*",
     "@avedon/compiler": "workspace:*",
     "@avedon/runtime": "workspace:*",
     "@avedon/server": "workspace:*",

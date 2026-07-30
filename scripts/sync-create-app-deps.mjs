@@ -29,6 +29,7 @@ const expectedTemplateDeps = {
 
 // Prefer cloudflare version; bun shares the same edge line in this repo.
 const edgeRange = caret(versionOf('adapter-cloudflare'))
+const staticRange = caret(versionOf('adapter-static'))
 const runtimePeer = caret(versionOf('runtime'))
 
 const templatePath = path.join(root, 'packages/create-avedon-app/template/package.json')
@@ -59,10 +60,16 @@ function writeTemplate() {
 
 function writeAdapter() {
   const re = /const ADAPTER_EDGE_RANGE = '[^']+'/
+  const reStatic = /const ADAPTER_STATIC_RANGE = '[^']+'/
   if (!re.test(before.adapter)) {
     throw new Error('ADAPTER_EDGE_RANGE const not found in apply-adapter.ts')
   }
-  const next = before.adapter.replace(re, `const ADAPTER_EDGE_RANGE = '${edgeRange}'`)
+  if (!reStatic.test(before.adapter)) {
+    throw new Error('ADAPTER_STATIC_RANGE const not found in apply-adapter.ts')
+  }
+  const next = before.adapter
+    .replace(re, `const ADAPTER_EDGE_RANGE = '${edgeRange}'`)
+    .replace(reStatic, `const ADAPTER_STATIC_RANGE = '${staticRange}'`)
   if (check) return next === before.adapter
   fs.writeFileSync(adapterPath, next)
   return next === before.adapter
@@ -92,6 +99,7 @@ if (check) {
   console.error('sync-create-app-deps: drift detected. Run: node scripts/sync-create-app-deps.mjs')
   console.error('expected template deps:', expectedTemplateDeps)
   console.error('expected ADAPTER_EDGE_RANGE:', edgeRange)
+  console.error('expected ADAPTER_STATIC_RANGE:', staticRange)
   console.error('expected compiler peer @avedon/runtime:', runtimePeer)
   process.exit(1)
 }
@@ -99,6 +107,7 @@ if (check) {
 const changed = !(okTemplate && okAdapter && okCompiler)
 console.log('sync-create-app-deps: wrote ranges', expectedTemplateDeps, {
   ADAPTER_EDGE_RANGE: edgeRange,
+  ADAPTER_STATIC_RANGE: staticRange,
   peerRuntime: runtimePeer,
 })
 

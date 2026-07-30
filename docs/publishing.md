@@ -9,7 +9,7 @@ Publishable packages:
 - `avedon`
 - `create-avedon-app`
 - `@avedon/compiler`, `@avedon/runtime`, `@avedon/server`, `@avedon/shared`, `@avedon/vite-plugin`
-- `@avedon/adapter-node`, `@avedon/adapter-bun`, `@avedon/adapter-cloudflare`
+- `@avedon/adapter-node`, `@avedon/adapter-bun`, `@avedon/adapter-cloudflare`, `@avedon/adapter-static`
 
 Verify:
 
@@ -32,6 +32,8 @@ Long-lived publish tokens / GAT `bypass2fa` are deprecated ([npm changelog 2026-
 
 On publish, the action logs `No NPM_TOKEN found, but OIDC is available - using npm trusted publishing`. Provenance attestations are generated automatically for public packages from this public repo.
 
+**New packages:** before the first OIDC publish of `@avedon/adapter-static`, configure a Trusted Publisher for that package (same `REPO` / `FILE` as above).
+
 ### Configure / verify trusted publishers
 
 Requires npm ≥ 11.5.1 and an owner login (`npm login`):
@@ -52,7 +54,8 @@ for pkg in \
   @avedon/vite-plugin \
   @avedon/adapter-node \
   @avedon/adapter-bun \
-  @avedon/adapter-cloudflare
+  @avedon/adapter-cloudflare \
+  @avedon/adapter-static
 do
   npm trust github "$pkg" --repo "$REPO" --file "$FILE" --allow-publish -y
 done

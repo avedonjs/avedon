@@ -34,6 +34,16 @@ export default {
 }
 ```
 
+Static (SSG only):
+
+```ts
+import { staticAdapter } from '@avedon/adapter-static'
+
+export default {
+  adapter: staticAdapter({ out: 'build' }),
+}
+```
+
 `out` is the adapter output directory used by `avedon build` (and by `avedon start` for the Node adapter).
 
 ## Environment variables
