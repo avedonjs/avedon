@@ -90,7 +90,8 @@ describe('compile', () => {
     expect(ssr.code).toContain('wait')
     const client = compile(src, { filename: 'T.ave', generate: 'client' })
     expect(client.code).toContain('wait')
-    expect(client.code).toContain("createComment('await')")
+    expect(client.code).toContain("__avedonComment(")
+    expect(client.code).toContain("'await'")
     expect(client.code).toMatch(/Promise\.resolve\(p\)\.then/)
   })
 
@@ -579,7 +580,8 @@ describe('transition:fade', () => {
   it('keyed each outros leaving records', () => {
     const src = `<template>{#each items as item (item.id)}<li transition:fade={{ duration: 30 }}>{item.id}</li>{/each}</template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain("createComment('each-keyed')")
+    expect(out.code).toContain("__avedonComment(")
+    expect(out.code).toContain("'each-keyed'")
     expect(out.code).toContain('__leaving')
     expect(out.code).toContain('__runOutro')
   })
@@ -1007,18 +1009,18 @@ describe('svg createElementNS', () => {
   it('client creates svg/path with createElementNS', () => {
     const src = `<template><svg viewBox="0 0 10 10"><path d="M0 0 L10 10" /></svg></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain('createElementNS')
+    expect(out.code).toContain('__avedonEl')
     expect(out.code).toMatch(/www\.w3\.org/)
-    expect(out.code).toMatch(/createElementNS\([^)]+,\s*["']svg["']\)/)
-    expect(out.code).toMatch(/createElementNS\([^)]+,\s*["']path["']\)/)
-    expect(out.code).not.toMatch(/createElement\(["']path["']\)/)
+    expect(out.code).toMatch(/__avedonEl\([^,]+,\s*["']svg["']/)
+    expect(out.code).toMatch(/__avedonEl\([^,]+,\s*["']path["']/)
+    expect(out.code).not.toMatch(/__avedonEl\([^,]+,\s*["']path["'],\s*null\)/)
   })
 
   it('client keeps HTML tags on createElement', () => {
     const src = `<template><div><span>x</span></div></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain("createElement('div')")
-    expect(out.code).not.toContain('createElementNS')
+    expect(out.code).toMatch(/__avedonEl\([^,]+,\s*["']div["'],\s*null\)/)
+    expect(out.code).not.toMatch(/www\.w3\.org\/2000\/svg/)
   })
 
   it('HTML <title> stays on createElement; SVG <title> uses NS', () => {
@@ -1026,14 +1028,14 @@ describe('svg createElementNS', () => {
       filename: 'T.ave',
       generate: 'client',
     })
-    expect(html.code).toMatch(/createElement\(["']title["']\)/)
-    expect(html.code).not.toContain('createElementNS')
+    expect(html.code).toMatch(/__avedonEl\([^,]+,\s*["']title["'],\s*null\)/)
+    expect(html.code).not.toMatch(/__avedonEl\([^,]+,\s*["']title["'],\s*["']http/)
 
     const svg = compile(`<template><svg><title>Tip</title></svg></template>`, {
       filename: 'T.ave',
       generate: 'client',
     })
-    expect(svg.code).toMatch(/createElementNS\([^)]+,\s*["']title["']\)/)
+    expect(svg.code).toMatch(/__avedonEl\([^,]+,\s*["']title["'],\s*["']http/)
   })
 })
 
@@ -1202,7 +1204,7 @@ describe('{:else if}', () => {
     expect(out.code).toContain('else if (b)')
     expect(out.code).toMatch(/else \{/)
     // One if-block comment — nested if tokens must not emit a second block.
-    expect(out.code.match(/createComment\('if'\)/g)?.length).toBe(1)
+    expect(out.code.match(/__avedonComment\([^,]+,\s*'if'\)/g)?.length).toBe(1)
   })
 })
 
@@ -1238,7 +1240,7 @@ describe('snippets', () => {
     const src = `<template>{#snippet row(item)}<li>{item}</li>{/snippet}<ul>{@render row(x)}</ul></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
     expect(out.code).toContain('((item) =>')
-    expect(out.code).toContain('createElement("li")')
+    expect(out.code).toMatch(/__avedonEl\([^,]+,\s*["']li["']/)
     expect(out.code).toMatch(/String\(item/)
   })
 
@@ -1346,7 +1348,8 @@ describe('HTML comments', () => {
     const src = `<template><!-- skip --><span>ok</span></template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
     expect(out.code).not.toContain('skip')
-    expect(out.code).toContain('createElement("span")')
+    expect(out.code).toContain('ok')
+    expect(out.code).toMatch(/__avedonEl\([^,]+,\s*["']span["']/)
   })
 
   it('rejects unclosed comments', () => {
@@ -1793,13 +1796,16 @@ describe('{#each} {:else}', () => {
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
     expect(out.code).toContain('__list.length')
     expect(out.code).toContain('empty')
-    expect(out.code).toContain("createComment('each')")
+    expect(out.code).toContain("__avedonComment(")
+    expect(out.code).toContain("'each'")
+    expect(out.code).not.toContain("'each-keyed'")
   })
 
   it('works with keyed each', () => {
     const src = `<template>{#each items as item (item.id)}<b>{item.name}</b>{:else}<i>none</i>{/each}</template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain("createComment('each-keyed')")
+    expect(out.code).toContain("__avedonComment(")
+    expect(out.code).toContain("'each-keyed'")
     expect(out.code).toContain('__list.length')
     expect(out.code).toContain('none')
   })
@@ -1810,15 +1816,78 @@ describe('{#key}', () => {
     const src = `<template>{#key id}<b>{label}</b>{/key}</template>`
     const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
     expect(out.code).toContain('__escape(label)')
+    expect(out.code).toContain('<!--key-->')
     expect(out.code).not.toMatch(/Unsupported \{#key\}/)
   })
 
   it('client remounts when the key expression changes', () => {
     const src = `<template>{#key id}<span>{label}</span>{/key}</template>`
     const out = compile(src, { filename: 'T.ave', generate: 'client' })
-    expect(out.code).toContain("createComment('key')")
+    expect(out.code).toContain("__avedonComment(")
+    expect(out.code).toContain("'key'")
     expect(out.code).toContain('Object.is(__k, __prevKey)')
     expect(out.code).toMatch(/const __k = \(id\)/)
+  })
+})
+
+describe('SSR claim anchors', () => {
+  it('emits if / each / each-keyed / await comment anchors', () => {
+    const ifSsr = compile(`<template>{#if on}<span>y</span>{/if}</template>`, {
+      filename: 'T.ave',
+      generate: 'ssr',
+    })
+    expect(ifSsr.code).toContain('<!--if-->')
+
+    const eachSsr = compile(`<template>{#each items as item}<b>{item}</b>{/each}</template>`, {
+      filename: 'T.ave',
+      generate: 'ssr',
+    })
+    expect(eachSsr.code).toContain('<!--each-->')
+
+    const keyed = compile(
+      `<template>{#each items as item (item.id)}<b>{item.name}</b>{/each}</template>`,
+      { filename: 'T.ave', generate: 'ssr' },
+    )
+    expect(keyed.code).toContain('<!--each-keyed-->')
+
+    const awaitSsr = compile(
+      `<template>{#await p}<i>wait</i>{:then v}<b>{v}</b>{/await}</template>`,
+      { filename: 'T.ave', generate: 'ssr' },
+    )
+    expect(awaitSsr.code).toContain('<!--await-->')
+  })
+
+  it('BUG-301: separates adjacent text/expr so HTML parse keeps distinct text nodes', () => {
+    const src = `<template>Hello {name}!</template>`
+    const ssr = compile(src, { filename: 'T.ave', generate: 'ssr' })
+    expect(ssr.code).toContain('<!---->')
+    expect(ssr.code).toMatch(/Hello[\s\S]*<!---->[\s\S]*__escape/)
+
+    const client = compile(src, { filename: 'T.ave', generate: 'client' })
+    expect(client.code).toContain("__avedonComment(")
+    expect(client.code).toMatch(/__avedonComment\([^,]+,\s*""\)/)
+  })
+
+  it('BUG-301: stream path also emits text separators', () => {
+    const src = `<template>Hi {n}</template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
+    // stream is on CompiledTemplate via generate ssr which includes both; check ssr expr has sep
+    expect(out.code).toContain('<!---->')
+  })
+
+  it('BUG-305: escapes &, <, > in static SSR text for claim parity', () => {
+    const out = compile(`<template><p>Hello &copy; a < b</p></template>`, {
+      filename: 'T.ave',
+      generate: 'ssr',
+    })
+    expect(out.code).toContain('&amp;copy;')
+    expect(out.code).toContain('&lt;')
+  })
+
+  it('BUG-307: rejects attribute names that break out of quotes', () => {
+    expect(() =>
+      compile(`<template><div foo"bar="{x}></div></template>`, { filename: 'T.ave', generate: 'ssr' }),
+    ).toThrow(/Invalid attribute name/)
   })
 })
 
@@ -1995,8 +2064,32 @@ describe('audit regressions 2026-07-29', () => {
     expect(out.code).toContain('__g !== __awaitGen')
   })
 
-  it('hydrate destroy clears the live target', () => {
+  it('hydrate falls back to soft remount destroy on mismatch', () => {
     const out = compile(`<template><p>x</p></template>`, { filename: 'H.ave', generate: 'client' })
-    expect(out.code).toMatch(/destroy\(\)\s*\{\s*inst\.destroy\(\);\s*target\.textContent/)
+    expect(out.code).toContain('__claimPush(target)')
+    expect(out.code).toContain('__HydrateMismatchError')
+    expect(out.code).toContain('soft.destroy()')
+    expect(out.code).toContain('target.textContent')
+    expect(out.code).toContain('__lifecycleAbort')
+    expect(out.code).toContain('__updateHooksAbort')
+    expect(out.code).toContain('if (__inst) { try { __inst.destroy(); } catch {} }')
+  })
+
+  it('BUG-302: mount aborts lifecycle/context cleanups when claim throws mid-init', () => {
+    const out = compile(`<template><p>{x}</p></template>`, { filename: 'H.ave', generate: 'client' })
+    expect(out.code).toContain('catch (__mountErr)')
+    expect(out.code).toContain('__lifecycleAbort()')
+    expect(out.code).toContain('__updateHooksAbort()')
+  })
+
+  it('BUG-306: destroy removes owned nodes only (not target.textContent)', () => {
+    const out = compile(`<template><p>x</p></template>`, { filename: 'H.ave', generate: 'client' })
+    expect(out.code).toContain('const __owned = []')
+    expect(out.code).toContain('__owned.push(target.childNodes[__oi])')
+    expect(out.code).toContain('for (const __n of __owned) { try { __n.remove(); } catch {} }')
+    // Soft-remount hydrate wrapper may still clear target; mount.destroy must not.
+    const mountDestroy = out.code.match(/return \{\s*destroy\(\) \{[\s\S]*?\},\s*update\(/)
+    expect(mountDestroy?.[0] ?? '').toContain('__n.remove()')
+    expect(mountDestroy?.[0] ?? '').not.toContain("target.textContent = ''")
   })
 })

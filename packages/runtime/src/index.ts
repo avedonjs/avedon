@@ -36,6 +36,30 @@ export {
   elementFromPath,
 } from './document.js'
 export {
+  HydrateMismatchError,
+  createClaimCursor,
+  skipWhitespace,
+  claimElement,
+  claimText,
+  claimComment,
+  assertClaimExhausted,
+  claimPush,
+  claimPop,
+  claimCurrent,
+  claimStackActive,
+  claimStackDepth,
+  __resetClaimStack,
+  avedonEl,
+  avedonElEnd,
+  avedonText,
+  avedonTextEmpty,
+  avedonComment,
+  avedonAppend,
+  avedonClaimingInto,
+  AVEDON_SVG_NS,
+} from './claim.js'
+export type { ClaimCursor } from './claim.js'
+export {
   preload,
   resolvePreloadMode,
   shouldSkipPreload,
@@ -2318,6 +2342,11 @@ export function __lifecycleEnd() {
   })
 }
 
+/** Compiler: clear lifecycle frame if `mount()` throws before `__lifecycleEnd`. */
+export function __lifecycleAbort() {
+  lifecycleStack = null
+}
+
 /**
  * Run after the component mounts (microtask). May return a cleanup called on destroy.
  * Only schedules work during client `mount()` init; no-op during SSR.
@@ -2374,6 +2403,11 @@ export function __updateHooksBegin(before: Array<() => void>, after: Array<() =>
 }
 
 export function __updateHooksEnd() {
+  updateHooksFrame = null
+}
+
+/** Compiler: clear update-hooks frame if `mount()` throws before `__updateHooksEnd`. */
+export function __updateHooksAbort() {
   updateHooksFrame = null
 }
 

@@ -1,0 +1,142 @@
+{
+  "scopeName": "source.avedon",
+  "name": "Avedon",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#script-block" },
+    { "include": "#style-block" },
+    { "include": "#template-block" },
+    { "include": "#mustache" },
+    { "include": "#tag" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.block.html.avedon",
+      "begin": "<!--",
+      "end": "-->"
+    },
+    "script-block": {
+      "name": "meta.block.script.avedon",
+      "begin": "(?i)(<script)\\b([^>]*)(>)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.tag.avedon" },
+        "2": { "name": "meta.tag.attributes.avedon" },
+        "3": { "name": "punctuation.definition.tag.end.avedon" }
+      },
+      "end": "(?i)(</script\\s*>)",
+      "endCaptures": {
+        "1": { "name": "entity.name.tag.avedon" }
+      },
+      "contentName": "source.ts",
+      "patterns": [
+        { "include": "source.ts" }
+      ]
+    },
+    "style-block": {
+      "name": "meta.block.style.avedon",
+      "begin": "(?i)(<style)\\b([^>]*)(>)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.tag.avedon" },
+        "2": { "name": "meta.tag.attributes.avedon" },
+        "3": { "name": "punctuation.definition.tag.end.avedon" }
+      },
+      "end": "(?i)(</style\\s*>)",
+      "endCaptures": {
+        "1": { "name": "entity.name.tag.avedon" }
+      },
+      "contentName": "source.css",
+      "patterns": [
+        { "include": "source.css" }
+      ]
+    },
+    "template-block": {
+      "name": "meta.block.template.avedon",
+      "begin": "(?i)(<template)\\b([^>]*)(>)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.tag.avedon" },
+        "2": { "name": "meta.tag.attributes.avedon" },
+        "3": { "name": "punctuation.definition.tag.end.avedon" }
+      },
+      "end": "(?i)(</template\\s*>)",
+      "endCaptures": {
+        "1": { "name": "entity.name.tag.avedon" }
+      },
+      "patterns": [
+        { "include": "#mustache" },
+        { "include": "#tag" },
+        { "include": "#comment" }
+      ]
+    },
+    "mustache": {
+      "patterns": [
+        {
+          "name": "meta.block.avedon",
+          "begin": "\\{#(if|each|await|key|snippet)\\b",
+          "beginCaptures": {
+            "0": { "name": "keyword.control.avedon" }
+          },
+          "end": "\\}",
+          "patterns": [
+            { "name": "source.ts.embedded.avedon", "match": "[^}]+" }
+          ]
+        },
+        {
+          "name": "keyword.control.avedon",
+          "match": "\\{/(if|each|await|key|snippet)\\}"
+        },
+        {
+          "name": "keyword.control.avedon",
+          "match": "\\{:(else(?:\\s+if)?|then|catch)\\b[^}]*\\}"
+        },
+        {
+          "name": "meta.directive.avedon",
+          "begin": "\\{@(html|const|render)\\b",
+          "beginCaptures": {
+            "0": { "name": "keyword.other.avedon" }
+          },
+          "end": "\\}",
+          "patterns": [
+            { "name": "source.ts.embedded.avedon", "match": "[^}]+" }
+          ]
+        },
+        {
+          "name": "meta.interpolation.avedon",
+          "begin": "\\{",
+          "end": "\\}",
+          "patterns": [
+            { "name": "source.ts.embedded.avedon", "match": "[^}]+" }
+          ]
+        }
+      ]
+    },
+    "tag": {
+      "name": "meta.tag.avedon",
+      "begin": "(</?)([A-Za-z][\\w:-]*)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.avedon" },
+        "2": { "name": "entity.name.tag.avedon" }
+      },
+      "end": "(/?>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.avedon" }
+      },
+      "patterns": [
+        {
+          "name": "entity.other.attribute-name.avedon",
+          "match": "\\b([A-Za-z_:][\\w:.-]*|\\{\\.\\.\\.[^}]+\\})"
+        },
+        {
+          "name": "string.quoted.double.avedon",
+          "begin": "\"",
+          "end": "\""
+        },
+        {
+          "name": "string.quoted.single.avedon",
+          "begin": "'",
+          "end": "'"
+        },
+        { "include": "#mustache" }
+      ]
+    }
+  }
+}

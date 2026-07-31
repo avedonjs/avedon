@@ -1,0 +1,14 @@
+BUG-ID,Severity,Category,File,Line,Description,Status
+BUG-301,HIGH,FUNCTIONAL,packages/compiler/src/codegen.ts,~1732,Adjacent text/expr HTML coalescing breaks claim hydrate,FIXED
+BUG-302,HIGH,FUNCTIONAL,packages/compiler/src/compile.ts,~59,Mount/hydrate mismatch leaks effects and lifecycle frames,FIXED
+BUG-303,HIGH,SECURITY,packages/server/src/cookies.ts,~26,Set-Cookie CRLF via name/path/domain,FIXED
+BUG-304,HIGH,SECURITY,packages/server/src/pipeline.ts,~85,Streaming redirect XSS via unsanitized Location in script,FIXED
+BUG-305,HIGH,FUNCTIONAL,packages/compiler/src/codegen.ts,~1740,Static SSR text not escaped breaks claim entities,FIXED
+BUG-306,HIGH,FUNCTIONAL,packages/compiler/src/compile.ts,~115,Child.destroy wiped shared parent DOM,FIXED
+BUG-307,MEDIUM,SECURITY,packages/compiler/src/codegen.ts,~1658,Invalid attr names with quote breakout,FIXED
+BUG-308,MEDIUM,FUNCTIONAL,packages/compiler/src/compile.ts,~152,Nested hydrate cleared entire claim stack,FIXED
+DEF-001,LOW,FUNCTIONAL,packages/compiler/src/codegen.ts,n/a,"{@html}/slotted soft-remount (intentional v1)",DEFERRED
+DEF-002,MEDIUM,FUNCTIONAL,packages/runtime/src/stream.ts,n/a,Streaming await OOO vs claim shape,DEFERRED
+DEF-003,MEDIUM,SECURITY,apps/www/src/playground/mock-server.ts,n/a,evalMockServer in parent origin (REPL),DEFERRED
+DEF-004,MEDIUM,SECURITY,packages/create-avedon-app/template,n/a,Scaffold CORS origin:true / XFF rate limit,DEFERRED
+DEF-005,MEDIUM,SECURITY,packages/adapter-node/src/index.ts,n/a,Static files missing Content-Type/nosniff,DEFERRED

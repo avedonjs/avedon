@@ -2,6 +2,11 @@ import { compileMarkup } from './codegen.js'
 import { extractActionKeys, extractLoadParamsType, inferLoadDataType } from './load-types.js'
 import { collectSignalNames, prepareSignalExpr } from './signal-script.js'
 import { hashStyle, parse, scopeCss } from './parse.js'
+import {
+  CompileError,
+  type CompileDiagnostic,
+  sectionDiagnostic,
+} from './diagnostics.js'
 import ts from 'typescript'
 
 export interface CompileOptions {
@@ -28,7 +33,12 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
 
   const hmr = options.hmr === true
   const parsed = parse(source)
-  assertNoServerOnUiComponent(parsed.serverScript, options.asUiComponent, filename)
+  assertNoServerOnUiComponent(
+    parsed.serverScript,
+    options.asUiComponent,
+    filename,
+    parsed.ranges.serverScript,
+  )
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const signalNames = collectSignalNames(stripTypeScript(clientBody))
   const cssHash = hashStyle(parsed.style, filename)
@@ -39,6 +49,7 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
     cssHash,
     components,
     signalNames,
+    parsed.markup ? parsed.ranges.markup.start : 0,
   )
 
   const hmrImport = hmr
@@ -46,7 +57,7 @@ export function compile(source: string, options: CompileOptions = {}): CompileRe
     : ''
 
   // Client codegen never interpolates serverScript — physical exclusion (not tree-shake).
-  const code = `import { escapeHtml as __escape, __lifecycleBegin, __lifecycleEnd, __contextBegin, __updateHooksBegin, __updateHooksEnd, captureFocus as __captureFocus, restoreFocus as __restoreFocus, captureFormState as __captureFormState, restoreFormState as __restoreFormState, captureScrollState as __captureScrollState, restoreScrollState as __restoreScrollState, captureOpenState as __captureOpenState, restoreOpenState as __restoreOpenState, transitionMs as __transitionMs, effect as __effect${hmrImport} } from '@avedon/runtime';
+  const code = `import { escapeHtml as __escape, __lifecycleBegin, __lifecycleEnd, __lifecycleAbort, __contextBegin, __updateHooksBegin, __updateHooksEnd, __updateHooksAbort, captureFocus as __captureFocus, restoreFocus as __restoreFocus, captureFormState as __captureFormState, restoreFormState as __restoreFormState, captureScrollState as __captureScrollState, restoreScrollState as __restoreScrollState, captureOpenState as __captureOpenState, restoreOpenState as __restoreOpenState, transitionMs as __transitionMs, effect as __effect, claimPush as __claimPush, claimPop as __claimPop, claimCurrent as __claimCurrent, claimStackActive as __claimStackActive, claimStackDepth as __claimStackDepth, assertClaimExhausted as __assertClaimExhausted, avedonEl as __avedonEl, avedonElEnd as __avedonElEnd, avedonText as __avedonText, avedonTextEmpty as __avedonTextEmpty, avedonComment as __avedonComment, avedonClaimingInto as __avedonClaimingInto, HydrateMismatchError as __HydrateMismatchError${hmrImport} } from '@avedon/runtime';
 ${clientImports}
 
 export const css = ${cssExportExpr(css, componentsUsed)};
@@ -59,12 +70,14 @@ ${ssrRenderBody(clientBody, ssrExpr)}
 export function mount(target, __props = {}) {
   const __effects = [];
   const __cleanups = [];
+  const __owned = [];
   const __beforeUpdate = [];
   const __afterUpdate = [];
   __lifecycleBegin(__cleanups);
   const __contextEnd = __contextBegin();
   __cleanups.push(__contextEnd);
   __updateHooksBegin(__beforeUpdate, __afterUpdate);
+  try {
   let __scheduled = false;
   let __updateReady = false;
   function __invalidate() {
@@ -114,7 +127,8 @@ ${hmr ? '  const __signalBag = __hmrBeginSignalBag();\n' : ''}${clientMountBody(
     destroy() {
       for (const __c of __cleanups) { try { __c(); } catch {} }
       __cleanups.length = 0;
-      target.textContent = '';
+      for (const __n of __owned) { try { __n.remove(); } catch {} }
+      __owned.length = 0;
     },
     update(next = {}) {
       for (const __k of Object.keys(next)) {
@@ -125,34 +139,58 @@ ${assignProps(clientBody)}
       __invalidate();
     },${hmr ? `\n    getHmrState() {\n      return { data: __props.data, signals: __hmrSnapshotSignals(__signalBag) };\n    },` : ''}
   };
+  } catch (__mountErr) {
+    __updateHooksAbort();
+    __lifecycleAbort();
+    for (const __c of __cleanups) { try { __c(); } catch {} }
+    __cleanups.length = 0;
+    throw __mountErr;
+  }
 }
 
-/** Soft hydrate: rebuild into a fragment then replaceChildren (no empty flash). */
+/** Claim hydrate: reuse SSR nodes; soft-remount on mismatch (prod) or throw (dev). */
 export function hydrate(target, __props = {}) {
   if (!target.hasChildNodes() || target.querySelector('[data-avedon-csr]')) {
     target.textContent = '';
     return mount(target, __props);
   }
-  const __focus = __captureFocus(target);
-  const __form = __captureFormState(target);
-  const __open = __captureOpenState(target);
-  const __scroll = __captureScrollState(target);
-  const holder = document.createElement('div');
-  const inst = mount(holder, __props);
-  const frag = document.createDocumentFragment();
-  while (holder.firstChild) frag.appendChild(holder.firstChild);
-  target.replaceChildren(frag);
-  __restoreFormState(target, __form);
-  __restoreOpenState(target, __open);
-  __restoreScrollState(target, __scroll);
-  __restoreFocus(target, __focus);
-  return {
-    destroy() {
-      inst.destroy();
-      target.textContent = '';
-    },
-    update(next = {}) { inst.update(next); },${hmr ? `\n    getHmrState: inst.getHmrState,` : ''}
-  };
+  const __dev = !!(typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV);
+  let __inst = null;
+  const __claimBase = __claimStackDepth();
+  try {
+    __claimPush(target);
+    __inst = mount(target, __props);
+    __assertClaimExhausted(__claimCurrent());
+    __claimPop();
+    return __inst;
+  } catch (e) {
+    while (__claimStackDepth() > __claimBase) __claimPop();
+    if (!(e instanceof __HydrateMismatchError) || __dev) {
+      if (__inst) { try { __inst.destroy(); } catch {} }
+      throw e;
+    }
+    const __focus = __captureFocus(target);
+    const __form = __captureFormState(target);
+    const __open = __captureOpenState(target);
+    const __scroll = __captureScrollState(target);
+    if (__inst) { try { __inst.destroy(); } catch {} }
+    const holder = document.createElement('div');
+    const soft = mount(holder, __props);
+    const frag = document.createDocumentFragment();
+    while (holder.firstChild) frag.appendChild(holder.firstChild);
+    target.replaceChildren(frag);
+    __restoreFormState(target, __form);
+    __restoreOpenState(target, __open);
+    __restoreScrollState(target, __scroll);
+    __restoreFocus(target, __focus);
+    return {
+      destroy() {
+        soft.destroy();
+        target.textContent = '';
+      },
+      update(next = {}) { soft.update(next); },${hmr ? `\n      getHmrState: soft.getHmrState,` : ''}
+    };
+  }
 }
 
 export default { render, mount, hydrate, css, cssHash };
@@ -166,7 +204,12 @@ export function compileSsr(
 ): CompileResult {
   const filename = options.filename ?? 'Component.ave'
   const parsed = parse(source)
-  assertNoServerOnUiComponent(parsed.serverScript, options.asUiComponent, filename)
+  assertNoServerOnUiComponent(
+    parsed.serverScript,
+    options.asUiComponent,
+    filename,
+    parsed.ranges.serverScript,
+  )
   const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
   const cssHash = hashStyle(parsed.style, filename)
   const css = parsed.scoped ? scopeCss(parsed.style, cssHash) : parsed.style
@@ -177,6 +220,7 @@ export function compileSsr(
     cssHash,
     components,
     signalNames,
+    parsed.markup ? parsed.ranges.markup.start : 0,
   )
 
   const hasLoad = /\bexport\s+(?:async\s+)?function\s+load\b|\bexport\s+(?:const|let|var)\s+load\b/.test(
@@ -246,11 +290,14 @@ function assertNoServerOnUiComponent(
   serverScript: string,
   asUiComponent: boolean | undefined,
   filename: string,
+  serverRange?: { start: number; end: number } | null,
 ): void {
   if (asUiComponent && serverScript.trim()) {
-    throw new Error(
-      `UI components cannot have a <script server> (${filename}). Move server logic to a route page or layout.`,
-    )
+    const message = `UI components cannot have a <script server> (${filename}). Move server logic to a route page or layout.`
+    if (serverRange) {
+      throw new CompileError(message, [sectionDiagnostic(message, serverRange)])
+    }
+    throw new Error(message)
   }
 }
 
@@ -576,3 +623,60 @@ function indent(code: string, n: number): string {
 }
 
 export { parse, hashStyle, scopeCss } from './parse.js'
+
+/**
+ * Collect compile diagnostics for a `.ave` source without throwing.
+ * Used by the language server; `compile()` still throws for Vite/CLI.
+ */
+export function diagnoseAve(
+  source: string,
+  options: CompileOptions = {},
+): CompileDiagnostic[] {
+  const filename = options.filename ?? 'Component.ave'
+  let parsed
+  try {
+    parsed = parse(source)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    return [
+      sectionDiagnostic(message, { start: 0, end: Math.max(1, source.length) }),
+    ]
+  }
+
+  const markupRange = parsed.ranges.markup
+  const diagnostics: CompileDiagnostic[] = []
+
+  if (options.asUiComponent && parsed.serverScript.trim()) {
+    const range = parsed.ranges.serverScript ?? markupRange
+    diagnostics.push(
+      sectionDiagnostic(
+        `UI components cannot have a <script server> (${filename}). Move server logic to a route page or layout.`,
+        range,
+      ),
+    )
+  }
+
+  try {
+    const { imports: clientImports, body: clientBody } = splitImports(parsed.clientScript)
+    const signalNames = collectSignalNames(stripTypeScript(clientBody))
+    const components = extractComponentImports(clientImports)
+    const markup = parsed.markup || '<!-- empty -->'
+    compileMarkup(
+      markup,
+      'avedon-diag',
+      components,
+      signalNames,
+      parsed.markup ? markupRange.start : 0,
+    )
+  } catch (e) {
+    if (e instanceof CompileError) {
+      diagnostics.push(...e.diagnostics)
+    } else if (e instanceof Error) {
+      diagnostics.push(sectionDiagnostic(e.message, markupRange))
+    } else {
+      diagnostics.push(sectionDiagnostic(String(e), markupRange))
+    }
+  }
+
+  return diagnostics
+}

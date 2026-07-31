@@ -1,0 +1,82 @@
+{
+  "name": "avedon-vscode",
+  "displayName": "Avedon",
+  "description": "Language support for Avedon .ave files (diagnostics)",
+  "version": "0.1.0",
+  "private": true,
+  "publisher": "avedonjs",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "avedon",
+        "aliases": [
+          "Avedon",
+          "ave"
+        ],
+        "extensions": [
+          ".ave"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/ave-light.svg",
+          "dark": "./icons/ave-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "avedon",
+        "scopeName": "source.avedon",
+        "path": "./syntaxes/avedon.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.ts": "typescript",
+          "source.css": "css",
+          "meta.block.script.avedon": "typescript",
+          "meta.block.style.avedon": "css"
+        },
+        "unbalancedBracketScopes": [
+          "keyword.operator.relational",
+          "storage.type.function.arrow",
+          "keyword.operator.bitwise.shift",
+          "meta.brace.angle",
+          "punctuation.definition.tag",
+          "keyword.operator.assignment.compound.bitwise.ts"
+        ]
+      }
+    ],
+    "configurationDefaults": {
+      "[avedon]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap && esbuild src/server.ts --bundle --outfile=dist/server.js --format=cjs --platform=node --sourcemap",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "package": "pnpm run build && npx --yes @vscode/vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "@avedon/language-server": "workspace:*",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avedonjs/avedon.git",
+    "directory": "packages/vscode-avedon"
+  },
+  "license": "MIT"
+}

@@ -24,12 +24,19 @@ export function parseCookieHeader(header: string | null): Map<string, string> {
 }
 
 export function serializeSetCookie(name: string, value: string, opts: CookieSerializeOptions = {}): string {
+  assertCookieToken(name, 'Cookie name')
   assertCookieValueSize(value)
   let out = `${name}=${encodeCookieValue(value)}`
   if (opts.maxAge !== undefined) out += `; Max-Age=${opts.maxAge}`
   if (opts.expires) out += `; Expires=${opts.expires.toUTCString()}`
-  if (opts.domain) out += `; Domain=${opts.domain}`
-  if (opts.path) out += `; Path=${opts.path}`
+  if (opts.domain) {
+    assertCookieToken(opts.domain, 'Cookie domain')
+    out += `; Domain=${opts.domain}`
+  }
+  if (opts.path) {
+    assertCookieToken(opts.path, 'Cookie path')
+    out += `; Path=${opts.path}`
+  }
   if (opts.httpOnly) out += '; HttpOnly'
   if (opts.secure) out += '; Secure'
   if (opts.sameSite) {
@@ -37,6 +44,13 @@ export function serializeSetCookie(name: string, value: string, opts: CookieSeri
     out += `; SameSite=${s}`
   }
   return out
+}
+
+/** Reject CR/LF/NUL and separators that enable Set-Cookie header injection. */
+function assertCookieToken(token: string, label: string): void {
+  if (!token || /[\x00-\x1f\x7f;,]/.test(token)) {
+    throw new Error(`${label} contains invalid characters`)
+  }
 }
 
 function encodeCookieValue(value: string): string {

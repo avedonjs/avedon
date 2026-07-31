@@ -124,7 +124,7 @@ See [docs/routing.md](./docs/routing.md). Contributors working on the framework 
 
 ## Roadmap
 
-- Language service / LSP for `.ave` (today: sibling `.ave.d.ts` files)
+- ~~Language service / LSP for `.ave`~~ **diagnostics v1** — `@avedon/language-server` + VS Code/Cursor extension (`packages/vscode-avedon`); sibling `*.ave.d.ts` still provide types
 - Richer template directives (`{#key}`, transitions, named slots)
 - First-class CSS tooling integrations
 

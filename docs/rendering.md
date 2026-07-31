@@ -91,11 +91,15 @@ Client-side rendering skips server HTML for the page body beyond the application
 
 ## Hydration and client navigation
 
-After SSR/SSG HTML reaches the browser, avedon **soft-hydrates**: it remounts the page into a temporary holder and swaps via `replaceChildren`, so the shell does not flash empty. This is not DOM-reuse hydration — event listeners and component instances are created fresh. Soft hydrate **restores form control values** (inputs, textareas, selects, checkbox/radio checked state), then **`<details>` / `<dialog>` open**, then **scroll offsets** (scrollable elements under the hydrate root plus `window` scroll), then **focus** (and text selection when applicable) captured from the SSR tree before the swap.
+After SSR/SSG HTML reaches the browser, avedon **claim-hydrates**: it walks the existing DOM with a cursor, reuses matching nodes, and attaches listeners/effects in place. Live node identity is preserved (focus, media, embeds) on the happy path.
 
-Child UI components always use `.mount()` on the client (including during hydrate). Client navigation moves `#app` children from the fetched document via `replaceChildren` (no `innerHTML` round-trip), then hydrates the new tree.
+**Mismatch:** if the client tree does not match the SSR HTML (wrong tag, missing comment anchors, slotted components, `{@html}`, etc.), **dev throws** and **production soft-remounts** (build into a holder, `replaceChildren`, then restore form/open/scroll/focus). Empty targets and `[data-avedon-csr]` always use a normal `mount`.
 
-True progressive hydration / DOM reuse remains a post-v1 goal.
+**Signals win:** after a successful claim, effects apply current prop/signal values onto claimed nodes — early user edits between paint and hydrate may be overwritten.
+
+SSR and streaming emit comment anchors (`<!--if-->`, `<!--each-->`, `<!--each-keyed-->`, `<!--key-->`, `<!--await-->`) so block markers line up with the client claim walk. Adjacent static text and `{expr}` segments are separated with empty `<!-- -->` comments so the HTML parser does not coalesce them into a single text node (which would break claim).
+
+Client navigation moves `#app` children from the fetched document via `replaceChildren` (no `innerHTML` round-trip), then hydrates the new tree.
 
 ## Mixing modes
 

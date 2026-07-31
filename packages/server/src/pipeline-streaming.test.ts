@@ -87,6 +87,29 @@ describe('SSR streaming TTFB', () => {
     expect(text).toContain('</html>')
   })
 
+  it('BUG-304: escapes </script> in post-shell redirect Location', async () => {
+    const handler = createHandler({
+      appHtml,
+      routes: [
+        {
+          path: '/xss-go',
+          component: {
+            render: () => '<p>nope</p>',
+            async load() {
+              await new Promise((r) => setTimeout(r, 80))
+              redirect('</script><script>alert(1)</script>')
+            },
+          },
+        },
+      ],
+    })
+    const res = await handler(new Request('http://localhost/xss-go'))
+    const text = await res.text()
+    expect(text).toContain('window.location.href')
+    expect(text).not.toMatch(/href=<\/script>/i)
+    expect(text).toContain('\\u003c/script>')
+  })
+
   it('renders notFound UI in stream when load throws after shell flush window', async () => {
     const handler = createHandler({
       appHtml,

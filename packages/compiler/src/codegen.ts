@@ -1,6 +1,7 @@
 /** Compile avedon markup into SSR expression (returns HTML string) and client DOM builder. */
 
 import { prepareSignalExpr } from './signal-script.js'
+import { fail, setErrorContext, updateErrorPos } from './diagnostics.js'
 
 let compileSignalNames: Set<string> = new Set()
 let compileSnippets: Map<string, Extract<Token, { type: 'snippet' }>> = new Map()
@@ -13,6 +14,43 @@ function sigExpr(expr: string): string {
 function eachListExpr(list: string): string {
   return `((${sigExpr(list)}) || [])`
 }
+
+/** Static text + mustache expressions become separate client text nodes; HTML parse coalesces them unless separated. */
+function isTextishToken(t: Token): boolean {
+  return t.type === 'text' || t.type === 'expr'
+}
+
+function tokensStartTextish(tokens: Token[]): boolean {
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]!
+    if (t.type === 'const') return tokensStartTextish(tokens.slice(i + 1))
+    if (isTextishToken(t)) return true
+    if (t.type === 'render') {
+      const sn = compileSnippets.get(t.name)
+      return sn ? tokensStartTextish(sn.body) : false
+    }
+    return false
+  }
+  return false
+}
+
+function tokensEndTextish(tokens: Token[]): boolean {
+  for (let i = 0; i < tokens.length; i++) {
+    if (tokens[i]!.type === 'const') return tokensEndTextish(tokens.slice(i + 1))
+  }
+  if (tokens.length === 0) return false
+  const t = tokens[tokens.length - 1]!
+  if (isTextishToken(t)) return true
+  if (t.type === 'render') {
+    const sn = compileSnippets.get(t.name)
+    return sn ? tokensEndTextish(sn.body) : false
+  }
+  return false
+}
+
+/** Empty HTML comment keeps adjacent text/expr as distinct DOM text nodes after parse. */
+const TEXT_SEP_HTML = '<!---->'
+const TEXT_SEP_COMMENT_DATA = ''
 
 /** Register block body updaters as nested effects so child reads don't remount the parent. */
 function emitRunBlockEffects(
@@ -40,6 +78,11 @@ function emitBindWrite(expr: string, nextExpr: string): string {
 
 function escapeForTemplateLiteral(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')
+}
+
+/** Escape static template text for HTML so claim text nodes match browser-decoded DOM. */
+function escapeHtmlText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 /** JSON string literal safe inside JS that may be embedded in HTML `<script>`. */
@@ -77,24 +120,34 @@ export function compileMarkup(
   hash: string,
   components: Set<string> = new Set(),
   signalNames: Set<string> = new Set(),
+  markupFileOffset = 0,
 ): CompiledTemplate {
   compileSignalNames = signalNames
-  const rawTokens = tokenize(markup)
-  const { snippets, main: tokens } = partitionRootSnippets(rawTokens)
-  compileSnippets = snippets
-  validateTokens(tokens, components, snippets)
-  for (const sn of snippets.values()) {
-    validateTokens(sn.body, components, snippets)
-  }
-  const componentsUsed = collectComponentNames(tokens)
-  for (const sn of snippets.values()) {
-    collectComponentNames(sn.body, componentsUsed)
-  }
-  return {
-    ssrExpr: emitSsr(tokens, hash),
-    ssrStream: emitSsrStream(tokens, hash),
-    clientBuild: emitClient(tokens, hash),
-    componentsUsed: [...componentsUsed],
+  const prev = setErrorContext({
+    base: markupFileOffset,
+    length: markup.length,
+    pos: 0,
+  })
+  try {
+    const rawTokens = tokenize(markup, markupFileOffset)
+    const { snippets, main: tokens } = partitionRootSnippets(rawTokens)
+    compileSnippets = snippets
+    validateTokens(tokens, components, snippets)
+    for (const sn of snippets.values()) {
+      validateTokens(sn.body, components, snippets)
+    }
+    const componentsUsed = collectComponentNames(tokens)
+    for (const sn of snippets.values()) {
+      collectComponentNames(sn.body, componentsUsed)
+    }
+    return {
+      ssrExpr: emitSsr(tokens, hash),
+      ssrStream: emitSsrStream(tokens, hash),
+      clientBuild: emitClient(tokens, hash),
+      componentsUsed: [...componentsUsed],
+    }
+  } finally {
+    setErrorContext(prev)
   }
 }
 
@@ -255,12 +308,17 @@ function readBalancedJs(input: string, start: number): { expr: string; end: numb
     }
     i++
   }
-  throw new Error('Unclosed expression')
+  fail('Unclosed expression')
 }
 
-function tokenize(input: string): Token[] {
+function tokenize(input: string, fileOffset = 0): Token[] {
   const tokens: Token[] = []
   let i = 0
+  const prev = setErrorContext({
+    base: fileOffset,
+    length: input.length,
+    pos: 0,
+  })
 
   function peek() {
     return input[i]
@@ -269,23 +327,26 @@ function tokenize(input: string): Token[] {
     return input.slice(i, i + s.length) === s
   }
 
+  try {
   while (i < input.length) {
+    updateErrorPos(i)
     if (startsWith('{#snippet ')) {
       i += 10
       const { expr: headerRaw, end } = readBalancedJs(input, i)
       const header = headerRaw.trim()
       i = end + 1
       const parsed = parseSnippetHeader(header)
+      const blockStart = i
       const block = readBlock(input.slice(i), ['{/snippet}'])
       if (block.rest !== '{/snippet}') {
-        throw new Error(`Unclosed {#snippet ${parsed.name}} — expected {/snippet}`)
+        fail(`Unclosed {#snippet ${parsed.name}} — expected {/snippet}`)
       }
       i += block.body.consumed
       tokens.push({
         type: 'snippet',
         name: parsed.name,
         params: parsed.params,
-        body: tokenize(block.body.raw),
+        body: tokenize(block.body.raw, fileOffset + blockStart),
       })
       continue
     }
@@ -295,7 +356,7 @@ function tokenize(input: string): Token[] {
       const { expr: condRaw, end: condEnd } = readBalancedJs(input, i)
       const cond = condRaw.trim()
       i = condEnd + 1
-      const parsed = parseIfChain(cond, input, i)
+      const parsed = parseIfChain(cond, input, i, fileOffset)
       i = parsed.next
       tokens.push(parsed.token)
       continue
@@ -309,16 +370,18 @@ function tokenize(input: string): Token[] {
       const m = header.match(
         /^(.+?)\s+as\s+(\w+)(?:\s*,\s*(\w+))?(?:\s+\((.+)\))?$/,
       )
-      if (!m) throw new Error(`Invalid each: ${header}`)
+      if (!m) fail(`Invalid each: ${header}`)
+      const blockStart = i
       const block = readBlock(input.slice(i), ['{:else}', '{/each}'])
       i += block.body.consumed
       let elseBody: Token[] | undefined
       if (block.rest === '{:else}') {
+        const elseStart = i
         const elseBlock = readBlock(input.slice(i), ['{/each}'])
         i += elseBlock.body.consumed
-        elseBody = tokenize(elseBlock.body.raw)
+        elseBody = tokenize(elseBlock.body.raw, fileOffset + elseStart)
       } else if (block.rest !== '{/each}') {
-        throw new Error(`Unexpected each terminator: ${block.rest}`)
+        fail(`Unexpected each terminator: ${block.rest}`)
       }
       tokens.push({
         type: 'each',
@@ -326,7 +389,7 @@ function tokenize(input: string): Token[] {
         item: m[2],
         index: m[3],
         key: m[4]?.trim(),
-        body: tokenize(block.body.raw),
+        body: tokenize(block.body.raw, fileOffset + blockStart),
         else: elseBody,
       })
       continue
@@ -336,11 +399,12 @@ function tokenize(input: string): Token[] {
       i += 6
       const { expr: exprRaw, end } = readBalancedJs(input, i)
       const expr = exprRaw.trim()
-      if (!expr) throw new Error('{#key} requires an expression')
+      if (!expr) fail('{#key} requires an expression')
       i = end + 1
+      const blockStart = i
       const block = readBlock(input.slice(i), ['{/key}'])
       i += block.body.consumed
-      tokens.push({ type: 'key', expr, body: tokenize(block.body.raw) })
+      tokens.push({ type: 'key', expr, body: tokenize(block.body.raw, fileOffset + blockStart) })
       continue
     }
 
@@ -368,49 +432,56 @@ function tokenize(input: string): Token[] {
         catchName = catchShort[2]!
         shorthand = 'catch'
       }
-      if (!promise) throw new Error('{#await} requires a promise expression')
+      if (!promise) fail('{#await} requires a promise expression')
 
       if (shorthand === 'then') {
+        const blockStart = i
         const block = readBlock(input.slice(i), ['{:catch', '{/await}'])
         i += block.body.consumed
-        thenBody = tokenize(block.body.raw)
+        thenBody = tokenize(block.body.raw, fileOffset + blockStart)
         if (block.rest?.startsWith('{:catch')) {
           const cm = block.rest.match(/^\{\:catch(?:\s+(\w+))?\}/)
           catchName = cm?.[1] ?? 'error'
+          const catchStart = i
           const cb = readBlock(input.slice(i), ['{/await}'])
-          catchBody = tokenize(cb.body.raw)
+          catchBody = tokenize(cb.body.raw, fileOffset + catchStart)
           i += cb.body.consumed
         }
       } else if (shorthand === 'catch') {
+        const blockStart = i
         const block = readBlock(input.slice(i), ['{/await}'])
         i += block.body.consumed
-        catchBody = tokenize(block.body.raw)
+        catchBody = tokenize(block.body.raw, fileOffset + blockStart)
       } else {
+        const firstStart = i
         const firstBlock = readBlock(input.slice(i), ['{:then', '{:catch', '{/await}'])
         i += firstBlock.body.consumed
         if (firstBlock.rest?.startsWith('{:then')) {
-          pending = tokenize(firstBlock.body.raw)
+          pending = tokenize(firstBlock.body.raw, fileOffset + firstStart)
           const nameMatch = firstBlock.rest.match(/^\{\:then(?:\s+(\w+))?\}/)
           thenName = nameMatch?.[1] ?? 'value'
+          const thenStart = i
           const tb = readBlock(input.slice(i), ['{:catch', '{/await}'])
-          thenBody = tokenize(tb.body.raw)
+          thenBody = tokenize(tb.body.raw, fileOffset + thenStart)
           i += tb.body.consumed
           if (tb.rest?.startsWith('{:catch')) {
             const cm = tb.rest.match(/^\{\:catch(?:\s+(\w+))?\}/)
             catchName = cm?.[1] ?? 'error'
+            const catchStart = i
             const cb = readBlock(input.slice(i), ['{/await}'])
-            catchBody = tokenize(cb.body.raw)
+            catchBody = tokenize(cb.body.raw, fileOffset + catchStart)
             i += cb.body.consumed
           }
         } else if (firstBlock.rest?.startsWith('{:catch')) {
-          pending = tokenize(firstBlock.body.raw)
+          pending = tokenize(firstBlock.body.raw, fileOffset + firstStart)
           const cm = firstBlock.rest.match(/^\{\:catch(?:\s+(\w+))?\}/)
           catchName = cm?.[1] ?? 'error'
+          const catchStart = i
           const cb = readBlock(input.slice(i), ['{/await}'])
-          catchBody = tokenize(cb.body.raw)
+          catchBody = tokenize(cb.body.raw, fileOffset + catchStart)
           i += cb.body.consumed
         } else {
-          thenBody = tokenize(firstBlock.body.raw)
+          thenBody = tokenize(firstBlock.body.raw, fileOffset + firstStart)
         }
       }
       tokens.push({ type: 'await', promise, pending, thenName, thenBody, catchName, catchBody })
@@ -439,7 +510,7 @@ function tokenize(input: string): Token[] {
       const { expr: bodyRaw, end } = readBalancedJs(input, i)
       const body = bodyRaw.trim()
       const m = body.match(/^([A-Za-z_$][\w$]*)\s*=\s*([\s\S]+)$/)
-      if (!m) throw new Error(`Invalid {@const} — expected \`{@const name = expr}\`, got {@const ${body}}`)
+      if (!m) fail(`Invalid {@const} — expected \`{@const name = expr}\`, got {@const ${body}}`)
       tokens.push({ type: 'const', name: m[1]!, value: m[2]!.trim() })
       i = end + 1
       continue
@@ -447,11 +518,11 @@ function tokenize(input: string): Token[] {
 
     if (startsWith('{@')) {
       const m = input.slice(i).match(/^\{@(\w+)/)
-      throw new Error(`Unsupported {@${m ? m[1] : ''}} — not available in v1`)
+      fail(`Unsupported {@${m ? m[1] : ''}} — not available in v1`)
     }
 
     if (startsWith('{#key')) {
-      throw new Error('{#key} requires an expression — use {#key expr}…{/key}')
+      fail('{#key} requires an expression — use {#key expr}…{/key}')
     }
 
     if (startsWith('{') && !startsWith('{#') && !startsWith('{/') && !startsWith('{:')) {
@@ -464,7 +535,7 @@ function tokenize(input: string): Token[] {
     if (peek() === '<') {
       if (startsWith('<!--')) {
         const end = input.indexOf('-->', i + 4)
-        if (end === -1) throw new Error('Unclosed HTML comment')
+        if (end === -1) fail('Unclosed HTML comment')
         i = end + 3
         continue
       }
@@ -486,18 +557,18 @@ function tokenize(input: string): Token[] {
         for (const a of slotAttrs) {
           if (a.name === 'name') {
             if (a.kind !== 'static' || a.value == null || a.value === '') {
-              throw new Error('slot name= must be a static non-empty string')
+              fail('slot name= must be a static non-empty string')
             }
             slotName = a.value
           } else {
-            throw new Error(`Unsupported attribute "${a.name}" on <slot>`)
+            fail(`Unsupported attribute "${a.name}" on <slot>`)
           }
         }
         let fallback: Token[] = []
         if (!parsed.selfClosing) {
           const closeIdx = findClosingTag(input, i, parsed.tag)
-          if (closeIdx === -1) throw new Error('Unclosed tag <slot>')
-          fallback = tokenize(input.slice(i, closeIdx))
+          if (closeIdx === -1) fail('Unclosed tag <slot>')
+          fallback = tokenize(input.slice(i, closeIdx), fileOffset + i)
           i = closeIdx + `</${parsed.tag}>`.length
         }
         tokens.push({ type: 'slot', name: slotName, fallback })
@@ -509,8 +580,8 @@ function tokenize(input: string): Token[] {
       if (!selfClosing) {
         const close = `</${parsed.tag}>`
         const closeIdx = findClosingTag(input, i, parsed.tag)
-        if (closeIdx === -1) throw new Error(`Unclosed tag <${parsed.tag}>`)
-        children = tokenize(input.slice(i, closeIdx))
+        if (closeIdx === -1) fail(`Unclosed tag <${parsed.tag}>`)
+        children = tokenize(input.slice(i, closeIdx), fileOffset + i)
         i = closeIdx + close.length
       }
       if (/^[A-Z]/.test(parsed.tag)) {
@@ -535,12 +606,15 @@ function tokenize(input: string): Token[] {
   }
 
   return tokens
+  } finally {
+    setErrorContext(prev)
+  }
 }
 
 function parseSnippetHeader(header: string): { name: string; params: string[] } {
   const m = header.match(/^([A-Za-z_$][\w$]*)(?:\s*\(\s*([^)]*)\s*\))?$/)
   if (!m) {
-    throw new Error(
+    fail(
       `Invalid {#snippet} — expected \`{#snippet name}\` or \`{#snippet name(a, b)}\`, got {#snippet ${header}}`,
     )
   }
@@ -550,7 +624,7 @@ function parseSnippetHeader(header: string): { name: string; params: string[] } 
   const params = paramsStr.split(',').map((p) => p.trim()).filter(Boolean)
   for (const p of params) {
     if (!/^[A-Za-z_$][\w$]*$/.test(p)) {
-      throw new Error(`Invalid snippet parameter "${p}" — use simple identifiers`)
+      fail(`Invalid snippet parameter "${p}" — use simple identifiers`)
     }
   }
   return { name, params }
@@ -559,7 +633,7 @@ function parseSnippetHeader(header: string): { name: string; params: string[] } 
 function parseRenderRef(ref: string): { name: string; args: string[] } {
   const m = ref.match(/^([A-Za-z_$][\w$]*)(?:\s*\(([\s\S]*)\))?$/)
   if (!m) {
-    throw new Error(
+    fail(
       `Invalid {@render} — expected \`{@render name}\` or \`{@render name(expr)}\`, got {@render ${ref}}`,
     )
   }
@@ -611,7 +685,7 @@ function partitionRootSnippets(tokens: Token[]): {
   for (const t of tokens) {
     if (t.type === 'snippet') {
       if (snippets.has(t.name)) {
-        throw new Error(`Duplicate snippet "${t.name}"`)
+        fail(`Duplicate snippet "${t.name}"`)
       }
       snippets.set(t.name, t)
     } else {
@@ -689,22 +763,22 @@ function validateTokens(
 ): void {
   for (const t of tokens) {
     if (t.type === 'snippet') {
-      throw new Error(`{#snippet} definitions must be at the template root, not inside blocks`)
+      fail(`{#snippet} definitions must be at the template root, not inside blocks`)
     }
     if (t.type === 'render') {
       const sn = snippets.get(t.name)
       if (!sn) {
-        throw new Error(`Unknown snippet "{@render ${t.name}}" — define {#snippet ${t.name}} first`)
+        fail(`Unknown snippet "{@render ${t.name}}" — define {#snippet ${t.name}} first`)
       }
       if (t.args.length !== sn.params.length) {
-        throw new Error(
+        fail(
           `{@render ${t.name}} expects ${sn.params.length} argument(s), got ${t.args.length}`,
         )
       }
     }
     if (t.type === 'component') {
       if (!components.has(t.name)) {
-        throw new Error(
+        fail(
           `Unknown component <${t.name}>: add \`import ${t.name} from './${t.name}.ave'\` (default import required).`,
         )
       }
@@ -737,7 +811,7 @@ function validateAttrs(attrs: Attr[], ctx: { component: boolean; tag: string }):
       continue
     }
     if (a.name.startsWith('{')) {
-      throw new Error(`Spread attributes are not supported (${a.name}) on <${ctx.tag}>`)
+      fail(`Spread attributes are not supported (${a.name}) on <${ctx.tag}>`)
     }
     const colon = a.name.indexOf(':')
     if (colon > 0) {
@@ -745,7 +819,7 @@ function validateAttrs(attrs: Attr[], ctx: { component: boolean; tag: string }):
       if (prefix === 'on') continue
       if (prefix === 'bind') {
         if (ctx.component) {
-          throw new Error(`bind: is not supported on components (<${ctx.tag} ${a.name}>)`)
+          fail(`bind: is not supported on components (<${ctx.tag} ${a.name}>)`)
         }
         if (
           a.name !== 'bind:value' &&
@@ -783,7 +857,7 @@ function validateAttrs(attrs: Attr[], ctx: { component: boolean; tag: string }):
           a.name !== 'bind:textContent' &&
           a.name !== 'bind:innerText'
         ) {
-          throw new Error(
+          fail(
             `Unsupported binding "${a.name}" — only bind:value, bind:checked, bind:group, bind:this, bind:files, dimension binds, bind:scrollTop/Left, bind:selectionStart/End, bind:indeterminate, bind:open, media binds (muted/paused/volume/currentTime/playbackRate/duration/ended/seeking/played/buffered/seekable/readyState/networkState/videoWidth/videoHeight), bind:naturalWidth/Height on images, and bind:textContent/innerText on elements are supported`,
           )
         }
@@ -791,31 +865,31 @@ function validateAttrs(attrs: Attr[], ctx: { component: boolean; tag: string }):
       }
       if (prefix === 'class') {
         if (ctx.component) {
-          throw new Error(`class: is not supported on components (<${ctx.tag} ${a.name}>)`)
+          fail(`class: is not supported on components (<${ctx.tag} ${a.name}>)`)
         }
         const cls = a.name.slice('class:'.length)
         if (!cls) {
-          throw new Error(`Invalid class: directive on <${ctx.tag}> — missing class name`)
+          fail(`Invalid class: directive on <${ctx.tag}> — missing class name`)
         }
         continue
       }
       if (prefix === 'style') {
         if (ctx.component) {
-          throw new Error(`style: is not supported on components (<${ctx.tag} ${a.name}>)`)
+          fail(`style: is not supported on components (<${ctx.tag} ${a.name}>)`)
         }
         const prop = a.name.slice('style:'.length)
         if (!prop) {
-          throw new Error(`Invalid style: directive on <${ctx.tag}> — missing property name`)
+          fail(`Invalid style: directive on <${ctx.tag}> — missing property name`)
         }
         continue
       }
       if (prefix === 'use') {
         if (ctx.component) {
-          throw new Error(`use: is not supported on components (<${ctx.tag} ${a.name}>)`)
+          fail(`use: is not supported on components (<${ctx.tag} ${a.name}>)`)
         }
         const action = a.name.slice('use:'.length)
         if (!action || !/^[A-Za-z_$][\w$]*$/.test(action)) {
-          throw new Error(
+          fail(
             `Invalid use: directive "${a.name}" on <${ctx.tag}> — action must be an identifier`,
           )
         }
@@ -823,12 +897,12 @@ function validateAttrs(attrs: Attr[], ctx: { component: boolean; tag: string }):
       }
       if (prefix === 'transition' || prefix === 'in' || prefix === 'out') {
         if (ctx.component) {
-          throw new Error(`${prefix}: is not supported on components (<${ctx.tag} ${a.name}>)`)
+          fail(`${prefix}: is not supported on components (<${ctx.tag} ${a.name}>)`)
         }
         parseTransitionDirective(a.name)
         continue
       }
-      throw new Error(`Unsupported directive "${a.name}" on <${ctx.tag}>`)
+      fail(`Unsupported directive "${a.name}" on <${ctx.tag}>`)
     }
   }
 }
@@ -886,7 +960,7 @@ function classNameExpr(classAttrs: Attr[], classDirs: Attr[]): string {
   }
   for (const d of classDirs) {
     const cls = d.name.slice('class:'.length)
-    if (d.value == null) throw new Error(`class: directive missing expression: ${d.name}`)
+    if (d.value == null) fail(`class: directive missing expression: ${d.name}`)
     parts.push(`((${sigExpr(d.value)}) ? ${jsLiteral(cls)} : '')`)
   }
   return `[${parts.join(', ')}].filter(Boolean).join(' ').replace(/\\s+/g, ' ').trim()`
@@ -923,7 +997,7 @@ function styleCssTextExpr(styleAttrs: Attr[], styleDirs: Attr[]): string {
   }
   for (const d of styleDirs) {
     const prop = d.name.slice('style:'.length)
-    if (d.value == null) throw new Error(`style: directive missing expression: ${d.name}`)
+    if (d.value == null) fail(`style: directive missing expression: ${d.name}`)
     parts.push(
       `((() => { const __raw = (${sigExpr(d.value)}); const __v = (__raw && typeof __raw.get === 'function') ? __raw.get() : __raw; return (__v == null || __v === false) ? '' : (${jsLiteral(prop + ':')} + __v); })())`,
     )
@@ -1040,7 +1114,7 @@ function slotAttrName(token: Token): string | null {
   const a = token.attrs.find((x) => x.name === 'slot')
   if (!a) return null
   if (a.kind !== 'static' || a.value == null || a.value === '') {
-    throw new Error('slot= on projected content must be a static non-empty string')
+    fail('slot= on projected content must be a static non-empty string')
   }
   return a.value
 }
@@ -1390,25 +1464,27 @@ function parseIfChain(
   cond: string,
   input: string,
   start: number,
+  fileOffset = 0,
 ): { token: Extract<Token, { type: 'if' }>; next: number } {
   let i = start
   const { body, rest: restRaw } = readBlock(input.slice(i), ['{:else', '{/if}'])
   const rest = restRaw ?? '{/if}'
   i += body.consumed
-  const then = tokenize(body.raw)
+  const then = tokenize(body.raw, fileOffset + start)
   let elseBody: Token[] | undefined
   if (rest.startsWith('{:else if ')) {
     const nextCond = rest.slice('{:else if '.length, -1).trim()
-    if (!nextCond) throw new Error('{:else if} requires a condition')
-    const nested = parseIfChain(nextCond, input, i)
+    if (!nextCond) fail('{:else if} requires a condition')
+    const nested = parseIfChain(nextCond, input, i, fileOffset)
     elseBody = [nested.token]
     i = nested.next
   } else if (rest === '{:else}') {
+    const elseStart = i
     const elseBlock = readBlock(input.slice(i), ['{/if}'])
-    elseBody = tokenize(elseBlock.body.raw)
+    elseBody = tokenize(elseBlock.body.raw, fileOffset + elseStart)
     i += elseBlock.body.consumed
   } else if (rest !== '{/if}') {
-    throw new Error(`Unexpected if branch terminator: ${rest}`)
+    fail(`Unexpected if branch terminator: ${rest}`)
   }
   return { token: { type: 'if', cond, then, else: elseBody }, next: i }
 }
@@ -1566,7 +1642,7 @@ function readBlock(
     }
     i++
   }
-  throw new Error(`Unclosed block, expected ${terminators.join(' | ')}`)
+  fail(`Unclosed block, expected ${terminators.join(' | ')}`)
 }
 
 function parseAttrs(attrStr: string): Attr[] {
@@ -1594,7 +1670,7 @@ function parseAttrs(attrStr: string): Attr[] {
         }
       }
     }
-    throw new Error(`Unclosed ${open}...${close} in attribute`)
+    fail(`Unclosed ${open}...${close} in attribute`)
   }
 
   while (i < s.length) {
@@ -1603,12 +1679,12 @@ function parseAttrs(attrStr: string): Attr[] {
     if (s[i] === '{') {
       const inner = readBalanced('{', '}').trim()
       if (!inner.startsWith('...')) {
-        throw new Error(
+        fail(
           `Invalid bare attribute expression "{${inner}}" — use name={expr} or {...obj}`,
         )
       }
       const expr = inner.slice(3).trim()
-      if (!expr) throw new Error(`Invalid spread attribute "{...}"`)
+      if (!expr) fail(`Invalid spread attribute "{...}"`)
       attrs.push({ name: '{...}', value: expr, kind: 'spread' })
       continue
     }
@@ -1616,13 +1692,20 @@ function parseAttrs(attrStr: string): Attr[] {
     while (i < s.length && /[^\s=]/.test(s[i])) i++
     const name = s.slice(nameStart, i)
     if (!name) break
+    // Reject quote/space breakout in SSR attrs. Event modifiers use `|` (validated later).
+    const nameOk = name.startsWith('on:')
+      ? /^on:[a-zA-Z_][\w:-]*(\|[a-zA-Z_]+)*$/.test(name)
+      : /^[a-zA-Z_:][\w:.-]*$/.test(name)
+    if (!nameOk) {
+      fail(`Invalid attribute name ${JSON.stringify(name)}`)
+    }
     skipWs()
     if (s[i] !== '=') {
       if (name.startsWith('class:')) {
         const cls = name.slice('class:'.length)
-        if (!cls) throw new Error(`Invalid class: directive — missing class name`)
+        if (!cls) fail(`Invalid class: directive — missing class name`)
         if (!/^[A-Za-z_$][\w$]*$/.test(cls)) {
-          throw new Error(
+          fail(
             `class:${cls} shorthand requires a matching identifier; use class:${cls}={expr}`,
           )
         }
@@ -1631,9 +1714,9 @@ function parseAttrs(attrStr: string): Attr[] {
       }
       if (name.startsWith('style:')) {
         const prop = name.slice('style:'.length)
-        if (!prop) throw new Error(`Invalid style: directive — missing property name`)
+        if (!prop) fail(`Invalid style: directive — missing property name`)
         if (!/^[A-Za-z_$][\w$]*$/.test(prop)) {
-          throw new Error(
+          fail(
             `style:${prop} shorthand requires a matching identifier; use style:${prop}={expr}`,
           )
         }
@@ -1643,7 +1726,7 @@ function parseAttrs(attrStr: string): Attr[] {
       if (name.startsWith('use:')) {
         const action = name.slice('use:'.length)
         if (!action || !/^[A-Za-z_$][\w$]*$/.test(action)) {
-          throw new Error(`Invalid use: directive "${name}" — action must be an identifier`)
+          fail(`Invalid use: directive "${name}" — action must be an identifier`)
         }
         attrs.push({ name, value: null, kind: 'use' })
         continue
@@ -1690,34 +1773,34 @@ function parseAttrs(attrStr: string): Attr[] {
       attrs.push({ name, value, kind: 'bind' })
     } else if (name.startsWith('class:')) {
       if (kind !== 'expr') {
-        throw new Error(`class: directives require an expression: ${name}={...}`)
+        fail(`class: directives require an expression: ${name}={...}`)
       }
       attrs.push({ name, value, kind: 'class' })
     } else if (name.startsWith('style:')) {
       if (kind !== 'expr') {
-        throw new Error(`style: directives require an expression: ${name}={...}`)
+        fail(`style: directives require an expression: ${name}={...}`)
       }
       attrs.push({ name, value, kind: 'style' })
     } else if (name.startsWith('use:')) {
       if (kind !== 'expr') {
-        throw new Error(`use: directives with parameters require an expression: ${name}={...}`)
+        fail(`use: directives with parameters require an expression: ${name}={...}`)
       }
       const action = name.slice('use:'.length)
       if (!action || !/^[A-Za-z_$][\w$]*$/.test(action)) {
-        throw new Error(`Invalid use: directive "${name}" — action must be an identifier`)
+        fail(`Invalid use: directive "${name}" — action must be an identifier`)
       }
       attrs.push({ name, value, kind: 'use' })
     } else if (name.startsWith('transition:') || name.startsWith('in:') || name.startsWith('out:')) {
       const { type } = parseTransitionDirective(name)
       if (kind !== 'expr') {
-        throw new Error(`${name.split(':')[0]}:${type} parameters require an expression: ${name}={...}`)
+        fail(`${name.split(':')[0]}:${type} parameters require an expression: ${name}={...}`)
       }
       attrs.push({ name, value, kind: 'transition' })
     } else if (kind === 'expr') {
       // Dynamic HTML event attrs (onclick={...}) are XSS sinks; require on:click.
       if (/^on[a-z]/i.test(name)) {
         const ev = name.slice(2)
-        throw new Error(
+        fail(
           `Dynamic event attribute "${name}={...}" is not allowed; use on:${ev.toLowerCase()}={...}`,
         )
       }
@@ -1729,83 +1812,109 @@ function parseAttrs(attrStr: string): Attr[] {
   return attrs
 }
 
-function emitSsr(tokens: Token[], hash: string): string {
+function emitSsr(tokens: Token[], hash: string, prevTextish = false): string {
   const parts: string[] = []
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i]!
     if (t.type === 'const') {
-      const rest = emitSsr(tokens.slice(i + 1), hash)
+      const rest = emitSsr(tokens.slice(i + 1), hash, prevTextish)
       parts.push(`((${t.name}) => (${rest}))(${sigExpr(t.value)})`)
       break
     } else if (t.type === 'text') {
-      parts.push('`' + escapeForTemplateLiteral(t.value) + '`')
+      if (prevTextish) parts.push(`'${TEXT_SEP_HTML}'`)
+      parts.push('`' + escapeForTemplateLiteral(escapeHtmlText(t.value)) + '`')
+      prevTextish = true
     } else if (t.type === 'slot') {
       parts.push(emitSlotContentExpr(t, hash))
+      prevTextish = false
     } else if (t.type === 'html') {
       parts.push(`(${sigExpr(t.value)})`)
+      prevTextish = false
     } else if (t.type === 'render') {
       const sn = compileSnippets.get(t.name)
-      if (!sn) throw new Error(`Unknown snippet "{@render ${t.name}}"`)
+      if (!sn) fail(`Unknown snippet "{@render ${t.name}}"`)
+      if (prevTextish && tokensStartTextish(sn.body)) parts.push(`'${TEXT_SEP_HTML}'`)
       parts.push(emitSnippetBodySsr(sn, t.args, hash))
+      prevTextish = tokensEndTextish(sn.body)
     } else if (t.type === 'expr') {
+      if (prevTextish) parts.push(`'${TEXT_SEP_HTML}'`)
       parts.push(`__escape(${sigExpr(t.value)})`)
+      prevTextish = true
     } else if (t.type === 'if') {
       const thenExpr = emitSsr(t.then, hash)
       const elseExpr = t.else ? emitSsr(t.else, hash) : '``'
-      parts.push(`((${sigExpr(t.cond)}) ? (${thenExpr}) : (${elseExpr}))`)
+      parts.push(
+        `('<!--if-->' + ((${sigExpr(t.cond)}) ? (${thenExpr}) : (${elseExpr})))`,
+      )
+      prevTextish = false
     } else if (t.type === 'each') {
       const body = emitSsr(t.body, hash)
       const idx = t.index ? `, ${t.index}` : ''
       const mapExpr = `__list.map((${t.item}${idx}) => (${body})).join('')`
+      const anchor = t.key ? '<!--each-keyed-->' : '<!--each-->'
       if (t.else) {
         const elseExpr = emitSsr(t.else, hash)
         parts.push(
-          `(((__list) => __list.length ? (${mapExpr}) : (${elseExpr}))(${eachListExpr(t.list)}))`,
+          `('${anchor}' + (((__list) => __list.length ? (${mapExpr}) : (${elseExpr}))(${eachListExpr(t.list)})))`,
         )
       } else {
-        parts.push(`${eachListExpr(t.list)}.map((${t.item}${idx}) => (${body})).join('')`)
+        parts.push(`('${anchor}' + ${eachListExpr(t.list)}.map((${t.item}${idx}) => (${body})).join(''))`)
       }
+      prevTextish = false
     } else if (t.type === 'key') {
-      // Key only affects client remount; SSR renders the body once.
-      parts.push(`(${emitSsr(t.body, hash)})`)
+      // Key only affects client remount; SSR renders the body once (with claim anchor).
+      parts.push(`('<!--key-->' + (${emitSsr(t.body, hash)}))`)
+      prevTextish = false
     } else if (t.type === 'await') {
       // Sync render(): pending branch if present; streaming path uses emitSsrStream
-      parts.push(t.pending?.length ? `(${emitSsr(t.pending, hash)})` : '``')
+      const pending = t.pending?.length ? `(${emitSsr(t.pending, hash)})` : '``'
+      parts.push(`('<!--await-->' + ${pending})`)
+      prevTextish = false
     } else if (t.type === 'component') {
       const { defaultChildren, named } = partitionSlotChildren(t.children)
       const childrenExpr =
         t.selfClosing || defaultChildren.length === 0 ? null : emitSsr(defaultChildren, hash)
       const slotsExpr = emitSsrSlotBag(named, hash)
       parts.push(`${t.name}.render(${componentPropsObject(t, childrenExpr, slotsExpr)})`)
+      prevTextish = false
     } else if (t.type === 'element') {
       parts.push(emitSsrElement(t, hash))
+      prevTextish = false
     }
   }
   return parts.length ? parts.join(' + ') : '``'
 }
 
 /** Statement-based SSR for out-of-order streaming (`__enqueue`, `__awaitBoundary`). */
-function emitSsrStream(tokens: Token[], hash: string): string {
+function emitSsrStream(tokens: Token[], hash: string, prevTextish = false): string {
   const lines: string[] = []
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i]!
     if (t.type === 'const') {
       lines.push(
-        `{\n  const ${t.name} = (${sigExpr(t.value)});\n${indentStream(emitSsrStream(tokens.slice(i + 1), hash))}\n}`,
+        `{\n  const ${t.name} = (${sigExpr(t.value)});\n${indentStream(emitSsrStream(tokens.slice(i + 1), hash, prevTextish))}\n}`,
       )
       break
     } else if (t.type === 'text') {
-      lines.push(`__enqueue(\`${escapeForTemplateLiteral(t.value)}\`);`)
+      if (prevTextish) lines.push(`__enqueue('${TEXT_SEP_HTML}');`)
+      lines.push(`__enqueue(\`${escapeForTemplateLiteral(escapeHtmlText(t.value))}\`);`)
+      prevTextish = true
     } else if (t.type === 'slot') {
       lines.push(`await __pipeChildren(${emitSlotContentExpr(t, hash)});`)
+      prevTextish = false
     } else if (t.type === 'html') {
       lines.push(`__enqueue(${sigExpr(t.value)});`)
+      prevTextish = false
     } else if (t.type === 'render') {
       const sn = compileSnippets.get(t.name)
-      if (!sn) throw new Error(`Unknown snippet "{@render ${t.name}}"`)
+      if (!sn) fail(`Unknown snippet "{@render ${t.name}}"`)
+      if (prevTextish && tokensStartTextish(sn.body)) lines.push(`__enqueue('${TEXT_SEP_HTML}');`)
       lines.push(emitSnippetBodyStream(sn, t.args, hash))
+      prevTextish = tokensEndTextish(sn.body)
     } else if (t.type === 'expr') {
+      if (prevTextish) lines.push(`__enqueue('${TEXT_SEP_HTML}');`)
       lines.push(`__enqueue(__escape(${sigExpr(t.value)}));`)
+      prevTextish = true
     } else if (t.type === 'if') {
       const { branches, elseBody } = flattenIfBranches(t)
       const parts: string[] = []
@@ -1821,27 +1930,31 @@ function emitSsrStream(tokens: Token[], hash: string): string {
       } else if (branches.length === 1) {
         parts.push(`else {\n}`)
       }
-      lines.push(parts.join(' '))
+      lines.push(`__enqueue('<!--if-->');\n${parts.join(' ')}`)
+      prevTextish = false
     } else if (t.type === 'each') {
       const body = emitSsrStream(t.body, hash)
       const elsePart = t.else
         ? ` else {\n${indentStream(emitSsrStream(t.else, hash))}\n}`
         : ''
+      const anchor = t.key ? '<!--each-keyed-->' : '<!--each-->'
       if (t.index) {
         lines.push(
-          `{\n  const __list = ${eachListExpr(t.list)};\n  if (__list.length) {\n    let ${t.index} = 0;\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n      ${t.index}++;\n    }\n  }${elsePart}\n}`,
+          `__enqueue('${anchor}');\n{\n  const __list = ${eachListExpr(t.list)};\n  if (__list.length) {\n    let ${t.index} = 0;\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n      ${t.index}++;\n    }\n  }${elsePart}\n}`,
         )
       } else if (t.else) {
         lines.push(
-          `{\n  const __list = ${eachListExpr(t.list)};\n  if (__list.length) {\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n    }\n  }${elsePart}\n}`,
+          `__enqueue('${anchor}');\n{\n  const __list = ${eachListExpr(t.list)};\n  if (__list.length) {\n    for (const ${t.item} of __list) {\n${indentStream(body)}\n    }\n  }${elsePart}\n}`,
         )
       } else {
         lines.push(
-          `for (const ${t.item} of ${eachListExpr(t.list)}) {\n${indentStream(body)}\n}`,
+          `__enqueue('${anchor}');\nfor (const ${t.item} of ${eachListExpr(t.list)}) {\n${indentStream(body)}\n}`,
         )
       }
+      prevTextish = false
     } else if (t.type === 'key') {
-      lines.push(emitSsrStream(t.body, hash))
+      lines.push(`__enqueue('<!--key-->');\n${emitSsrStream(t.body, hash)}`)
+      prevTextish = false
     } else if (t.type === 'await') {
       const thenBody = emitSsrStream(t.thenBody, hash)
       const catchPart = t.catchBody
@@ -1851,10 +1964,11 @@ function emitSsrStream(tokens: Token[], hash: string): string {
         : ', undefined'
       const pendingExpr = t.pending?.length ? `(${emitSsr(t.pending, hash)})` : '``'
       lines.push(
-        `__awaitBoundary(Promise.resolve(${t.promise}), async (${t.thenName}, __enqueue) => {\n` +
+        `__enqueue('<!--await-->');\n__awaitBoundary(Promise.resolve(${t.promise}), async (${t.thenName}, __enqueue) => {\n` +
           `  const __awaitBoundary = (p, t, c, e, pend) => __ctrl.enqueueBoundary(p, t, c, e, pend);\n` +
           `${indentStream(thenBody)}\n}${catchPart}, undefined, ${pendingExpr});`,
       )
+      prevTextish = false
     } else if (t.type === 'component') {
       // v1: slotted content is materialized synchronously (no OOO boundaries inside components)
       const { defaultChildren, named } = partitionSlotChildren(t.children)
@@ -1862,8 +1976,10 @@ function emitSsrStream(tokens: Token[], hash: string): string {
         t.selfClosing || defaultChildren.length === 0 ? null : emitSsr(defaultChildren, hash)
       const slotsExpr = emitSsrSlotBag(named, hash)
       lines.push(`__enqueue(${t.name}.render(${componentPropsObject(t, childrenExpr, slotsExpr)}));`)
+      prevTextish = false
     } else if (t.type === 'element') {
       lines.push(emitSsrStreamElement(t, hash))
+      prevTextish = false
     }
   }
   return lines.join('\n')
@@ -2100,7 +2216,14 @@ function emitSsrElement(el: Token & { type: 'element' }, hash: string): string {
 }
 
 function emitClient(tokens: Token[], hash: string): string {
-  return `const __root = document.createDocumentFragment();\n${emitClientNodes(tokens, hash, '__root')}\ntarget.appendChild(__root);\n`
+  return `const __claiming = __avedonClaimingInto(target);
+  const __root = __claiming ? target : document.createDocumentFragment();
+  const __ownedStart = __claiming ? __claimCurrent().index : target.childNodes.length;
+${emitClientNodes(tokens, hash, '__root')}
+  if (!__claiming) target.appendChild(__root);
+  const __ownedEnd = __claiming ? __claimCurrent().index : target.childNodes.length;
+  for (let __oi = __ownedStart; __oi < __ownedEnd; __oi++) __owned.push(target.childNodes[__oi]);
+`
 }
 
 function emitClientNodes(
@@ -2109,6 +2232,7 @@ function emitClientNodes(
   parent: string,
   effectsVar = '__effects',
   inSvg = false,
+  prevTextish = false,
 ): string {
   const lines: string[] = []
   let n = 0
@@ -2118,12 +2242,16 @@ function emitClientNodes(
     if (t.type === 'const') {
       lines.push(`{
         const ${t.name} = (${sigExpr(t.value)});
-        ${emitClientNodes(tokens.slice(i + 1), hash, parent, effectsVar, inSvg)}
+        ${emitClientNodes(tokens.slice(i + 1), hash, parent, effectsVar, inSvg, prevTextish)}
       }`)
       break
     }
     if (t.type === 'text') {
-      lines.push(`{ const ${id} = document.createTextNode(${jsLiteral(t.value)}); ${parent}.appendChild(${id}); }`)
+      if (prevTextish) {
+        lines.push(`{ __avedonComment(${parent}, ${jsLiteral(TEXT_SEP_COMMENT_DATA)}); }`)
+      }
+      lines.push(`{ const ${id} = __avedonText(${parent}, ${jsLiteral(t.value)}); }`)
+      prevTextish = true
     } else if (t.type === 'slot') {
       // Layout/slot content is a trusted framework contract (SSR HTML or Node).
       // Public mount/update must not pass untrusted strings — see docs/security.md.
@@ -2148,33 +2276,79 @@ function emitClientNodes(
           ${parent}.appendChild(${id}.content);
         } else ${fallbackBlock || '{}'}
       }`)
+      prevTextish = false
     } else if (t.type === 'html') {
       lines.push(`{
+        if (__claimStackActive()) {
+          throw new __HydrateMismatchError('{@html} cannot be claim-hydrated; soft remount');
+        }
         // trusted HTML — {@html}; see docs/security.md
         const ${id} = document.createElement('template');
         ${id}.innerHTML = String(${sigExpr(t.value)} ?? '');
         ${parent}.appendChild(${id}.content);
       }`)
+      prevTextish = false
     } else if (t.type === 'render') {
       const sn = compileSnippets.get(t.name)
-      if (!sn) throw new Error(`Unknown snippet "{@render ${t.name}}"`)
+      if (!sn) fail(`Unknown snippet "{@render ${t.name}}"`)
+      if (prevTextish && tokensStartTextish(sn.body)) {
+        lines.push(`{ __avedonComment(${parent}, ${jsLiteral(TEXT_SEP_COMMENT_DATA)}); }`)
+      }
       lines.push(emitSnippetBodyClient(sn, t.args, hash, parent, effectsVar, inSvg))
+      prevTextish = tokensEndTextish(sn.body)
     } else if (t.type === 'expr') {
+      if (prevTextish) {
+        lines.push(`{ __avedonComment(${parent}, ${jsLiteral(TEXT_SEP_COMMENT_DATA)}); }`)
+      }
       lines.push(`{
-        const ${id} = document.createTextNode('');
-        ${parent}.appendChild(${id});
+        const ${id} = __avedonTextEmpty(${parent});
         ${effectsVar}.push(() => { ${id}.data = String(${sigExpr(t.value)} ?? ''); });
       }`)
+      prevTextish = true
     } else if (t.type === 'if') {
       lines.push(`{
-        const ${id} = document.createComment('if');
-        ${parent}.appendChild(${id});
+        const ${id} = __avedonComment(${parent}, 'if');
         let __anchor = ${id};
         let __nodes = [];
         let __blockEffects = [];
         let __blockCleanups = [];
         let __outroGen = 0;
         let __branch = -1;
+        const __claimInit = __claimStackActive();
+        const __syncEnter = () => {
+          let __next = -1;
+          ${emitClientIfBranchIndex(t)}
+          __branch = __next;
+          if (__claimInit) {
+            const __start = __claimCurrent().index;
+            {
+              const __effects = __blockEffects;
+              const __cleanups = __blockCleanups;
+              ${emitClientIfBranches(t, hash, parent, '__effects', inSvg)}
+            }
+            __nodes = [];
+            for (let __i = __start; __i < __claimCurrent().index; __i++) {
+              __nodes.push(${parent}.childNodes[__i]);
+            }
+            ${emitRunBlockEffects()}
+            return;
+          }
+          const __frag = document.createDocumentFragment();
+          {
+            const __effects = __blockEffects;
+            const __cleanups = __blockCleanups;
+            ${emitClientIfBranches(t, hash, '__frag', '__effects', inSvg)}
+          }
+          let __insertBefore = __anchor.nextSibling;
+          while (__frag.firstChild) {
+            __nodes.push(__frag.firstChild);
+            __anchor.parentNode.insertBefore(__frag.firstChild, __insertBefore);
+          }
+          ${emitRunBlockEffects()}
+        };
+        if (__claimInit) {
+          __syncEnter();
+        }
         ${effectsVar}.push(() => {
           let __next = -1;
           ${emitClientIfBranchIndex(t)}
@@ -2206,6 +2380,7 @@ function emitClientNodes(
         });
         ${emitBlockDestroyCleanup('__blockCleanups', '__outroGen')}
       }`)
+      prevTextish = false
     } else if (t.type === 'each' && t.key) {
       const idx = t.index ?? '__i'
       const compareIndex = t.index ? ` && __rec.index === ${idx}` : ''
@@ -2227,14 +2402,64 @@ function emitClientNodes(
           ${emitRunBlockEffects('__blockEffects', '__elseCleanups')}`
         : ''
       lines.push(`{
-        const ${id} = document.createComment('each-keyed');
-        ${parent}.appendChild(${id});
+        const ${id} = __avedonComment(${parent}, 'each-keyed');
         let __records = [];
         let __elseNodes = [];
         let __elseCleanups = [];
         let __blockEffects = [];
         let __outroGen = 0;
+        let __skipOnce = __claimStackActive();
+        if (__skipOnce) {
+          const __list = ${eachListExpr(t.list)};
+          if (!__list.length) {
+            ${
+              t.else
+                ? `const __start = __claimCurrent().index;
+            __blockEffects = [];
+            __elseCleanups = [];
+            {
+              const __effects = __blockEffects;
+              const __cleanups = __elseCleanups;
+              ${emitClientNodes(t.else, hash, parent, '__effects', inSvg)}
+            }
+            for (let __i = __start; __i < __claimCurrent().index; __i++) {
+              __elseNodes.push(${parent}.childNodes[__i]);
+            }
+            ${emitRunBlockEffects('__blockEffects', '__elseCleanups')}`
+                : ''
+            }
+          } else {
+            const __seenKeys = new Set();
+            __list.forEach((${t.item}, ${idx}) => {
+              const __key = (${t.key});
+              if (__seenKeys.has(__key)) fail('Duplicate key in {#each}: ' + String(__key));
+              __seenKeys.add(__key);
+              const __start = __claimCurrent().index;
+              const __blockEffects = [];
+              const __blockCleanups = [];
+              {
+                const __effects = __blockEffects;
+                const __cleanups = __blockCleanups;
+                ${emitClientNodes(t.body, hash, parent, '__effects', inSvg)}
+              }
+              const __nodes = [];
+              for (let __i = __start; __i < __claimCurrent().index; __i++) {
+                __nodes.push(${parent}.childNodes[__i]);
+              }
+              ${emitRunBlockEffects('__blockEffects', '__blockCleanups')}
+              __records.push({
+                key: __key,
+                value: ${t.item},
+                index: ${idx},
+                nodes: __nodes,
+                effects: __blockEffects,
+                cleanups: __blockCleanups,
+              });
+            });
+          }
+        }
         ${effectsVar}.push(() => {
+          if (__skipOnce) { __skipOnce = false; return; }
           const __g = ++__outroGen;
           const __list = ${eachListExpr(t.list)};
           if (!__list.length) {
@@ -2269,7 +2494,7 @@ function emitClientNodes(
           for (const c of __leavingElseCleanups) __leavingCleanups.push(c);
           __list.forEach((${t.item}, ${idx}) => {
             const __key = (${t.key});
-            if (__seenKeys.has(__key)) throw new Error('Duplicate key in {#each}: ' + String(__key));
+            if (__seenKeys.has(__key)) fail('Duplicate key in {#each}: ' + String(__key));
             __seenKeys.add(__key);
             let __rec = __oldByKey.get(__key);
             if (__rec && Object.is(__rec.value, ${t.item})${compareIndex}) {
@@ -2329,6 +2554,7 @@ function emitClientNodes(
           __records = [];
         });
       }`)
+      prevTextish = false
     } else if (t.type === 'each') {
       const idx = t.index ?? '__i'
       const elseBranch = t.else
@@ -2337,13 +2563,37 @@ function emitClientNodes(
             }`
         : ''
       lines.push(`{
-        const ${id} = document.createComment('each');
-        ${parent}.appendChild(${id});
+        const ${id} = __avedonComment(${parent}, 'each');
         let __nodes = [];
         let __blockEffects = [];
         let __blockCleanups = [];
         let __outroGen = 0;
+        let __skipOnce = __claimStackActive();
+        if (__skipOnce) {
+          const __start = __claimCurrent().index;
+          {
+            const __effects = __blockEffects;
+            const __cleanups = __blockCleanups;
+            const __list = ${eachListExpr(t.list)};
+            if (__list.length) {
+              __list.forEach((${t.item}, ${idx}) => {
+                ${emitClientNodes(t.body, hash, parent, '__effects', inSvg)}
+              });
+            }${
+              t.else
+                ? ` else {
+              ${emitClientNodes(t.else, hash, parent, '__effects', inSvg)}
+            }`
+                : ''
+            }
+          }
+          for (let __i = __start; __i < __claimCurrent().index; __i++) {
+            __nodes.push(${parent}.childNodes[__i]);
+          }
+          ${emitRunBlockEffects()}
+        }
         ${effectsVar}.push(() => {
+          if (__skipOnce) { __skipOnce = false; return; }
           const __g = ++__outroGen;
           const __leaving = __nodes;
           const __leavingCleanups = __blockCleanups;
@@ -2375,15 +2625,30 @@ function emitClientNodes(
         });
         ${emitBlockDestroyCleanup('__blockCleanups', '__outroGen')}
       }`)
+      prevTextish = false
     } else if (t.type === 'key') {
       lines.push(`{
-        const ${id} = document.createComment('key');
-        ${parent}.appendChild(${id});
+        const ${id} = __avedonComment(${parent}, 'key');
         let __nodes = [];
         let __blockEffects = [];
         let __blockCleanups = [];
         let __prevKey = Symbol('avedon-key');
+        let __skipOnce = __claimStackActive();
+        if (__skipOnce) {
+          __prevKey = (${sigExpr(t.expr)});
+          const __start = __claimCurrent().index;
+          {
+            const __effects = __blockEffects;
+            const __cleanups = __blockCleanups;
+            ${emitClientNodes(t.body, hash, parent, '__effects', inSvg)}
+          }
+          for (let __i = __start; __i < __claimCurrent().index; __i++) {
+            __nodes.push(${parent}.childNodes[__i]);
+          }
+          ${emitRunBlockEffects()}
+        }
         ${effectsVar}.push(() => {
+          if (__skipOnce) { __skipOnce = false; return; }
           const __k = (${sigExpr(t.expr)});
           if (Object.is(__k, __prevKey)) return;
           __prevKey = __k;
@@ -2407,7 +2672,22 @@ function emitClientNodes(
         });
         ${emitBlockDestroyCleanup()}
       }`)
+      prevTextish = false
     } else if (t.type === 'await') {
+      const pendingClaim = t.pending?.length
+        ? `{
+          const __start = __claimCurrent().index;
+          {
+            const __effects = __blockEffects;
+            const __cleanups = __blockCleanups;
+            ${emitClientNodes(t.pending, hash, parent, '__effects', inSvg)}
+          }
+          for (let __i = __start; __i < __claimCurrent().index; __i++) {
+            __nodes.push(${parent}.childNodes[__i]);
+          }
+          ${emitRunBlockEffects()}
+        }`
+        : ''
       const pendingMount = t.pending?.length
         ? `{
           const __frag = document.createDocumentFragment();
@@ -2455,14 +2735,38 @@ function emitClientNodes(
         }`
         : ''
       lines.push(`{
-        const ${id} = document.createComment('await');
-        ${parent}.appendChild(${id});
+        const ${id} = __avedonComment(${parent}, 'await');
         let __nodes = [];
         let __blockEffects = [];
         let __blockCleanups = [];
         let __awaitGen = 0;
+        let __skipOnce = __claimStackActive();
+        if (__skipOnce) {
+          ${pendingClaim}
+        }
         ${effectsVar}.push(() => {
           const __g = ++__awaitGen;
+          if (__skipOnce) {
+            __skipOnce = false;
+            Promise.resolve(${sigExpr(t.promise)}).then((${t.thenName}) => {
+              if (__g !== __awaitGen) return;
+              for (const __c of __blockCleanups) { try { __c(); } catch {} }
+              for (const n of __nodes) n.remove();
+              __nodes = [];
+              __blockEffects = [];
+              __blockCleanups = [];
+              ${thenMount}
+            }${t.catchBody ? `, (${t.catchName ?? 'error'}) => {
+              if (__g !== __awaitGen) return;
+              for (const __c of __blockCleanups) { try { __c(); } catch {} }
+              for (const n of __nodes) n.remove();
+              __nodes = [];
+              __blockEffects = [];
+              __blockCleanups = [];
+              ${catchMount}
+            }` : ''});
+            return;
+          }
           for (const __c of __blockCleanups) { try { __c(); } catch {} }
           for (const n of __nodes) n.remove();
           __nodes = [];
@@ -2489,6 +2793,7 @@ function emitClientNodes(
         });
         ${emitBlockDestroyCleanup('__blockCleanups', '__awaitGen')}
       }`)
+      prevTextish = false
     } else if (t.type === 'component') {
       const childrenVar = `${id}_children`
       const slotsVar = `${id}_slots`
@@ -2497,6 +2802,9 @@ function emitClientNodes(
       const hasChildren = !t.selfClosing && defaultChildren.length > 0
       const hasNamed = named.size > 0
       const sub: string[] = []
+      if (hasChildren || hasNamed) {
+        sub.push(`if (__claimStackActive()) throw new __HydrateMismatchError('slotted component: soft remount');`)
+      }
       if (hasChildren) {
         sub.push(`const ${childrenVar} = document.createDocumentFragment();`)
         sub.push(emitClientNodes(defaultChildren, hash, childrenVar, effectsVar, inSvg))
@@ -2609,8 +2917,10 @@ function emitClientNodes(
       }
       sub.push(`__cleanups.push(() => { ${instVar}.destroy(); });`)
       lines.push(`{ ${sub.join('\n')} }`)
+      prevTextish = false
     } else if (t.type === 'element') {
       lines.push(emitClientElement(t, hash, parent, id, effectsVar, inSvg))
+      prevTextish = false
     }
   }
   return lines.join('\n')
@@ -2627,8 +2937,9 @@ function emitClientElement(
   const { classAttrs, classDirs, rest: afterClass } = partitionClassAttrs(el.attrs)
   const { styleAttrs, styleDirs, rest } = partitionStyleAttrs(afterClass)
   const svg = shouldCreateSvg(el.tag, inSvg)
+  const ns = svg ? jsLiteral(SVG_NS) : 'null'
   const lines = [
-    `const ${id} = ${emitCreateElement(el.tag, inSvg)};`,
+    `const ${id} = __avedonEl(${parent}, ${jsLiteral(el.tag)}, ${ns});`,
     `${id}.setAttribute(${jsLiteral(hash)}, '');`,
   ]
   if (classDirs.length) {
@@ -2943,7 +3254,7 @@ function emitClientElement(
       emitClientNodes(el.children, hash, id, effectsVar, childSvgContext(el.tag, inSvg)),
     )
   }
-  lines.push(`${parent}.appendChild(${id});`)
+  lines.push(`__avedonElEnd();`)
   return `{ ${lines.join('\n')} }`
 }
 
@@ -3054,7 +3365,7 @@ function parseTransitionDirective(attrName: string): {
   const prefix = attrName.slice(0, colon)
   const type = attrName.slice(colon + 1)
   if (prefix !== 'transition' && prefix !== 'in' && prefix !== 'out') {
-    throw new Error(`Invalid transition directive "${attrName}"`)
+    fail(`Invalid transition directive "${attrName}"`)
   }
   if (
     type !== 'fade' &&
@@ -3076,7 +3387,7 @@ function parseTransitionDirective(attrName: string): {
     type !== 'roll' &&
     type !== 'zoom'
   ) {
-    throw new Error(
+    fail(
       `Unsupported transition "${attrName}" — only fade, fly, slide, slideX, scale, blur, draw, spin, pop, bounce, drop, shake, flip, pulse, wipe, skew, roll, and zoom are supported (transition:/in:/out:)`,
     )
   }
@@ -3766,18 +4077,18 @@ function parseEventDirective(attrName: string): {
   const parts = rest.split('|')
   const event = parts[0]!
   if (!event || !/^[A-Za-z_][\w-]*$/.test(event)) {
-    throw new Error(`Invalid event name in "${attrName}"`)
+    fail(`Invalid event name in "${attrName}"`)
   }
   const modifiers = parts.slice(1)
   for (const m of modifiers) {
     if (!EVENT_MODIFIERS.has(m)) {
-      throw new Error(
+      fail(
         `Unknown event modifier "${m}" on ${attrName} — supported: ${[...EVENT_MODIFIERS].join(', ')}`,
       )
     }
   }
   if (modifiers.includes('passive') && modifiers.includes('nonpassive')) {
-    throw new Error(`Cannot combine passive and nonpassive on ${attrName}`)
+    fail(`Cannot combine passive and nonpassive on ${attrName}`)
   }
   return { event, modifiers, propKey: 'on' + event }
 }

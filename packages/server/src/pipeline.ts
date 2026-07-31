@@ -84,7 +84,10 @@ function assertHeadOptIn(
 
 function clientRedirectScript(response: Response): string {
   const loc = response.headers.get('Location') ?? '/'
-  return `<script>window.location.href=${JSON.stringify(loc)}</script>`
+  // Escape `<` so `</script>` in Location cannot break out of the inline script
+  // (JSON.stringify alone does not). Match `__AVEDON_DATA__` in ssr.ts.
+  const json = JSON.stringify(loc).replace(/</g, '\\u003c')
+  return `<script>window.location.href=${json}</script>`
 }
 
 async function responseFromLoadOutcome(

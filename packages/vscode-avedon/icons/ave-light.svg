@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Avedon">
+  <title>Avedon</title>
+  <g fill="none" stroke="#06B6D4" stroke-width="2.5" stroke-linecap="square">
+    <path d="M4 4v6M4 4h6"/>
+    <path d="M28 4v6M28 4h-6"/>
+    <path d="M4 28v-6M4 28h6"/>
+    <path d="M28 28v-6M28 28h-6"/>
+  </g>
+  <path fill="#09090B" d="M16 9 9.5 26h2.6l1.15-2.9h5.5L19.9 26H22.5L16 9z"/>
+  <path fill="#06B6D4" d="M14.35 20.5h3.3l-1.65-4.15z"/>
+</svg>

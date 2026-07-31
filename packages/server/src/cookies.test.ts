@@ -32,4 +32,13 @@ describe('serializeSetCookie', () => {
   it('rejects oversized values', () => {
     expect(() => serializeSetCookie('n', 'x'.repeat(5000))).toThrow(/4096/)
   })
+
+  it('BUG-303: rejects CR/LF in cookie name', () => {
+    expect(() => serializeSetCookie('a\r\nSet-Cookie: evil=1', 'v')).toThrow(/Cookie name/)
+  })
+
+  it('BUG-303: rejects CR/LF in path and domain', () => {
+    expect(() => serializeSetCookie('ok', 'v', { path: '/\r\nX-Injected: yes' })).toThrow(/Cookie path/)
+    expect(() => serializeSetCookie('ok', 'v', { domain: 'x\r\nEvil' })).toThrow(/Cookie domain/)
+  })
 })

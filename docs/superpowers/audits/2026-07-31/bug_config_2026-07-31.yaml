@@ -1,0 +1,23 @@
+audit:
+  date: "2026-07-31"
+  repository: avedon
+  baseline_commit: 64c09e6a75dde144eb5fd329214f419e151da581
+  focus:
+    - claim-hydrate
+    - dependency-audit
+    - security-regression
+results:
+  fixed:
+    - BUG-301
+    - BUG-302
+  deferred:
+    - DEF-001
+    - DEF-002
+    - DEF-003
+    - DEF-004
+  pnpm_audit_vulnerabilities: 0
+  unit_tests_passed: 773
+ci_recommendations:
+  - keep CodeQL javascript-typescript required on main
+  - keep Dependabot alerts triage
+  - add Playwright claim-hydrate identity labs before npm publish of claim-hydrate

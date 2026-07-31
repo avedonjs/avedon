@@ -1,3 +1,8 @@
+export interface SourceRange {
+  start: number
+  end: number
+}
+
 export interface ParsedAvedon {
   clientScript: string
   serverScript: string
@@ -6,6 +11,13 @@ export interface ParsedAvedon {
   scriptLang: string
   serverLang: string
   scoped: boolean
+  /** Absolute UTF-16 ranges for trimmed section bodies in the original source. */
+  ranges: {
+    clientScript: SourceRange | null
+    serverScript: SourceRange | null
+    style: SourceRange | null
+    markup: SourceRange
+  }
 }
 
 interface TagBlock {
@@ -13,6 +25,8 @@ interface TagBlock {
   body: string
   start: number
   end: number
+  bodyStart: number
+  bodyEnd: number
 }
 
 /** Linear scan for `<tag ...>body</tag>` (optional space before `>` in the closer). */
@@ -47,6 +61,8 @@ function findTagBlock(source: string, tag: string, from: number): TagBlock | nul
           body: source.slice(bodyStart, cidx),
           start: idx,
           end: m + 1,
+          bodyStart,
+          bodyEnd: cidx,
         }
       }
       k = cidx + 1
@@ -61,21 +77,63 @@ function isAsciiSpace(ch: string): boolean {
   return c === 32 || c === 9 || c === 10 || c === 13 || c === 12
 }
 
-function extractAll(source: string, tag: string): { blocks: TagBlock[]; remaining: string } {
+interface ExtractResult {
+  blocks: TagBlock[]
+  remaining: string
+  /** remaining index → absolute source index */
+  toSource: number[]
+}
+
+function extractAll(source: string, tag: string): ExtractResult {
   const blocks: TagBlock[] = []
   let remaining = ''
+  const toSource: number[] = []
   let i = 0
   while (i < source.length) {
     const block = findTagBlock(source, tag, i)
     if (!block) {
-      remaining += source.slice(i)
+      for (let j = i; j < source.length; j++) {
+        remaining += source[j]
+        toSource.push(j)
+      }
       break
     }
-    remaining += source.slice(i, block.start)
+    for (let j = i; j < block.start; j++) {
+      remaining += source[j]
+      toSource.push(j)
+    }
     blocks.push(block)
     i = block.end
   }
-  return { blocks, remaining }
+  return { blocks, remaining, toSource }
+}
+
+function trimRange(source: string, start: number, end: number): SourceRange & { text: string } {
+  let a = start
+  let b = end
+  while (a < b && isAsciiSpace(source[a]!)) a++
+  while (b > a && isAsciiSpace(source[b - 1]!)) b--
+  return { start: a, end: b, text: source.slice(a, b) }
+}
+
+function mapRange(toSource: number[], start: number, end: number): SourceRange {
+  if (toSource.length === 0) return { start: 0, end: 0 }
+  const absStart = toSource[Math.min(Math.max(start, 0), toSource.length - 1)] ?? 0
+  if (end <= start) return { start: absStart, end: absStart }
+  const lastIdx = Math.min(end - 1, toSource.length - 1)
+  const absEnd = (toSource[lastIdx] ?? absStart) + 1
+  return { start: absStart, end: absEnd }
+}
+
+function mergeRanges(ranges: SourceRange[]): SourceRange | null {
+  if (ranges.length === 0) return null
+  let start = ranges[0]!.start
+  let end = ranges[0]!.end
+  for (const r of ranges) {
+    if (r.start < start) start = r.start
+    if (r.end > end) end = r.end
+  }
+  return { start, end }
 }
 
 export function parse(source: string): ParsedAvedon {
@@ -85,19 +143,25 @@ export function parse(source: string): ParsedAvedon {
   let serverLang = 'ts'
   let style = ''
   let scoped = true
+  const clientRanges: SourceRange[] = []
+  const serverRanges: SourceRange[] = []
+  const styleRanges: SourceRange[] = []
 
   const scripts = extractAll(source, 'script')
   for (const block of scripts.blocks) {
     const attrStr = block.attrs
     const langMatch = attrStr.match(/lang\s*=\s*["']([^"']+)["']/)
     const lang = langMatch?.[1] ?? 'ts'
+    const trimmed = trimRange(source, block.bodyStart, block.bodyEnd)
     const isServer = /\bserver\b/.test(attrStr)
     if (isServer) {
       serverScript += block.body
       serverLang = lang
+      if (trimmed.text) serverRanges.push({ start: trimmed.start, end: trimmed.end })
     } else {
       clientScript += block.body
       scriptLang = lang
+      if (trimmed.text) clientRanges.push({ start: trimmed.start, end: trimmed.end })
     }
   }
 
@@ -107,11 +171,36 @@ export function parse(source: string): ParsedAvedon {
     if (/\bunscoped\b/.test(attrStr)) scoped = false
     if (/\bscoped\b/.test(attrStr)) scoped = true
     style += block.body
+    const abs = mapRange(scripts.toSource, block.bodyStart, block.bodyEnd)
+    const trimmed = trimRange(source, abs.start, abs.end)
+    if (trimmed.text) styleRanges.push({ start: trimmed.start, end: trimmed.end })
   }
 
-  let remaining = styles.remaining
+  const styleToSource: number[] = []
+  for (let i = 0; i < styles.toSource.length; i++) {
+    const remIdx = styles.toSource[i]!
+    styleToSource.push(scripts.toSource[remIdx] ?? remIdx)
+  }
+
+  const remaining = styles.remaining
   const template = findTagBlock(remaining, 'template', 0)
-  const markup = template ? template.body.trim() : remaining.trim()
+  let markup: string
+  let markupRange: SourceRange
+
+  if (template) {
+    const abs = mapRange(styleToSource, template.bodyStart, template.bodyEnd)
+    const trimmed = trimRange(source, abs.start, abs.end)
+    markup = trimmed.text
+    markupRange = { start: trimmed.start, end: trimmed.end }
+  } else if (styleToSource.length > 0) {
+    const abs = mapRange(styleToSource, 0, styleToSource.length)
+    const trimmed = trimRange(source, abs.start, abs.end)
+    markup = trimmed.text
+    markupRange = { start: trimmed.start, end: trimmed.end }
+  } else {
+    markup = ''
+    markupRange = { start: source.length, end: source.length }
+  }
 
   return {
     clientScript: clientScript.trim(),
@@ -121,6 +210,12 @@ export function parse(source: string): ParsedAvedon {
     scriptLang,
     serverLang,
     scoped,
+    ranges: {
+      clientScript: mergeRanges(clientRanges),
+      serverScript: mergeRanges(serverRanges),
+      style: mergeRanges(styleRanges),
+      markup: markupRange,
+    },
   }
 }
 

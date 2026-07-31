@@ -1,0 +1,82 @@
+{
+  "metadata": {
+    "date": "2026-07-31",
+    "repository": "/home/anilo/Projeler/avedon",
+    "commit_hash": "64c09e6a75dde144eb5fd329214f419e151da581",
+    "analyzer": "cursor-agent"
+  },
+  "overview": {
+    "total_bugs_found": 2,
+    "total_bugs_fixed": 2,
+    "bugs_deferred": 4,
+    "tests_passed": 773,
+    "dependency_vulnerabilities": 0
+  },
+  "bugs": [
+    {
+      "bug_id": "BUG-301",
+      "severity": "HIGH",
+      "category": "FUNCTIONAL",
+      "status": "FIXED",
+      "location": {
+        "files": [
+          "packages/compiler/src/codegen.ts"
+        ],
+        "component": "@avedon/compiler",
+        "function": "emitSsr / emitSsrStream / emitClientNodes"
+      },
+      "description": {
+        "current_behavior": "Adjacent static text and {expr} became one DOM text node after HTML parse; claim hydrate always mismatched.",
+        "expected_behavior": "Distinct text nodes matching client claim walk.",
+        "root_cause": "HTML parser text coalescing without separators between textish tokens."
+      },
+      "impact_assessment": {
+        "user_impact": "Claim hydrate never reused DOM for typical templates; always soft-remounted in prod.",
+        "system_impact": "Lost focus/media identity benefits of claim hydrate.",
+        "business_impact": "Feature incorrect for common case before ship."
+      },
+      "verification": {
+        "test_case": "packages/compiler/src/compile.test.ts — BUG-301"
+      },
+      "metadata": {
+        "discovered_date": "2026-07-31",
+        "discovered_by": "static analysis + HTML parse semantics",
+        "cve_id": null,
+        "cwe_id": null
+      }
+    },
+    {
+      "bug_id": "BUG-302",
+      "severity": "HIGH",
+      "category": "FUNCTIONAL",
+      "status": "FIXED",
+      "location": {
+        "files": [
+          "packages/compiler/src/compile.ts",
+          "packages/runtime/src/index.ts"
+        ],
+        "component": "@avedon/compiler + @avedon/runtime",
+        "function": "mount / hydrate / __lifecycleAbort"
+      },
+      "description": {
+        "current_behavior": "HydrateMismatchError mid-mount leaked lifecycle/update-hook frames and signal effects; post-mount assert failure soft-remounted without destroy.",
+        "expected_behavior": "Abort init frames, run cleanups, destroy claim instance before soft-remount.",
+        "root_cause": "No try/finally on mount; hydrate discarded inst without destroy."
+      },
+      "impact_assessment": {
+        "user_impact": "Duplicate reactive updates / memory growth after mismatch soft-remount.",
+        "system_impact": "Corrupted lifecycleStack for subsequent mounts.",
+        "business_impact": "Prod mismatch path unsafe."
+      },
+      "verification": {
+        "test_case": "packages/compiler/src/compile.test.ts — BUG-302"
+      },
+      "metadata": {
+        "discovered_date": "2026-07-31",
+        "discovered_by": "control-flow review of claim hydrate",
+        "cve_id": null,
+        "cwe_id": "CWE-404"
+      }
+    }
+  ]
+}

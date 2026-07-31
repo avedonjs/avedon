@@ -1,6 +1,38 @@
 # memories.md
 
-Updated: 2026-07-30
+Updated: 2026-07-31
+
+## `.ave` LSP diagnostics v1 (2026-07-31)
+
+- Spec: `docs/superpowers/specs/2026-07-31-ave-lsp-design.md`
+- Plan: `docs/superpowers/plans/2026-07-31-ave-lsp.md`
+- Compiler: `diagnoseAve()`, `CompileError`/`CompileDiagnostic`, `parse().ranges`, template `fail()` with file offsets
+- Package: `@avedon/language-server` (`avedon-language-server` stdio)
+- Extension: `packages/vscode-avedon` (`avedon-vscode`, private) — language id `avedon`, TextMate, language client; VSIX via esbuild-bundled `dist/server.js` + `vsce --no-dependencies` (pnpm-safe)
+- Out of v1: completion/hover/go-to-def/rename/embedded TS LS; Marketplace publish later
+- Changeset: `.changeset/ave-lsp.md` (compiler + language-server)
+
+## Claim hydrate (2026-07-31)
+
+- Spec: `docs/superpowers/specs/2026-07-31-claim-hydrate-design.md`
+- Plan: `docs/superpowers/plans/2026-07-31-claim-hydrate.md`
+- Runtime: `packages/runtime/src/claim.ts` — cursor claim helpers + `avedonEl`/`avedonText`/`avedonComment`
+- Compiler: mode via claim stack; SSR/stream `<!--if-->` / `<!--each-->` / … anchors; `hydrate()` claim-first, soft-remount on `HydrateMismatchError` in prod
+- v1 soft-remount still used for `{@html}` and slotted components
+- Changeset: `.changeset/claim-hydrate.md` (runtime + compiler minor)
+- **Audit fixes (2026-07-31):** BUG-301 text seps; BUG-302 mount abort + destroy before soft-remount; BUG-305 escape static SSR text; BUG-306 `__owned` node destroy (no `target.textContent=''`); BUG-308 claim stack depth on nested hydrate
+- **Security (same pass):** BUG-303 cookie CRLF; BUG-304 streaming redirect `\u003c`; BUG-307 attr name charset
+- Artefacts: `docs/superpowers/audits/2026-07-31/`
+- Unit: 778 green; Playwright identity labs still TODO per spec
+- Deferred: streaming await claim shape; playground evalMockServer parent-origin; scaffold CORS/XFF; node adapter Content-Type
+
+## Release queue (2026-07-31)
+
+Pending publish via changesets on next Version Packages merge:
+- Claim hydrate (runtime + compiler minor)
+- `.ave` LSP (`@avedon/language-server` + compiler minor)
+- Server security audit (patch: cookie CRLF + streaming redirect escape)
+- VS Code extension stays private (`avedon-vscode`); not npm-published
 
 ## Published (2026-07-30)
 
@@ -8,6 +40,7 @@ Version Packages PR #9 merged → OIDC publish succeeded.
 Release: https://github.com/avedonjs/avedon/actions/runs/30534754553
 Versions: `avedon@0.1.10`, `@avedon/compiler@1.0.0`, `@avedon/runtime@0.3.0`, `@avedon/server@0.2.6`, `@avedon/vite-plugin@0.1.9`, `create-avedon-app@0.1.4`, adapters node `0.1.9` / bun+cf `0.2.7`.
 Template sync OK: runtime `^0.3.0`, compiler peer `^0.3.0`.
+Adapter-static / create-app later: `0d925c8` chore version packages on main.
 
 ## Snippets (2026-07-30)
 
@@ -68,7 +101,8 @@ Reusable template fragments within a single `.ave` file — like a local mini-co
 
 ### Bilinçli kalan
 - Soft hydrate = remount + restore (DOM reuse yok)
-- CF ISR yok; `.ave` LSP yok
+- CF ISR yok
+- ~~`.ave` LSP yok~~ **diagnostics v1 landed** (`@avedon/language-server` + `avedon-vscode`)
 - ASI: `signal(false)\\n()` sonraki satıra yapışır — deklarasyon sonrası `;` veya boş satır
 
 ### Önceki audit
@@ -443,7 +477,7 @@ Plan: `docs/superpowers/plans/2026-07-22-pre-publish-release-gate.md`
 - ~~Composition + head npm changeset~~ **yayınlandı** (`avedon@0.1.4`, compiler/server/shared `0.2.0`)
 - ~~Sitemap/robots / OG absolute~~ **hazır** (`AVEDON_DOCS_ORIGIN`, default pages.dev; Pages Variable `AVEDON_DOCS_ORIGIN`)
 - CF adapter: ISR yok (dokümante)
-- `.ave` language service / LSP yok
+- ~~`.ave` language service / LSP yok~~ **diagnostics v1** (`@avedon/language-server` + `avedon-vscode`)
 
 **Kabul edilebilir post-v1:** other transitions beyond fade/fly/slide/scale/blur, on-demand ISR
 - ~~`{#key}`~~ **landed (2026-07-26)** — remount on expression change; changeset `compiler-key-block`

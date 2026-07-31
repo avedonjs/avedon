@@ -1,4 +1,6 @@
-export { compile, compileSsr } from './compile.js'
+export { compile, compileSsr, diagnoseAve } from './compile.js'
 export type { CompileOptions, CompileResult } from './compile.js'
 export { parse, hashStyle, scopeCss, changedBlocks } from './parse.js'
-export type { ParsedAvedon, AvedonBlockKind } from './parse.js'
+export type { ParsedAvedon, AvedonBlockKind, SourceRange } from './parse.js'
+export { CompileError } from './diagnostics.js'
+export type { CompileDiagnostic } from './diagnostics.js'
