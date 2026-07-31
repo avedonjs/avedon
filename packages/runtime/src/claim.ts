@@ -222,7 +222,13 @@ export function avedonTextEmpty(parent: ParentNode): Text {
 
 export function avedonComment(parent: ParentNode, data: string): Comment {
   if (shouldClaim(parent)) {
-    return claimComment(claimCurrent(), data)
+    const cursor = claimCurrent()
+    // Text-separator `<!---->` nodes are stripped during claim (see skipClaimNoise).
+    if (data === '') {
+      skipEmptyComments(cursor)
+      return document.createComment('')
+    }
+    return claimComment(cursor, data)
   }
   const c = document.createComment(data)
   parent.appendChild(c)

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   assertClaimExhausted,
   avedonText,
+  avedonTextEmpty,
+  avedonComment,
   claimComment,
   claimCurrent,
   claimElement,
@@ -79,6 +81,37 @@ describe('claim helpers', () => {
     const c = createClaimCursor(parentOf(empty, el))
     skipClaimNoise(c)
     expect(claimElement(c, 'span')).toBe(el)
+  })
+
+  it('avedonComment with empty data consumes text separator during claim', () => {
+    const nodes = [
+      { nodeType: 3, data: 'Likes: ' },
+      { nodeType: 8, data: '' },
+      { nodeType: 3, data: '3' },
+    ]
+    for (const n of nodes) {
+      n.remove = () => {
+        const i = nodes.indexOf(n)
+        if (i >= 0) nodes.splice(i, 1)
+      }
+    }
+    const parent = { childNodes: nodes as unknown as NodeListOf<ChildNode> } as ParentNode
+    const prevDoc = globalThis.document
+    globalThis.document = {
+      createComment() {
+        return { nodeType: 8, data: '' }
+      },
+    } as Document
+    try {
+      __resetClaimStack()
+      claimPush(parent)
+      avedonText(parent, 'Likes: ')
+      avedonComment(parent, '')
+      expect(avedonTextEmpty(parent).data).toBe('3')
+      expect(claimCurrent().index).toBe(2)
+    } finally {
+      globalThis.document = prevDoc
+    }
   })
 
   it('avedonText into detached element creates without claiming from cursor', () => {

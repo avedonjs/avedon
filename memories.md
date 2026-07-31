@@ -22,7 +22,7 @@ Updated: 2026-07-31
 - Changeset: `.changeset/claim-hydrate.md` (runtime + compiler minor)
 - **Audit fixes (2026-07-31):** BUG-301 text seps; BUG-302 mount abort + destroy before soft-remount; BUG-305 escape static SSR text; BUG-306 `__owned` node destroy (no `target.textContent=''`); BUG-308 claim stack depth on nested hydrate
 - **Reactivity fix (2026-07-31):** static `avedonText` claim no longer strict-equals SSR whitespace (layout shell indent); keyed/unkeyed `{#each}` claim init trims per-item outer whitespace text tokens so claim walk matches joined SSR HTML
-- **Claim hydrate CI fix (2026-07-31):** `skipClaimNoise` vs `skipWhitespace`; `avedonTextEmpty` creates missing empty reactive text; `{#await}` claim init strips SSR then-branch + remounts pending via fragment; `shouldClaim` only when `claimCurrent().parent === parent` (fragment/detached remount must create); `elClaimOpened` stack pairs `avedonEl`/`avedonElEnd`; await cursor resync after strip+insert
+- **Claim hydrate CI fix (2026-07-31):** `skipClaimNoise` vs `skipWhitespace`; `avedonTextEmpty` creates missing empty reactive text; `{#await}` claim init strips SSR then-branch + remounts pending via fragment; `shouldClaim` only when `claimCurrent().parent === parent` (fragment/detached remount must create); `elClaimOpened` stack pairs `avedonEl`/`avedonElEnd`; await cursor resync after strip+insert; **`avedonComment('')` consumes `<!---->` text separators during claim** (fixes mixed static+signal text like `Likes: {likes}`)
 - **Security (same pass):** BUG-303 cookie CRLF; BUG-304 streaming redirect `\u003c`; BUG-307 attr name charset
 - Artefacts: `docs/superpowers/audits/2026-07-31/`
 - Unit: 778 green; Playwright identity labs still TODO per spec
