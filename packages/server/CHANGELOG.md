@@ -1,5 +1,13 @@
 # @avedon/server
 
+## 0.2.8
+
+### Patch Changes
+
+- 7952e61: Harden Set-Cookie serialization against CRLF injection and escape `<` in streaming redirect Location scripts.
+- Updated dependencies [7952e61]
+  - @avedon/runtime@0.4.0
+
 ## 0.2.7
 
 ### Patch Changes
