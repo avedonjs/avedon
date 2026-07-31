@@ -21,6 +21,7 @@ Updated: 2026-07-31
 - v1 soft-remount still used for `{@html}` and slotted components
 - Changeset: `.changeset/claim-hydrate.md` (runtime + compiler minor)
 - **Audit fixes (2026-07-31):** BUG-301 text seps; BUG-302 mount abort + destroy before soft-remount; BUG-305 escape static SSR text; BUG-306 `__owned` node destroy (no `target.textContent=''`); BUG-308 claim stack depth on nested hydrate
+- **Reactivity fix (2026-07-31):** static `avedonText` claim no longer strict-equals SSR whitespace (layout shell indent); keyed/unkeyed `{#each}` claim init trims per-item outer whitespace text tokens so claim walk matches joined SSR HTML
 - **Security (same pass):** BUG-303 cookie CRLF; BUG-304 streaming redirect `\u003c`; BUG-307 attr name charset
 - Artefacts: `docs/superpowers/audits/2026-07-31/`
 - Unit: 778 green; Playwright identity labs still TODO per spec
@@ -142,6 +143,7 @@ Reusable template fragments within a single `.ave` file — like a local mini-co
 ## Preferences
 
 - Stay on main; commit only when asked
+- **Subagent Auto model (2026-07-31):** Task/subagents must inherit Auto — omit Task `model`; CLI `agent --model auto`. Skill: `~/.cursor/skills/subagent-auto-model/`; alwaysApply rule: `~/.cursor/rules/subagent-auto-model.mdc`. Avoid premium Task slugs (Other Models rate limits).
 - TypeScript: stay on 5.x for now; skip 6 bump — wait for **7.1** (stable programmatic API) before major TS upgrade (2026-07-22)
 - Creative feature loop: **paused** for release (2026-07-29) — user asked to publish accumulated features; do not re-arm `AGENT_LOOP_WAKE_avedon_build` until asked
 - Prior loop heartbeat was **~5m** (`sleep 300`)

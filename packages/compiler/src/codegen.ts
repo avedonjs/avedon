@@ -48,6 +48,15 @@ function tokensEndTextish(tokens: Token[]): boolean {
   return false
 }
 
+/** Claim-walk each items: SSR joins item HTML without per-item outer whitespace text nodes. */
+function trimWhitespaceTextTokens(tokens: Token[]): Token[] {
+  let start = 0
+  let end = tokens.length
+  while (start < end && tokens[start]?.type === 'text' && !tokens[start]!.value.trim()) start++
+  while (end > start && tokens[end - 1]?.type === 'text' && !tokens[end - 1]!.value.trim()) end--
+  return tokens.slice(start, end)
+}
+
 /** Empty HTML comment keeps adjacent text/expr as distinct DOM text nodes after parse. */
 const TEXT_SEP_HTML = '<!---->'
 const TEXT_SEP_COMMENT_DATA = ''
@@ -2420,7 +2429,7 @@ function emitClientNodes(
             {
               const __effects = __blockEffects;
               const __cleanups = __elseCleanups;
-              ${emitClientNodes(t.else, hash, parent, '__effects', inSvg)}
+              ${emitClientNodes(trimWhitespaceTextTokens(t.else), hash, parent, '__effects', inSvg)}
             }
             for (let __i = __start; __i < __claimCurrent().index; __i++) {
               __elseNodes.push(${parent}.childNodes[__i]);
@@ -2440,7 +2449,7 @@ function emitClientNodes(
               {
                 const __effects = __blockEffects;
                 const __cleanups = __blockCleanups;
-                ${emitClientNodes(t.body, hash, parent, '__effects', inSvg)}
+                ${emitClientNodes(trimWhitespaceTextTokens(t.body), hash, parent, '__effects', inSvg)}
               }
               const __nodes = [];
               for (let __i = __start; __i < __claimCurrent().index; __i++) {
@@ -2577,12 +2586,12 @@ function emitClientNodes(
             const __list = ${eachListExpr(t.list)};
             if (__list.length) {
               __list.forEach((${t.item}, ${idx}) => {
-                ${emitClientNodes(t.body, hash, parent, '__effects', inSvg)}
+                ${emitClientNodes(trimWhitespaceTextTokens(t.body), hash, parent, '__effects', inSvg)}
               });
             }${
               t.else
                 ? ` else {
-              ${emitClientNodes(t.else, hash, parent, '__effects', inSvg)}
+              ${emitClientNodes(trimWhitespaceTextTokens(t.else), hash, parent, '__effects', inSvg)}
             }`
                 : ''
             }

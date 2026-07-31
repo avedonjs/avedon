@@ -1917,6 +1917,17 @@ describe('keyed {#each}', () => {
     expect(out.code).toContain('__oldByKey.get(__key)')
     expect(out.code).toContain('insertBefore(n, __cursor)')
   })
+
+  it('claim init trims each-item whitespace text tokens', () => {
+    const src = `<template>{#each items as item (item.id)}
+        <li>{item.name}</li>
+      {/each}</template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'client' })
+    const claimLoop = out.code.match(/if \(__skipOnce\) \{[\s\S]*?__records\.push/)?.[0] ?? ''
+    expect(claimLoop).toContain('__list.forEach((item, __i) => {')
+    expect(claimLoop).toContain('__avedonEl(__root')
+    expect(claimLoop).not.toContain('__avedonText(__root')
+  })
 })
 
 describe('named slots', () => {

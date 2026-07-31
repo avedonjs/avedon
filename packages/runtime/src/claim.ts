@@ -134,7 +134,9 @@ export function avedonElEnd(): void {
 
 export function avedonText(parent: ParentNode, data: string): Text {
   if (claimStack.length) {
-    return claimText(claimCurrent(), data)
+    // Static SSR text may differ in insignificant whitespace once embedded in a
+    // layout shell; reuse the live node instead of strict string equality.
+    return claimText(claimCurrent())
   }
   const t = document.createTextNode(data)
   parent.appendChild(t)

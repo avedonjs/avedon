@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertClaimExhausted,
+  avedonText,
   claimComment,
   claimElement,
+  claimPush,
   claimText,
   createClaimCursor,
   HydrateMismatchError,
   skipWhitespace,
+  __resetClaimStack,
 } from './claim.js'
 
 function parentOf(...nodes: Array<{ nodeType: number; data?: string; tagName?: string }>) {
@@ -50,5 +53,12 @@ describe('claim helpers', () => {
   it('throws when expected text differs', () => {
     const c = createClaimCursor(parentOf({ nodeType: 3, data: 'a' }))
     expect(() => claimText(c, 'b')).toThrow(HydrateMismatchError)
+  })
+
+  it('avedonText claims static text without strict whitespace equality', () => {
+    const parent = parentOf({ nodeType: 3, data: '\n        ' })
+    __resetClaimStack()
+    claimPush(parent)
+    expect(avedonText(parent, '\n    ').data).toBe('\n        ')
   })
 })
