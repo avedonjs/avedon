@@ -20,11 +20,18 @@ function isTextishToken(t: Token): boolean {
   return t.type === 'text' || t.type === 'expr'
 }
 
+/** Whitespace-only text does not need a <!----> separator (and must not leave empty comments after HTML comment stripping). */
+function isSignificantTextish(t: Token): boolean {
+  if (t.type === 'expr') return true
+  if (t.type === 'text') return t.value.trim() !== ''
+  return false
+}
+
 function tokensStartTextish(tokens: Token[]): boolean {
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i]!
     if (t.type === 'const') return tokensStartTextish(tokens.slice(i + 1))
-    if (isTextishToken(t)) return true
+    if (isSignificantTextish(t)) return true
     if (t.type === 'render') {
       const sn = compileSnippets.get(t.name)
       return sn ? tokensStartTextish(sn.body) : false
@@ -40,7 +47,7 @@ function tokensEndTextish(tokens: Token[]): boolean {
   }
   if (tokens.length === 0) return false
   const t = tokens[tokens.length - 1]!
-  if (isTextishToken(t)) return true
+  if (isSignificantTextish(t)) return true
   if (t.type === 'render') {
     const sn = compileSnippets.get(t.name)
     return sn ? tokensEndTextish(sn.body) : false
@@ -52,8 +59,20 @@ function tokensEndTextish(tokens: Token[]): boolean {
 function trimWhitespaceTextTokens(tokens: Token[]): Token[] {
   let start = 0
   let end = tokens.length
-  while (start < end && tokens[start]?.type === 'text' && !tokens[start]!.value.trim()) start++
-  while (end > start && tokens[end - 1]?.type === 'text' && !tokens[end - 1]!.value.trim()) end--
+  while (
+    start < end &&
+    tokens[start]?.type === 'text' &&
+    !(tokens[start] as { type: 'text'; value: string }).value.trim()
+  ) {
+    start++
+  }
+  while (
+    end > start &&
+    tokens[end - 1]?.type === 'text' &&
+    !(tokens[end - 1] as { type: 'text'; value: string }).value.trim()
+  ) {
+    end--
+  }
   return tokens.slice(start, end)
 }
 
@@ -1832,7 +1851,7 @@ function emitSsr(tokens: Token[], hash: string, prevTextish = false): string {
     } else if (t.type === 'text') {
       if (prevTextish) parts.push(`'${TEXT_SEP_HTML}'`)
       parts.push('`' + escapeForTemplateLiteral(escapeHtmlText(t.value)) + '`')
-      prevTextish = true
+      prevTextish = t.value.trim() !== ''
     } else if (t.type === 'slot') {
       parts.push(emitSlotContentExpr(t, hash))
       prevTextish = false
@@ -1907,7 +1926,7 @@ function emitSsrStream(tokens: Token[], hash: string, prevTextish = false): stri
     } else if (t.type === 'text') {
       if (prevTextish) lines.push(`__enqueue('${TEXT_SEP_HTML}');`)
       lines.push(`__enqueue(\`${escapeForTemplateLiteral(escapeHtmlText(t.value))}\`);`)
-      prevTextish = true
+      prevTextish = t.value.trim() !== ''
     } else if (t.type === 'slot') {
       lines.push(`await __pipeChildren(${emitSlotContentExpr(t, hash)});`)
       prevTextish = false
@@ -2260,7 +2279,7 @@ function emitClientNodes(
         lines.push(`{ __avedonComment(${parent}, ${jsLiteral(TEXT_SEP_COMMENT_DATA)}); }`)
       }
       lines.push(`{ const ${id} = __avedonText(${parent}, ${jsLiteral(t.value)}); }`)
-      prevTextish = true
+      prevTextish = t.value.trim() !== ''
     } else if (t.type === 'slot') {
       // Layout/slot content is a trusted framework contract (SSR HTML or Node).
       // Public mount/update must not pass untrusted strings — see docs/security.md.
@@ -2683,20 +2702,15 @@ function emitClientNodes(
       }`)
       prevTextish = false
     } else if (t.type === 'await') {
-      const pendingClaim = t.pending?.length
-        ? `{
-          const __start = __claimCurrent().index;
-          {
-            const __effects = __blockEffects;
-            const __cleanups = __blockCleanups;
-            ${emitClientNodes(t.pending, hash, parent, '__effects', inSvg)}
+      const awaitStripSsrBranch = `{
+          let __n = ${id}.nextSibling;
+          while (__n) {
+            const __next = __n.nextSibling;
+            if (__n.nodeType === 8 && /^(if|each|each-keyed|key|await)$/.test(__n.data)) break;
+            __n.remove();
+            __n = __next;
           }
-          for (let __i = __start; __i < __claimCurrent().index; __i++) {
-            __nodes.push(${parent}.childNodes[__i]);
-          }
-          ${emitRunBlockEffects()}
         }`
-        : ''
       const pendingMount = t.pending?.length
         ? `{
           const __frag = document.createDocumentFragment();
@@ -2751,7 +2765,20 @@ function emitClientNodes(
         let __awaitGen = 0;
         let __skipOnce = __claimStackActive();
         if (__skipOnce) {
-          ${pendingClaim}
+          ${awaitStripSsrBranch}
+          __nodes = [];
+          ${pendingMount}
+          {
+            let __ci = 0;
+            while (__ci < ${parent}.childNodes.length && ${parent}.childNodes[__ci] !== ${id}) __ci++;
+            __ci++;
+            while (__ci < ${parent}.childNodes.length) {
+              const __cn = ${parent}.childNodes[__ci];
+              if (__cn.nodeType === 8 && /^(if|each|each-keyed|key|await)$/.test(__cn.data)) break;
+              __ci++;
+            }
+            __claimCurrent().index = __ci;
+          }
         }
         ${effectsVar}.push(() => {
           const __g = ++__awaitGen;

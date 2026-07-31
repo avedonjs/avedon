@@ -3,18 +3,29 @@ import {
   assertClaimExhausted,
   avedonText,
   claimComment,
+  claimCurrent,
   claimElement,
   claimPush,
   claimText,
   createClaimCursor,
   HydrateMismatchError,
+  skipClaimNoise,
   skipWhitespace,
   __resetClaimStack,
 } from './claim.js'
 
-function parentOf(...nodes: Array<{ nodeType: number; data?: string; tagName?: string }>) {
+function parentOf(...nodes: Array<{ nodeType: number; data?: string; tagName?: string; remove?: () => void }>) {
+  const list = [...nodes]
+  for (const n of list) {
+    if (!n.remove) {
+      n.remove = () => {
+        const i = list.indexOf(n)
+        if (i >= 0) list.splice(i, 1)
+      }
+    }
+  }
   return {
-    childNodes: nodes as unknown as NodeListOf<ChildNode>,
+    childNodes: list as unknown as NodeListOf<ChildNode>,
   } as ParentNode
 }
 
@@ -60,5 +71,43 @@ describe('claim helpers', () => {
     __resetClaimStack()
     claimPush(parent)
     expect(avedonText(parent, '\n    ').data).toBe('\n        ')
+  })
+
+  it('skipClaimNoise removes empty comment separators', () => {
+    const empty = { nodeType: 8, data: '' }
+    const el = { nodeType: 1, tagName: 'SPAN' }
+    const c = createClaimCursor(parentOf(empty, el))
+    skipClaimNoise(c)
+    expect(claimElement(c, 'span')).toBe(el)
+  })
+
+  it('avedonText into detached element creates without claiming from cursor', () => {
+    const anchor = { nodeType: 8, data: 'await' }
+    const parent = parentOf(anchor)
+    const p = {
+      nodeType: 1,
+      childNodes: [] as Array<{ nodeType: number; data: string }>,
+      appendChild(node: { nodeType: number; data: string }) {
+        p.childNodes.push(node)
+        return node
+      },
+    } as unknown as ParentNode
+    const prevDoc = globalThis.document
+    globalThis.document = {
+      createTextNode(data: string) {
+        return { nodeType: 3, data }
+      },
+    } as Document
+    try {
+      __resetClaimStack()
+      claimPush(parent)
+      const t = avedonText(p, 'loading')
+      expect(t.data).toBe('loading')
+      expect(p.childNodes).toHaveLength(1)
+      expect(claimCurrent().index).toBe(0)
+      expect(claimComment(claimCurrent(), 'await')).toBe(anchor)
+    } finally {
+      globalThis.document = prevDoc
+    }
   })
 })

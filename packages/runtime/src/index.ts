@@ -43,6 +43,7 @@ export {
   claimText,
   claimComment,
   assertClaimExhausted,
+  claimAdvancePastSiblings,
   claimPush,
   claimPop,
   claimCurrent,

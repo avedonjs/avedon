@@ -1868,6 +1868,12 @@ describe('SSR claim anchors', () => {
     expect(client.code).toMatch(/__avedonComment\([^,]+,\s*""\)/)
   })
 
+  it('BUG-301b: whitespace-only text after stripped HTML comments does not emit separators', () => {
+    const src = `<template><h1>x</h1><!-- removed --><p>y</p></template>`
+    const ssr = compile(src, { filename: 'T.ave', generate: 'ssr' })
+    expect(ssr.code).not.toContain('<!---->')
+  })
+
   it('BUG-301: stream path also emits text separators', () => {
     const src = `<template>Hi {n}</template>`
     const out = compile(src, { filename: 'T.ave', generate: 'ssr' })

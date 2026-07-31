@@ -24,8 +24,31 @@ export function skipWhitespace(cursor: ClaimCursor): void {
   }
 }
 
+/** Skip empty `<!---->` text-separator comments (not whitespace text nodes). */
+function skipEmptyComments(cursor: ClaimCursor): void {
+  while (true) {
+    const n = childAt(cursor)
+    if (!n || n.nodeType !== 8) return
+    const c = n as Comment
+    if (c.data !== '') return
+    c.remove()
+  }
+}
+
+/** Skip whitespace-only text and remove empty `<!---->` text-separator comments left from SSR. */
+export function skipClaimNoise(cursor: ClaimCursor): void {
+  while (true) {
+    skipWhitespace(cursor)
+    const n = childAt(cursor)
+    if (!n || n.nodeType !== 8) return
+    const c = n as Comment
+    if (c.data !== '') return
+    c.remove()
+  }
+}
+
 function advance(cursor: ClaimCursor): ChildNode {
-  skipWhitespace(cursor)
+  skipClaimNoise(cursor)
   const n = childAt(cursor)
   if (!n) throw new HydrateMismatchError('unexpected end of children')
   cursor.index++
@@ -45,6 +68,7 @@ export function claimElement(cursor: ClaimCursor, tag: string): Element {
 }
 
 export function claimText(cursor: ClaimCursor, expected?: string): Text {
+  skipEmptyComments(cursor)
   const n = childAt(cursor)
   if (!n || n.nodeType !== 3) {
     throw new HydrateMismatchError('expected text node')
@@ -74,9 +98,19 @@ export function claimComment(cursor: ClaimCursor, data: string): Comment {
 }
 
 export function assertClaimExhausted(cursor: ClaimCursor): void {
-  skipWhitespace(cursor)
+  skipClaimNoise(cursor)
   if (childAt(cursor)) {
     throw new HydrateMismatchError('unexpected trailing nodes after claim')
+  }
+}
+
+export function claimAdvancePastSiblings(cursor: ClaimCursor): void {
+  while (true) {
+    skipClaimNoise(cursor)
+    const n = childAt(cursor)
+    if (!n) return
+    if (n.nodeType === 8 && /^(if|each|each-keyed|key|await)$/.test((n as Comment).data)) return
+    cursor.index++
   }
 }
 
@@ -109,34 +143,58 @@ export function claimStackDepth(): number {
 /** Test helper — clear claim stack between tests. */
 export function __resetClaimStack(): void {
   claimStack.length = 0
+  elClaimOpened.length = 0
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
+/** True when emit helpers should claim from the active cursor (not create fresh nodes). */
+function shouldClaim(parent: ParentNode): boolean {
+  return claimStack.length > 0 && parent.nodeType !== 11 && claimCurrent().parent === parent
+}
+
+/** Tracks whether the matching avedonElEnd should pop a nested claim cursor. */
+const elClaimOpened: boolean[] = []
+
 /** Create or claim an element; when claiming, pushes a child cursor for nested emit. */
 export function avedonEl(parent: ParentNode, tag: string, ns?: string | null): Element {
-  if (claimStack.length) {
+  if (shouldClaim(parent)) {
     const el = claimElement(claimCurrent(), tag)
     claimPush(el)
+    elClaimOpened.push(true)
     return el
   }
   const el = ns ? document.createElementNS(ns, tag) : document.createElement(tag)
   parent.appendChild(el)
+  elClaimOpened.push(false)
   return el
 }
 
 /** Pop child claim cursor after element children are emitted. */
 export function avedonElEnd(): void {
-  if (!claimStack.length) return
+  const opened = elClaimOpened.pop()
+  if (!opened || !claimStack.length) return
   assertClaimExhausted(claimCurrent())
   claimPop()
 }
 
 export function avedonText(parent: ParentNode, data: string): Text {
-  if (claimStack.length) {
-    // Static SSR text may differ in insignificant whitespace once embedded in a
-    // layout shell; reuse the live node instead of strict string equality.
-    return claimText(claimCurrent())
+  if (shouldClaim(parent)) {
+    const cursor = claimCurrent()
+    skipEmptyComments(cursor)
+    const n = childAt(cursor)
+    if (n && n.nodeType === 3) {
+      cursor.index++
+      return n as Text
+    }
+    // SSR/layout may omit insignificant whitespace-only text nodes between elements.
+    if (data.trim() === '') {
+      const t = document.createTextNode(data)
+      if (n) cursor.parent.insertBefore(t, n)
+      else cursor.parent.appendChild(t)
+      return t
+    }
+    throw new HydrateMismatchError('expected text node')
   }
   const t = document.createTextNode(data)
   parent.appendChild(t)
@@ -144,8 +202,18 @@ export function avedonText(parent: ParentNode, data: string): Text {
 }
 
 export function avedonTextEmpty(parent: ParentNode): Text {
-  if (claimStack.length) {
-    return claimText(claimCurrent())
+  if (shouldClaim(parent)) {
+    const cursor = claimCurrent()
+    skipEmptyComments(cursor)
+    const n = childAt(cursor)
+    if (n && n.nodeType === 3) {
+      cursor.index++
+      return n as Text
+    }
+    // SSR often omits text nodes for empty expressions; create one for effects.
+    const t = document.createTextNode('')
+    parent.appendChild(t)
+    return t
   }
   const t = document.createTextNode('')
   parent.appendChild(t)
@@ -153,7 +221,7 @@ export function avedonTextEmpty(parent: ParentNode): Text {
 }
 
 export function avedonComment(parent: ParentNode, data: string): Comment {
-  if (claimStack.length) {
+  if (shouldClaim(parent)) {
     return claimComment(claimCurrent(), data)
   }
   const c = document.createComment(data)
