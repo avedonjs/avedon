@@ -29,6 +29,26 @@ const wwwBuild = path.join(www, 'build')
 fs.rmSync(wwwBuild, { recursive: true, force: true })
 fs.rmSync(path.join(www, '.avedon'), { recursive: true, force: true })
 
+// CLI build skips package.json prebuild; run www prebuild assets first.
+const pre = spawn(
+  process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
+  ['-F', 'www', 'run', 'prebuild'],
+  { cwd: root, stdio: 'pipe', shell: process.platform === 'win32' },
+)
+const preOut = await new Promise((resolve) => {
+  let err = ''
+  pre.stderr.on('data', (c) => {
+    err += c
+  })
+  pre.stdout.on('data', (c) => {
+    err += c
+  })
+  pre.on('close', (code) => resolve({ code, err }))
+})
+if (preOut.code !== 0) {
+  throw new Error('static-adapt-smoke: www prebuild failed\n' + preOut.err)
+}
+
 const wwwResult = await runBuild(www)
 if (wwwResult.code !== 0) {
   throw new Error('static-adapt-smoke: www build failed\n' + wwwResult.err)
