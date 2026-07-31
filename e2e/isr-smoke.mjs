@@ -18,7 +18,12 @@ try {
 }
 
 function parseBuiltAt(html) {
-  const m = html.match(/data-isr-lab[^>]*>built:(\d+)/) ?? html.match(/built:(\d+)/)
+  // Claim hydrate inserts <!----> between static text and {expr} in SSR.
+  const m =
+    html.match(/data-isr-lab[^>]*>built:<!---->(\d+)/) ??
+    html.match(/built:<!---->(\d+)/) ??
+    html.match(/data-isr-lab[^>]*>built:(\d+)/) ??
+    html.match(/built:(\d+)/)
   if (!m) throw new Error('ISR builtAt missing in ' + html.slice(0, 300))
   return Number(m[1])
 }
