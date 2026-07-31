@@ -149,13 +149,16 @@ try {
   if (routeErr.status !== 500) throw new Error('error-lab/boom expected 500, got ' + routeErr.status)
   const routeErrHtml = await routeErr.text()
   if (!routeErrHtml.includes('data-error-lab="route-error"')) throw new Error('route error UI missing')
-  if (!routeErrHtml.includes('500: lab-boom')) throw new Error('route error message missing')
+  // Claim hydrate inserts <!----> between adjacent text/{expr} so the browser keeps distinct text nodes.
+  if (!routeErrHtml.includes('500<!---->: <!---->lab-boom')) {
+    throw new Error('route error message missing')
+  }
   if (routeErrHtml.includes('>Error 500<')) throw new Error('should not use global error.ave')
 
   const nestedErr = await fetch('http://localhost:5173/error-lab/nested-boom')
   if (nestedErr.status !== 500) throw new Error('nested-boom expected 500')
   const nestedErrHtml = await nestedErr.text()
-  if (!nestedErrHtml.includes('500: nested-lab-boom')) {
+  if (!nestedErrHtml.includes('500<!---->: <!---->nested-lab-boom')) {
     throw new Error('parent route error boundary missing for nested load error')
   }
 
