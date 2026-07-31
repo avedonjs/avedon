@@ -1,5 +1,17 @@
 # @avedon/compiler
 
+## 2.0.0
+
+### Minor Changes
+
+- 7952e61: Add diagnoseAve() with source-span diagnostics and ship @avedon/language-server for .ave editor squiggles.
+- 7952e61: Claim hydrate: reuse SSR DOM nodes via cursor claim helpers; soft-remount only on mismatch, empty, or CSR. SSR emits block comment anchors for claim parity.
+
+### Patch Changes
+
+- Updated dependencies [7952e61]
+  - @avedon/runtime@0.4.0
+
 ## 1.0.0
 
 ### Minor Changes

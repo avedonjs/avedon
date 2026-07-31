@@ -1,5 +1,11 @@
 # @avedon/runtime
 
+## 0.4.0
+
+### Minor Changes
+
+- 7952e61: Claim hydrate: reuse SSR DOM nodes via cursor claim helpers; soft-remount only on mismatch, empty, or CSR. SSR emits block comment anchors for claim parity.
+
 ## 0.3.0
 
 ### Minor Changes
