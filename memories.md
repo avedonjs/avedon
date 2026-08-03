@@ -30,9 +30,8 @@ Updated: 2026-07-31
 
 ## Version lockstep (2026-08-03)
 
-All publishable packages share one version via Changesets `fixed` in `.changeset/config.json`. Current workspace: **2.0.1**. Any future changeset bumps every package together. Private `avedon-vscode` synced by `scripts/sync-private-package-versions.mjs` on `pnpm changeset:version`.
-
-**Not published yet:** commit version bump + push main → Release publishes `2.0.1` for all (language-server needs Trusted Publisher or local OTP).
+All publishable packages share one version via Changesets `fixed` in `.changeset/config.json`. Baseline **2.0.1** published: https://github.com/avedonjs/avedon/actions/runs/30848747080  
+Any future changeset bumps every package together. Private `avedon-vscode` synced by `scripts/sync-private-package-versions.mjs` on `pnpm changeset:version`.
 
 ## Release queue (2026-07-31)
 
