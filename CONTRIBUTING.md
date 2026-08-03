@@ -73,7 +73,7 @@ pnpm changeset
 
 Follow the prompts (semver bump + summary). Commit the generated file under `.changeset/` with your PR. The release workflow opens or updates a **Version Packages** PR on `main`; merging that PR triggers npm publish.
 
-Publishable packages include `avedon`, `create-avedon-app`, and all `@avedon/*` workspace packages. The root workspace and `examples/*` apps are private and are not published.
+All publishable packages (`avedon`, `create-avedon-app`, and every `@avedon/*`) share one lockstep version via Changesets `fixed`. Naming any package in a changeset bumps **all** of them together. The root workspace, `apps/*`, `examples/*`, and private `avedon-vscode` are not published (vscode version is synced on `changeset:version`).
 
 ### CI status checks
 

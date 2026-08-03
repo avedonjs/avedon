@@ -1,6 +1,6 @@
 {
   "name": "avedon",
-  "version": "0.1.12",
+  "version": "2.0.1",
   "type": "module",
   "bin": {
     "avedon": "./dist/cli.js"

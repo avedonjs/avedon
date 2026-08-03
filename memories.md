@@ -28,18 +28,24 @@ Updated: 2026-07-31
 - Unit: 778 green; Playwright identity labs still TODO per spec
 - Deferred: streaming await claim shape; playground evalMockServer parent-origin; scaffold CORS/XFF; node adapter Content-Type
 
+## Version lockstep (2026-08-03)
+
+All publishable packages share one version via Changesets `fixed` in `.changeset/config.json`. Current workspace: **2.0.1**. Any future changeset bumps every package together. Private `avedon-vscode` synced by `scripts/sync-private-package-versions.mjs` on `pnpm changeset:version`.
+
+**Not published yet:** commit version bump + push main → Release publishes `2.0.1` for all (language-server needs Trusted Publisher or local OTP).
+
 ## Release queue (2026-07-31)
 
 **Published** via PR #10 merge → https://github.com/avedonjs/avedon/actions/runs/30657284549  
 (workflow exit 1: `@avedon/language-server` first publish ENEEDAUTH — needs npm Trusted Publisher / one-time token create)
 
-Published OK:
+Published OK (pre-lockstep):
 - `@avedon/compiler@2.0.0`, `@avedon/runtime@0.4.0`, `@avedon/server@0.2.8`
 - `@avedon/vite-plugin@0.1.11`, `avedon@0.1.12`, `create-avedon-app@0.2.1`
 - adapters bun/cf `0.2.9`, node `0.1.11`
 - Claim hydrate + LSP diagnose + server security; claim reactivity follow-ups on main
 
-**Still needed:** create `@avedon/language-server` on npm (OIDC trusted publisher for `avedonjs/avedon` Release workflow), then republish `0.2.0` (or empty changeset + version bump). VS Code extension stays private.
+**Still needed:** ~~create `@avedon/language-server` on npm~~ → **local publish OK 2026-08-03:** `@avedon/language-server@0.2.0`. Trusted Publisher kur (avedonjs/avedon Release workflow). VS Code extension stays private.
 
 ## Published (2026-07-30)
 

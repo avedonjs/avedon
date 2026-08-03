@@ -1,5 +1,17 @@
 # avedon
 
+## 2.0.1
+
+### Patch Changes
+
+- Align all publishable packages to a shared lockstep version. Changesets `fixed` group keeps them on the same version forever after (even when a package has no code changes).
+- Updated dependencies
+  - create-avedon-app@2.0.1
+  - @avedon/adapter-node@2.0.1
+  - @avedon/runtime@2.0.1
+  - @avedon/server@2.0.1
+  - @avedon/vite-plugin@2.0.1
+
 ## 0.1.12
 
 ### Patch Changes

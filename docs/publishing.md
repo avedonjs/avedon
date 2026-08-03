@@ -4,12 +4,15 @@
 
 Packages are on npm (`avedon`, `create-avedon-app`, `@avedon/*`). Ongoing releases use Changesets + `.github/workflows/release.yml` with **npm Trusted Publisher (OIDC)** — no long-lived `NPM_TOKEN` in GitHub Actions.
 
-Publishable packages:
+Publishable packages (lockstep — always the same version):
 
 - `avedon`
 - `create-avedon-app`
 - `@avedon/compiler`, `@avedon/runtime`, `@avedon/server`, `@avedon/shared`, `@avedon/vite-plugin`
+- `@avedon/language-server`
 - `@avedon/adapter-node`, `@avedon/adapter-bun`, `@avedon/adapter-cloudflare`, `@avedon/adapter-static`
+
+Configured via Changesets [`fixed`](https://github.com/changesets/changesets/blob/main/docs/fixed-packages.md) in `.changeset/config.json`. Any changeset bumps **all** of them to the same next version, even if a package had no code changes. Private `avedon-vscode` is kept on the same version by `scripts/sync-private-package-versions.mjs` (run from `pnpm changeset:version`).
 
 Verify:
 
@@ -52,6 +55,7 @@ for pkg in \
   @avedon/runtime \
   @avedon/server \
   @avedon/vite-plugin \
+  @avedon/language-server \
   @avedon/adapter-node \
   @avedon/adapter-bun \
   @avedon/adapter-cloudflare \

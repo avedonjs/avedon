@@ -3,9 +3,9 @@ import path from 'node:path'
 import type { AdapterChoice } from './types.js'
 
 /** Match current npm majors: cloudflare/bun are 0.2.x. */
-const ADAPTER_EDGE_RANGE = '^0.2.9'
+const ADAPTER_EDGE_RANGE = '^2.0.1'
 /** First publish line for @avedon/adapter-static. */
-const ADAPTER_STATIC_RANGE = '^0.2.1'
+const ADAPTER_STATIC_RANGE = '^2.0.1'
 const WRANGLER_DEP = '^4.113.0'
 
 export function applyAdapter(

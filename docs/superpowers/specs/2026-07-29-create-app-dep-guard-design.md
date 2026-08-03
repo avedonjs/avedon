@@ -12,8 +12,9 @@ Prevent scaffolded apps from installing `@avedon/*` versions that lack APIs the 
 
 - Smoke against the public npm registry for unpublished versions (false failures during pre-publish PRs)
 - Multi-repo / separate version trains for create-app vs core packages
-- Lockstep “fixed” Changesets group for all `@avedon/*` packages
 - Auto-opening a changeset when sync mutates the template outside `changeset version`
+
+(Lockstep `fixed` Changesets group for publishable packages is **implemented** — see `.changeset/config.json` and `docs/publishing.md`.)
 
 ## Problem
 

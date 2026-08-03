@@ -1,6 +1,6 @@
 {
   "name": "create-avedon-app",
-  "version": "0.2.1",
+  "version": "2.0.1",
   "type": "module",
   "description": "Scaffold a new avedon app",
   "bin": {

@@ -1,6 +1,6 @@
 {
   "name": "@avedon/language-server",
-  "version": "0.2.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "Language server for Avedon .ave files (diagnostics)",
   "bin": {
