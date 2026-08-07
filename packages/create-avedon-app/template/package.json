@@ -9,11 +9,11 @@
     "preview": "avedon preview"
   },
   "dependencies": {
-    "@avedon/adapter-node": "^2.0.1",
-    "@avedon/runtime": "^2.0.1",
-    "@avedon/server": "^2.0.1",
-    "@avedon/vite-plugin": "^2.0.1",
-    "avedon": "^2.0.1"
+    "@avedon/adapter-node": "^3.0.0",
+    "@avedon/runtime": "^3.0.0",
+    "@avedon/server": "^3.0.0",
+    "@avedon/vite-plugin": "^3.0.0",
+    "avedon": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.8.2",

@@ -1,5 +1,12 @@
 # @avedon/runtime
 
+## 3.0.0
+
+### Minor Changes
+
+- 503a15f: Claim hydrate v1.1: slotted projection callbacks, `{@html}` anchors, streaming await unwrap, identity labs
+- 503a15f: Component bind:value, nested layout load merge, and crossfade send/receive transitions
+
 ## 2.0.1
 
 ### Patch Changes
