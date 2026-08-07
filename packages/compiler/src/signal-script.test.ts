@@ -46,4 +46,14 @@ const view = readonly(count)`
     expect(out).toContain('readonly(count)')
     expect(out).not.toContain('readonly(count.get())')
   })
+
+  it('rewrites signal assignments inside nested functions', () => {
+    const src = `const copied = signal(false)
+function pick() { copied = false }
+`
+    const names = collectSignalNames(src)
+    const out = prepareSignalExpr(src, names)
+    expect(out).toContain('copied.set(false)')
+    expect(out).not.toMatch(/copied\s*=\s*false/)
+  })
 })

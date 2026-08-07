@@ -463,12 +463,14 @@ function ssrRenderBody(clientScript: string, ssrExpr: string): string {
   lines.push(`  const __contextEnd = __contextBegin();`)
   lines.push(`  try {`)
   const script = stripTypeScript(clientScript)
+  const signalNames = collectSignalNames(script)
   const exported = extractExportLets(script)
   for (const p of exported) {
     lines.push(`    let ${p} = __props.${p};`)
   }
   const body = wireEventDispatcher(stripExportLets(script, exported))
-  if (body.trim()) lines.push(indent(body, 4))
+  const prepared = prepareSignalExpr(body, signalNames)
+  if (prepared.trim()) lines.push(indent(prepared, 4))
   lines.push(`    return ${ssrExpr};`)
   lines.push(`  } finally {`)
   lines.push(`    __contextEnd();`)
@@ -481,12 +483,14 @@ function ssrStreamBody(clientScript: string, ssrStream: string): string {
   lines.push(`  const __contextEnd = __contextBegin();`)
   lines.push(`  try {`)
   const script = stripTypeScript(clientScript)
+  const signalNames = collectSignalNames(script)
   const exported = extractExportLets(script)
   for (const p of exported) {
     lines.push(`    let ${p} = __props.${p};`)
   }
   const body = wireEventDispatcher(stripExportLets(script, exported))
-  if (body.trim()) lines.push(indent(body, 4))
+  const prepared = prepareSignalExpr(body, signalNames)
+  if (prepared.trim()) lines.push(indent(prepared, 4))
   lines.push(`    const __enqueue = (html) => __ctrl.enqueueHtml(html);`)
   lines.push(
     `    const __awaitBoundary = (p, t, c, e, pend) => __ctrl.enqueueBoundary(p, t, c, e ?? __enqueue, pend);`,

@@ -81,7 +81,13 @@ function getMockWorker(): Worker {
   return mockWorker
 }
 
-function mockRequest(msg: object & { id: number }): Promise<MockReply> {
+function mockRequest(msg: {
+  id: number
+  type: string
+  serverScript?: string
+  action?: string
+  fields?: [string, FormDataEntryValue][]
+}): Promise<MockReply> {
   return new Promise((resolve, reject) => {
     mockPending.set(msg.id, { resolve, reject })
     getMockWorker().postMessage(msg)

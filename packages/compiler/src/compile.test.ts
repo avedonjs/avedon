@@ -431,6 +431,18 @@ describe('fail-closed syntax', () => {
     expect(() => compile(src, { filename: 'T.ave', generate: 'ssr' })).not.toThrow()
   })
 
+  it('rewrites signal assignments in SSR render bodies', () => {
+    const src = `<script>
+  import { signal } from '@avedon/runtime'
+  const copied = signal(false)
+  function pick() { copied = false }
+</script>
+<template><p>{copied}</p></template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'ssr' })
+    expect(out.code).toContain('copied.set(false)')
+    expect(out.code).not.toMatch(/copied\s*=\s*false/)
+  })
+
   it('rejects bind:checked on a component tag', () => {
     const src = `<script>
   import Card from './Card.ave'
