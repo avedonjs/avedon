@@ -8,24 +8,21 @@ Plan: Cursor `Avedon sonraki roadmap` — creative feature loop stays paused.
 
 | Phase | Focus | Status |
 |-------|--------|--------|
-| R | Version Packages + Trusted Publisher | `@avedon/language-server@2.0.1` on npm OK; Version Packages **blocked until commit/push** of open changesets |
-| H | Phase-5 labs + Node adapt.test + audit/spec hygiene | done (this session) |
-| D | LSP v3 (script symbols / definition ranges) | done (this session) |
-| P | Deployment/rendering + create-app ISR wording | done (this session) |
+| R | Version Packages + Trusted Publisher | **done** — lockstep **3.0.0** published |
+| H | Phase-5 labs + Node adapt.test + audit/spec hygiene | done |
+| D | LSP v3 (script symbols / definition ranges) | done |
+| P | Deployment/rendering + create-app ISR wording | done |
 | M | VSIX Marketplace/Open VSX workflow | done — needs `VSCE_PAT` / `OVSX_PAT` secrets to publish |
 
-Also fixed: component `bind:value` onUpdate shadowed `__n` (`const __n = (__n)`) — `.changeset/fix-component-bind-shadow.md`.
+Also fixed during release: component `bind:value` `__n` shadow; SSR signal-script rewrite (www Workers bundle).
 
-Prior plan phases 0–5 remain implemented on `main` (unreleased until Version Packages).
-
-**Baseline:** lockstep **2.0.1** published.
+**Baseline:** lockstep **3.0.0** on npm (Release: https://github.com/avedonjs/avedon/actions/runs/31191533095).
 
 ## Next steps (2026-08-07)
 
-1. Commit + push accumulated `main` work (phases 0–5 + this roadmap session, including bind shadow fix + lsp-v3 changeset)
-2. Let Release workflow open **Version Packages** PR → merge → lockstep publish (expect **2.1.0**)
-3. Set `VSCE_PAT` / `OVSX_PAT` repo secrets when ready to publish the extension
-4. Creative feature spam stays paused; stores / UI kit / file-based routing remain non-goals without a product decision
+1. Set `VSCE_PAT` / `OVSX_PAT` when ready to publish the VS Code extension
+2. Confirm Pages/CI green on the post-release main tip if still running
+3. Creative feature spam stays paused; stores / UI kit / file-based routing remain non-goals without a product decision
 
 ## `.ave` LSP diagnostics v1 (2026-07-31)
 

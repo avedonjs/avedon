@@ -130,7 +130,7 @@ See [docs/routing.md](./docs/routing.md). Contributors working on the framework 
 - ~~Richer template directives~~ (`{#key}`, transitions, named slots, binds, snippets, crossfade) — shipped
 - ~~Claim hydrate~~ (SSR DOM reuse) — v1.1: slotted / `{@html}` / streaming await claim + identity labs
 - ~~First-class CSS tooling~~ — Tailwind scaffold + [docs/styling.md](./docs/styling.md) (PostCSS / Uno)
-- Nested layout `load` merge + component `bind:value` — shipped (awaiting Version Packages with other open changesets)
+- Nested layout `load` merge + component `bind:value` — shipped (lockstep **3.0.0**)
 - Still non-goals without a product decision: stores, UI kit, file-based routing
 
 ## Community
