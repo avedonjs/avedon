@@ -1,5 +1,11 @@
 # create-avedon-app
 
+## 3.0.0
+
+### Patch Changes
+
+- 503a15f: Harden rate-limit defaults (no XFF trust), scaffold CORS, and Node static Content-Type/nosniff
+
 ## 2.0.1
 
 ### Patch Changes

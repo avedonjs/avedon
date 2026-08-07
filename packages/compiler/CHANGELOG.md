@@ -1,5 +1,21 @@
 # @avedon/compiler
 
+## 3.0.0
+
+### Minor Changes
+
+- 503a15f: Claim hydrate v1.1: slotted projection callbacks, `{@html}` anchors, streaming await unwrap, identity labs
+- 503a15f: Component bind:value, nested layout load merge, and crossfade send/receive transitions
+
+### Patch Changes
+
+- 503a15f: Fix component bind:value onUpdate shadowing the write temp (`const __n = (__n)`)
+- 52dabb9: Apply signal-script rewrite in SSR render/stream bodies (fixes const signal assign for Workers bundle)
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+  - @avedon/runtime@3.0.0
+  - @avedon/shared@3.0.0
+
 ## 2.0.1
 
 ### Patch Changes

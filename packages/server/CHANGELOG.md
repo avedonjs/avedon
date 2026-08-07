@@ -1,5 +1,19 @@
 # @avedon/server
 
+## 3.0.0
+
+### Minor Changes
+
+- 503a15f: Component bind:value, nested layout load merge, and crossfade send/receive transitions
+- 503a15f: Harden rate-limit defaults (no XFF trust), scaffold CORS, and Node static Content-Type/nosniff
+
+### Patch Changes
+
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+  - @avedon/runtime@3.0.0
+  - @avedon/shared@3.0.0
+
 ## 2.0.1
 
 ### Patch Changes

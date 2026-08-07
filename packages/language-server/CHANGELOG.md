@@ -1,5 +1,20 @@
 # @avedon/language-server
 
+## 3.0.0
+
+### Minor Changes
+
+- 503a15f: LSP v2: completion, hover, and go-to-definition for .ave components and template blocks
+- 503a15f: LSP v3: script symbol index, richer hover, definition ranges for components / locals
+
+### Patch Changes
+
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+- Updated dependencies [52dabb9]
+- Updated dependencies [503a15f]
+  - @avedon/compiler@3.0.0
+
 ## 2.0.1
 
 ### Patch Changes

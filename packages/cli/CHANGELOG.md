@@ -1,5 +1,19 @@
 # avedon
 
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+  - @avedon/runtime@3.0.0
+  - @avedon/server@3.0.0
+  - @avedon/adapter-node@3.0.0
+  - create-avedon-app@3.0.0
+  - @avedon/vite-plugin@3.0.0
+
 ## 2.0.1
 
 ### Patch Changes

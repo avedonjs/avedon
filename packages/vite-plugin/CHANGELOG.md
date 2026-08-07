@@ -1,5 +1,17 @@
 # @avedon/vite-plugin
 
+## 3.0.0
+
+### Patch Changes
+
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+- Updated dependencies [52dabb9]
+- Updated dependencies [503a15f]
+- Updated dependencies [503a15f]
+  - @avedon/compiler@3.0.0
+  - @avedon/server@3.0.0
+
 ## 2.0.1
 
 ### Patch Changes
