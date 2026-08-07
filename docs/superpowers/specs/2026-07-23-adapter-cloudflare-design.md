@@ -1,9 +1,9 @@
 # `@avedon/adapter-cloudflare` (Workers) design
 
-Updated: 2026-07-23  
-**Status:** Approved for implementation (2026-07-23)  
+Updated: 2026-08-07  
+**Status:** Implemented (SSG + Workers+Assets; ISR still unsupported on Workers)  
 **Plan:** `docs/superpowers/plans/2026-07-23-adapter-cloudflare.md`  
-**Scope:** Implement the Cloudflare **Workers** adapter (replace the current stub) so `avedon build` produces a Wrangler-deployable Worker + static assets.
+**Scope:** Cloudflare Workers adapter: Wrangler-deployable Worker + static assets.
 
 ## Goal
 

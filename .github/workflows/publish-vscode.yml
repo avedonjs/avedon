@@ -1,0 +1,55 @@
+name: Publish VS Code extension
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/vscode-avedon/**'
+      - 'packages/language-server/**'
+      - '.github/workflows/publish-vscode.yml'
+
+concurrency:
+  group: publish-vscode-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Package and publish VSIX
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          package-manager-cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build language server + extension
+        run: |
+          pnpm -F @avedon/compiler build
+          pnpm -F @avedon/language-server build
+          pnpm -F avedon-vscode package
+
+      - name: Publish to VS Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        if: env.VSCE_PAT != ''
+        working-directory: packages/vscode-avedon
+        run: npx --yes @vscode/vsce publish --packagePath "$(ls avedon-vscode-*.vsix | head -1)" --pat "$VSCE_PAT"
+
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        if: env.OVSX_PAT != ''
+        working-directory: packages/vscode-avedon
+        run: npx --yes ovsx publish "$(ls avedon-vscode-*.vsix | head -1)" --pat "$OVSX_PAT"

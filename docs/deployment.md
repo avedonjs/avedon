@@ -14,7 +14,11 @@ Use `@avedon/adapter-static` for fully static hosts (Cloudflare Pages, Netlify, 
 import { staticAdapter } from '@avedon/adapter-static'
 
 export default {
-  adapter: staticAdapter({ out: 'build' }),
+  adapter: staticAdapter({
+    out: 'build',
+    notFoundHtml: true, // writes client/404.html
+    redirects: 'cloudflare', // stub _redirects if public/_redirects is absent
+  }),
 }
 ```
 
@@ -30,6 +34,8 @@ wrangler pages deploy ./build/client --project-name=my-app
 
 - **Only `render: 'ssg'`** — SSR, CSR, form `actions`, `api` / `api_*`, and `revalidate` cause a hard build failure.
 - No Node/Bun/Workers runtime; there is nothing to `avedon start`.
+
+The docs site (`apps/www`) builds with `@avedon/adapter-cloudflare` (Workers+Assets dogfood) and still deploys `build/client` to Cloudflare Pages for [avedon.pages.dev](https://avedon.pages.dev).
 
 ## Node
 
@@ -50,7 +56,11 @@ Ensure production env vars are set (for example `SESSION_SECRET` if you use sess
 
 - Client assets
 - Server bundles
-- Static HTML for routes marked `ssg` (plus ISR behavior when `revalidate` is set — see [Rendering](./rendering.md))
+- Static HTML for routes marked `ssg` (plus ISR when `revalidate` is set — see [Rendering](./rendering.md))
+
+### ISR and on-demand revalidation
+
+Node supports stale-while-revalidate via route `revalidate` and on-demand regeneration via `revalidatePath(pathname, ctx, { wait? })` from `@avedon/adapter-node` (call from an `action` / `api_*` with `clientDir`, `routes`, and `appHtml`). Paths that were never built at `avedon build` are not created. Bun mirrors this API; **Cloudflare Workers do not**.
 
 ### Hosting tips
 
@@ -91,7 +101,7 @@ If your `server-entry` exports `session` without a `secret`, the generated Worke
 
 ### Limits (v1)
 
-- **ISR / `revalidate`:** not supported on Workers — SSG HTML is static until the next deploy. Prefer Node if you need stale-while-revalidate today.
+- **ISR / `revalidate` / `revalidatePath`:** not supported on Workers — SSG HTML is static until the next deploy. Prefer **Node** or **Bun** if you need stale-while-revalidate or on-demand regeneration today.
 - This adapter targets **Workers + Assets**, not Pages Functions. Prefer `@avedon/adapter-static` for fully static SSG sites on Pages.
 
 ## Bun

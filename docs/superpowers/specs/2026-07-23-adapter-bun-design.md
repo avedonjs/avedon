@@ -1,9 +1,9 @@
 # `@avedon/adapter-bun` design
 
-Updated: 2026-07-23  
-**Status:** Approved for implementation (2026-07-23)  
+Updated: 2026-08-07  
+**Status:** Implemented  
 **Plan:** `docs/superpowers/plans/2026-07-23-adapter-bun.md`  
-**Scope:** Implement the Bun adapter (replace the stub) so `avedon build` produces a `Bun.serve` entry with Node-parity static serving, SSG, and ISR (stale-while-revalidate).
+**Scope:** Bun adapter with `Bun.serve`, Node-parity static serving, SSG, and ISR (stale-while-revalidate + `revalidatePath`).
 
 ## Goal
 

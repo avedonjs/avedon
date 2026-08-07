@@ -109,7 +109,29 @@ export function claimAdvancePastSiblings(cursor: ClaimCursor): void {
     skipClaimNoise(cursor)
     const n = childAt(cursor)
     if (!n) return
-    if (n.nodeType === 8 && /^(if|each|each-keyed|key|await)$/.test((n as Comment).data)) return
+    if (
+      n.nodeType === 8 &&
+      /^(if|each|each-keyed|key|await|html|\/html)$/.test((n as Comment).data)
+    ) {
+      return
+    }
+    cursor.index++
+  }
+}
+
+/**
+ * Advance over opaque siblings until comment `data` (consumed).
+ * Uses whitespace-only skip — empty comments inside `{@html}` are content.
+ */
+export function claimAdvanceUntilComment(cursor: ClaimCursor, data: string): void {
+  while (true) {
+    skipWhitespace(cursor)
+    const n = childAt(cursor)
+    if (!n) throw new HydrateMismatchError(`missing comment ${JSON.stringify(data)}`)
+    if (n.nodeType === 8 && (n as Comment).data === data) {
+      cursor.index++
+      return
+    }
     cursor.index++
   }
 }

@@ -1,5 +1,6 @@
 import { assertCsrf } from './csrf.js'
 import { HttpError, isHttpError } from './errors.js'
+import { loadRouteChain } from './load-chain.js'
 import { matchRoute, type MatchResult } from './match.js'
 import { sequence } from './sequence.js'
 import {
@@ -30,25 +31,20 @@ type LoadOutcome =
   | { kind: 'throw'; err: unknown }
 
 function startLoadOutcome(
+  layouts: AvedonComponentModule[],
   component: AvedonComponentModule,
   event: LoadEvent,
   extra: Record<string, unknown>,
 ): { promise: Promise<void>; get: () => LoadOutcome } {
   let outcome: LoadOutcome = { kind: 'pending' }
   const promise = (async () => {
-    if (!component.load) {
-      outcome = { kind: 'data', data: { ...extra } }
-      return
-    }
     try {
-      const loaded = await component.load(event)
+      const loaded = await loadRouteChain(layouts, component, event, extra)
       if (loaded instanceof Response) {
         outcome = { kind: 'response', response: loaded }
         return
       }
-      let data: Record<string, unknown> = { ...extra }
-      if (loaded) data = { ...data, ...loaded }
-      outcome = { kind: 'data', data }
+      outcome = { kind: 'data', data: loaded }
     } catch (err) {
       outcome = { kind: 'throw', err }
     }
@@ -362,19 +358,19 @@ async function renderPage(
   if (component.css) cssParts.push(component.css)
 
   if (mode === 'csr') {
-    let data: Record<string, unknown> = { ...extra }
-    if (component.load) {
-      const loaded = await component.load(event)
-      if (loaded instanceof Response) return loaded
-      if (loaded) data = { ...data, ...loaded }
-    }
-    const body = `<div data-avedon-csr></div>`
+    // Resolve layouts for CSS + nested load before leaf
+    const layouts: AvedonComponentModule[] = []
     for (let i = matched.chain.length - 1; i >= 0; i--) {
       const r = matched.chain[i]
       if (!r.layout) continue
       const layout = await resolveComponent(r.layout)
+      layouts.push(layout)
       if (layout.css) cssParts.push(layout.css)
     }
+    const loaded = await loadRouteChain(layouts, component, event, extra)
+    if (loaded instanceof Response) return loaded
+    const data = loaded
+    const body = `<div data-avedon-csr></div>`
     if (options.getCss?.()) cssParts.push(options.getCss())
     const html = renderShell(options.appHtml, {
       body,
@@ -404,12 +400,9 @@ async function renderPage(
   const css = cssParts.filter(Boolean).join('\n')
 
   if (route.bufferHtml) {
-    let data: Record<string, unknown> = { ...extra }
-    if (component.load) {
-      const loaded = await component.load(event)
-      if (loaded instanceof Response) return loaded
-      if (loaded) data = { ...data, ...loaded }
-    }
+    const loaded = await loadRouteChain(layouts, component, event, extra)
+    if (loaded instanceof Response) return loaded
+    const data = loaded
     const body = await renderPageBodyBuffered(component, data, layouts)
     const html = renderShell(options.appHtml, {
       body,
@@ -453,7 +446,12 @@ async function renderPage(
       clientEntry: options.clientEntry,
     })
 
-  const { promise: loadPromise, get: getLoadOutcome } = startLoadOutcome(component, event, extra)
+  const { promise: loadPromise, get: getLoadOutcome } = startLoadOutcome(
+    layouts,
+    component,
+    event,
+    extra,
+  )
   if (route.awaitHead) {
     await loadPromise
   } else {

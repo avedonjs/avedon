@@ -101,7 +101,8 @@ function emitBindRead(expr: string): string {
 
 /** Write a bind target that may be a plain lvalue or a signal. */
 function emitBindWrite(expr: string, nextExpr: string): string {
-  return `{ const __b = (${expr}); const __n = (${nextExpr}); if (__b && typeof __b.set === 'function') __b.set(__n); else if (__b && typeof __b.update === 'function') __b.update(() => __n); else (${expr}) = __n; }`
+  // Use __nv (not __n) so callers that pass `__n` as nextExpr do not shadow themselves.
+  return `{ const __b = (${expr}); const __nv = (${nextExpr}); if (__b && typeof __b.set === 'function') __b.set(__nv); else if (__b && typeof __b.update === 'function') __b.update(() => __nv); else (${expr}) = __nv; }`
 }
 
 function escapeForTemplateLiteral(s: string): string {
@@ -847,7 +848,12 @@ function validateAttrs(attrs: Attr[], ctx: { component: boolean; tag: string }):
       if (prefix === 'on') continue
       if (prefix === 'bind') {
         if (ctx.component) {
-          fail(`bind: is not supported on components (<${ctx.tag} ${a.name}>)`)
+          if (a.name !== 'bind:value') {
+            fail(
+              `Only bind:value is supported on components (<${ctx.tag} ${a.name}>)`,
+            )
+          }
+          continue
         }
         if (
           a.name !== 'bind:value' &&
@@ -1081,8 +1087,12 @@ function componentPropsObject(
             `${jsLiteral(propKey)}: (...__a) => { const event = __a[0]; ${prelude} ${call} }`,
           )
         }
+      } else if (a.kind === 'bind' && a.name === 'bind:value') {
+        entries.push(`value: (${emitBindRead(a.value!)})`)
       } else if (a.kind === 'expr') {
         entries.push(`${jsLiteral(a.name)}: (${sigExpr(a.value!)})`)
+      } else if (a.kind === 'bind' || a.kind === 'class' || a.kind === 'style' || a.kind === 'use' || a.kind === 'transition') {
+        continue
       } else if (a.value == null) {
         entries.push(`${jsLiteral(a.name)}: true`)
       } else {
@@ -1856,7 +1866,7 @@ function emitSsr(tokens: Token[], hash: string, prevTextish = false): string {
       parts.push(emitSlotContentExpr(t, hash))
       prevTextish = false
     } else if (t.type === 'html') {
-      parts.push(`(${sigExpr(t.value)})`)
+      parts.push(`('<!--html-->' + (${sigExpr(t.value)}) + '<!--/html-->')`)
       prevTextish = false
     } else if (t.type === 'render') {
       const sn = compileSnippets.get(t.name)
@@ -1931,7 +1941,9 @@ function emitSsrStream(tokens: Token[], hash: string, prevTextish = false): stri
       lines.push(`await __pipeChildren(${emitSlotContentExpr(t, hash)});`)
       prevTextish = false
     } else if (t.type === 'html') {
+      lines.push(`__enqueue('<!--html-->');`)
       lines.push(`__enqueue(${sigExpr(t.value)});`)
+      lines.push(`__enqueue('<!--/html-->');`)
       prevTextish = false
     } else if (t.type === 'render') {
       const sn = compileSnippets.get(t.name)
@@ -2282,38 +2294,52 @@ function emitClientNodes(
       prevTextish = t.value.trim() !== ''
     } else if (t.type === 'slot') {
       // Layout/slot content is a trusted framework contract (SSR HTML or Node).
+      // Claim path: parent passes a projection callback that advances the shared cursor.
       // Public mount/update must not pass untrusted strings — see docs/security.md.
       const contentExpr = t.name
         ? `(__props.slots && __props.slots[${jsLiteral(t.name)}])`
         : `__props.children`
       const fallbackBlock = t.fallback.length
-        ? `{
-            const __frag = document.createDocumentFragment();
-            ${emitClientNodes(t.fallback, hash, '__frag', effectsVar, inSvg)}
-            ${parent}.appendChild(__frag);
-          }`
+        ? emitClientNodes(t.fallback, hash, parent, effectsVar, inSvg)
         : ''
       lines.push(`{
-        // trusted framework HTML or Node — see docs/security.md
+        // trusted framework HTML, Node, or claim projection — see docs/security.md
         const __ch = ${contentExpr};
-        if (__ch instanceof Node) {
+        if (typeof __ch === 'function') {
+          __ch(${parent});
+        } else if (__ch instanceof Node) {
           ${parent}.appendChild(__ch);
         } else if (__ch != null && __ch !== '') {
           const ${id} = document.createElement('template');
           ${id}.innerHTML = String(__ch);
           ${parent}.appendChild(${id}.content);
-        } else ${fallbackBlock || '{}'}
+        } else {
+          ${fallbackBlock || ''}
+        }
       }`)
       prevTextish = false
     } else if (t.type === 'html') {
       lines.push(`{
+        const ${id} = __avedonComment(${parent}, 'html');
+        let __htmlNodes = [];
         if (__claimStackActive()) {
-          throw new __HydrateMismatchError('{@html} cannot be claim-hydrated; soft remount');
+          const __start = __claimCurrent().index;
+          __claimAdvanceUntilComment(__claimCurrent(), '/html');
+          for (let __i = __start; __i < __claimCurrent().index - 1; __i++) {
+            __htmlNodes.push(${parent}.childNodes[__i]);
+          }
+        } else {
+          const __t = document.createElement('template');
+          // trusted HTML — {@html}; see docs/security.md
+          __t.innerHTML = String(${sigExpr(t.value)} ?? '');
+          let __insertBefore = ${id}.nextSibling;
+          while (__t.content.firstChild) {
+            __htmlNodes.push(__t.content.firstChild);
+            ${id}.parentNode.insertBefore(__t.content.firstChild, __insertBefore);
+          }
+          const __end = document.createComment('/html');
+          ${id}.parentNode.insertBefore(__end, __insertBefore);
         }
-        // trusted HTML — {@html}; see docs/security.md
-        const ${id} = document.createElement('template');
-        ${id}.innerHTML = String(${sigExpr(t.value)} ?? '');
-        ${parent}.appendChild(${id}.content);
       }`)
       prevTextish = false
     } else if (t.type === 'render') {
@@ -2702,15 +2728,6 @@ function emitClientNodes(
       }`)
       prevTextish = false
     } else if (t.type === 'await') {
-      const awaitStripSsrBranch = `{
-          let __n = ${id}.nextSibling;
-          while (__n) {
-            const __next = __n.nextSibling;
-            if (__n.nodeType === 8 && /^(if|each|each-keyed|key|await)$/.test(__n.data)) break;
-            __n.remove();
-            __n = __next;
-          }
-        }`
       const pendingMount = t.pending?.length
         ? `{
           const __frag = document.createDocumentFragment();
@@ -2727,6 +2744,39 @@ function emitClientNodes(
           ${emitRunBlockEffects()}
         }`
         : ''
+      const awaitClaimExisting = `{
+          const __start = __claimCurrent().index;
+          let __ci = __start;
+          while (__ci < ${parent}.childNodes.length) {
+            const __cn = ${parent}.childNodes[__ci];
+            if (__cn.nodeType === 8 && /^(if|each|each-keyed|key|await|html|\\/html)$/.test(__cn.data)) break;
+            __ci++;
+          }
+          __nodes = [];
+          for (let __i = __start; __i < __ci; __i++) {
+            __nodes.push(${parent}.childNodes[__i]);
+          }
+          __claimCurrent().index = __ci;
+          // Streaming OOO may leave a boundary wrapper; unwrap so claim shape matches sync SSR.
+          if (__nodes.length === 1 && __nodes[0].nodeType === 1 && __nodes[0].id && String(__nodes[0].id).indexOf('avedon-b-') === 0) {
+            const __wrap = __nodes[0];
+            const __frag = document.createDocumentFragment();
+            while (__wrap.firstChild) __frag.appendChild(__wrap.firstChild);
+            __wrap.replaceWith(__frag);
+            __nodes = [];
+            for (let __i = __start; __i < ${parent}.childNodes.length; __i++) {
+              const __cn = ${parent}.childNodes[__i];
+              if (__cn.nodeType === 8 && /^(if|each|each-keyed|key|await|html|\\/html)$/.test(__cn.data)) break;
+              __nodes.push(__cn);
+            }
+            __claimCurrent().index = __start + __nodes.length;
+          }
+          if (__nodes.length === 0) {
+            ${pendingMount}
+          } else {
+            ${emitRunBlockEffects()}
+          }
+        }`
       const thenMount = `{
           const __frag = document.createDocumentFragment();
           {
@@ -2765,20 +2815,7 @@ function emitClientNodes(
         let __awaitGen = 0;
         let __skipOnce = __claimStackActive();
         if (__skipOnce) {
-          ${awaitStripSsrBranch}
-          __nodes = [];
-          ${pendingMount}
-          {
-            let __ci = 0;
-            while (__ci < ${parent}.childNodes.length && ${parent}.childNodes[__ci] !== ${id}) __ci++;
-            __ci++;
-            while (__ci < ${parent}.childNodes.length) {
-              const __cn = ${parent}.childNodes[__ci];
-              if (__cn.nodeType === 8 && /^(if|each|each-keyed|key|await)$/.test(__cn.data)) break;
-              __ci++;
-            }
-            __claimCurrent().index = __ci;
-          }
+          ${awaitClaimExisting}
         }
         ${effectsVar}.push(() => {
           const __g = ++__awaitGen;
@@ -2838,21 +2875,31 @@ function emitClientNodes(
       const hasChildren = !t.selfClosing && defaultChildren.length > 0
       const hasNamed = named.size > 0
       const sub: string[] = []
-      if (hasChildren || hasNamed) {
-        sub.push(`if (__claimStackActive()) throw new __HydrateMismatchError('slotted component: soft remount');`)
-      }
       if (hasChildren) {
-        sub.push(`const ${childrenVar} = document.createDocumentFragment();`)
-        sub.push(emitClientNodes(defaultChildren, hash, childrenVar, effectsVar, inSvg))
+        sub.push(`let ${childrenVar};`)
+        sub.push(`if (__claimStackActive()) {
+          ${childrenVar} = (__slotParent) => {
+            ${emitClientNodes(defaultChildren, hash, '__slotParent', effectsVar, inSvg)}
+          };
+        } else {
+          ${childrenVar} = document.createDocumentFragment();
+          ${emitClientNodes(defaultChildren, hash, childrenVar, effectsVar, inSvg)}
+        }`)
       }
       if (hasNamed) {
         sub.push(`const ${slotsVar} = {};`)
         let si = 0
         for (const [name, tokens] of named) {
           const frag = `${slotsVar}_f${si++}`
-          sub.push(`const ${frag} = document.createDocumentFragment();`)
-          sub.push(emitClientNodes(tokens, hash, frag, effectsVar, inSvg))
-          sub.push(`${slotsVar}[${jsLiteral(name)}] = ${frag};`)
+          sub.push(`if (__claimStackActive()) {
+            ${slotsVar}[${jsLiteral(name)}] = (__slotParent) => {
+              ${emitClientNodes(tokens, hash, '__slotParent', effectsVar, inSvg)}
+            };
+          } else {
+            const ${frag} = document.createDocumentFragment();
+            ${emitClientNodes(tokens, hash, frag, effectsVar, inSvg)}
+            ${slotsVar}[${jsLiteral(name)}] = ${frag};
+          }`)
         }
       }
       const hasSpread = t.attrs.some((a) => a.kind === 'spread')
@@ -2870,11 +2917,22 @@ function emitClientNodes(
             staticEntries.push(
               `${jsLiteral(propKey)}: (...__a) => { const event = __a[0]; ${prelude} ${call} }`,
             )
+          } else if (a.kind === 'bind' && a.name === 'bind:value') {
+            staticEntries.push(
+              `onUpdate: (__next) => { ${emitBindWrite(a.value!, '__next')}; __invalidate(); }`,
+            )
+            dynamicEntries.push(`value: (${emitBindRead(a.value!)})`)
           } else if (a.kind === 'expr') {
             dynamicEntries.push(`${jsLiteral(a.name)}: (${sigExpr(a.value!)})`)
           } else if (a.value == null) {
             staticEntries.push(`${jsLiteral(a.name)}: true`)
-          } else {
+          } else if (
+            a.kind !== 'bind' &&
+            a.kind !== 'class' &&
+            a.kind !== 'style' &&
+            a.kind !== 'use' &&
+            a.kind !== 'transition'
+          ) {
             staticEntries.push(`${jsLiteral(a.name)}: ${jsLiteral(a.value)}`)
           }
         }
@@ -3396,6 +3454,7 @@ function parseTransitionDirective(attrName: string): {
     | 'skew'
     | 'roll'
     | 'zoom'
+    | 'crossfade'
 } {
   const colon = attrName.indexOf(':')
   const prefix = attrName.slice(0, colon)
@@ -3421,10 +3480,11 @@ function parseTransitionDirective(attrName: string): {
     type !== 'wipe' &&
     type !== 'skew' &&
     type !== 'roll' &&
-    type !== 'zoom'
+    type !== 'zoom' &&
+    type !== 'crossfade'
   ) {
     fail(
-      `Unsupported transition "${attrName}" — only fade, fly, slide, slideX, scale, blur, draw, spin, pop, bounce, drop, shake, flip, pulse, wipe, skew, roll, and zoom are supported (transition:/in:/out:)`,
+      `Unsupported transition "${attrName}" — only fade, fly, slide, slideX, scale, blur, draw, spin, pop, bounce, drop, shake, flip, pulse, wipe, skew, roll, zoom, and crossfade are supported (transition:/in:/out:)`,
     )
   }
   const mode = prefix === 'transition' ? 'both' : (prefix as 'in' | 'out')
@@ -4083,6 +4143,24 @@ function emitClientTransitionBody(a: Attr, id: string): string {
       setTimeout(__finish, __dur + __delay + 50);
     };`
     : ''
+
+  if (type === 'crossfade') {
+    const introCf = doIn
+      ? `__crossfadeReceive(String(__topt && __topt.key != null ? __topt.key : ''), ${id}, __dur);`
+      : ''
+    const outroCf = doOut
+      ? `${id}.__avedonOutro = (done) => {
+      __crossfadeSend(String(__topt && __topt.key != null ? __topt.key : ''), ${id}, done);
+    };`
+      : ''
+    return `{
+      const __topt = ${opts};
+      const __dur = __transitionMs((__topt && __topt.duration != null) ? Number(__topt.duration) : 200);
+      ${introCf}
+      ${outroCf}
+    }`
+  }
+
   return `{
     const __topt = ${opts};
     const __dur = __transitionMs((__topt && __topt.duration != null) ? Number(__topt.duration) : 200);

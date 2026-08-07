@@ -22,6 +22,11 @@ export interface RateLimitOptions {
   windowMs?: number
   max?: number
   key?: (req: Request) => string
+  /**
+   * When true, the default key uses `cf-connecting-ip` then `x-forwarded-for`.
+   * Leave false unless a trusted reverse proxy sets those headers (clients can spoof XFF).
+   */
+  trustForwarded?: boolean
 }
 
 function resolveAllowOrigin(originOpt: CorsOrigin | undefined, requestOrigin: string | null): string | null {
@@ -102,11 +107,13 @@ export function logger(opts: LoggerOptions = {}): Middleware {
   }
 }
 
-function defaultRateLimitKey(req: Request): string {
-  const cf = req.headers.get('cf-connecting-ip')
-  if (cf) return cf.trim()
-  const xff = req.headers.get('x-forwarded-for')
-  if (xff) return xff.split(',')[0]!.trim()
+function defaultRateLimitKey(req: Request, trustForwarded: boolean): string {
+  if (trustForwarded) {
+    const cf = req.headers.get('cf-connecting-ip')
+    if (cf) return cf.trim()
+    const xff = req.headers.get('x-forwarded-for')
+    if (xff) return xff.split(',')[0]!.trim()
+  }
   return 'anon'
 }
 
@@ -117,7 +124,8 @@ function defaultRateLimitKey(req: Request): string {
 export function rateLimit(opts: RateLimitOptions = {}): Middleware {
   const windowMs = opts.windowMs ?? 60_000
   const max = opts.max ?? 100
-  const keyFn = opts.key ?? defaultRateLimitKey
+  const trustForwarded = opts.trustForwarded === true
+  const keyFn = opts.key ?? ((req: Request) => defaultRateLimitKey(req, trustForwarded))
   const hits = new Map<string, { count: number; resetAt: number }>()
 
   return async ({ request, resolve }) => {

@@ -6,8 +6,8 @@ export type { AdapterBuilder, AdapterInterface }
 export type Builder = AdapterBuilder
 export type Adapter = AdapterInterface
 
-export { tryServeSsgIsrBun, ssgHtmlPath, writeHtmlAtomic, isRegenerating } from './ssg-isr.js'
-export type { ServeSsgIsrBunOptions } from './ssg-isr.js'
+export { tryServeSsgIsrBun, ssgHtmlPath, writeHtmlAtomic, isRegenerating, revalidatePath } from './ssg-isr.js'
+export type { ServeSsgIsrBunOptions, RevalidatePathContext } from './ssg-isr.js'
 export { resolveUnderRoot, ssgHtmlPathSafe } from './safe-path.js'
 
 export type BunAdapterOptions = {

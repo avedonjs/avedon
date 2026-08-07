@@ -39,7 +39,8 @@ Navigation order is defined in [`manifest.json`](./manifest.json).
 | [Session](./session.md) | Cookies and sealed session |
 | [Security](./security.md) | Trusted HTML, reporting |
 | [Configuration](./configuration.md) | `avedon.config.ts` and env |
-| [Deployment](./deployment.md) | Node production build |
+| [Styling](./styling.md) | Scoped CSS, Tailwind, PostCSS, UnoCSS |
+| [Deployment](./deployment.md) | Node, static, Workers, Bun |
 
 ## Maintainer / contributor
 

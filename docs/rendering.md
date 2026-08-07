@@ -83,7 +83,9 @@ By default SSG HTML is immutable until the next `avedon build`. Set `revalidate`
 | `N > 0` | After N seconds, next GET returns cached HTML and regenerates in the background |
 | `0` | Every request treated as stale (regen deduped per path) |
 
-**Not in v1:** on-demand `revalidatePath` / tags, or regenerating paths that were never built. `avedon dev` does not run the disk ISR loop.
+**On-demand:** call `revalidatePath(pathname, ctx, { wait?: boolean })` from `@avedon/adapter-node` or `@avedon/adapter-bun` inside an `action` / `api_*` handler. Regenerates an **already-built** SSG HTML file; returns `false` if the file was never emitted at build time. Cloudflare Workers do not support ISR or on-demand revalidation in v1.
+
+**Not in v1:** tag-based invalidation, or regenerating paths that were never built. `avedon dev` does not run the disk ISR loop.
 
 ## CSR
 
@@ -93,11 +95,11 @@ Client-side rendering skips server HTML for the page body beyond the application
 
 After SSR/SSG HTML reaches the browser, avedon **claim-hydrates**: it walks the existing DOM with a cursor, reuses matching nodes, and attaches listeners/effects in place. Live node identity is preserved (focus, media, embeds) on the happy path.
 
-**Mismatch:** if the client tree does not match the SSR HTML (wrong tag, missing comment anchors, slotted components, `{@html}`, etc.), **dev throws** and **production soft-remounts** (build into a holder, `replaceChildren`, then restore form/open/scroll/focus). Empty targets and `[data-avedon-csr]` always use a normal `mount`.
+**Mismatch:** if the client tree does not match the SSR HTML (wrong tag, missing comment anchors, etc.), **dev throws** and **production soft-remounts** (build into a holder, `replaceChildren`, then restore form/open/scroll/focus). Empty targets and `[data-avedon-csr]` always use a normal `mount`.
 
 **Signals win:** after a successful claim, effects apply current prop/signal values onto claimed nodes — early user edits between paint and hydrate may be overwritten.
 
-SSR and streaming emit comment anchors (`<!--if-->`, `<!--each-->`, `<!--each-keyed-->`, `<!--key-->`, `<!--await-->`) so block markers line up with the client claim walk. Adjacent static text and `{expr}` segments are separated with empty `<!-- -->` comments so the HTML parser does not coalesce them into a single text node (which would break claim).
+SSR and streaming emit comment anchors (`<!--if-->`, `<!--each-->`, `<!--each-keyed-->`, `<!--key-->`, `<!--await-->`, `<!--html-->`…`<!--/html-->`) so block markers line up with the client claim walk. Adjacent static text and `{expr}` segments are separated with empty `<!-- -->` comments so the HTML parser does not coalesce them into a single text node (which would break claim). Slotted child content is claimed via parent projection callbacks that advance the shared cursor over SSR-inlined slot HTML. `{@html}` is an opaque island between html anchors.
 
 Client navigation moves `#app` children from the fetched document via `replaceChildren` (no `innerHTML` round-trip), then hydrates the new tree.
 

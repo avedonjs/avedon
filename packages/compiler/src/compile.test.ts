@@ -135,10 +135,37 @@ describe('compile', () => {
     const client = compile(src, { filename: 'Html.ave' })
     expect(client.code).toMatch(/innerHTML/)
     expect(client.code).toMatch(/\bbody\b/)
+    expect(client.code).toContain("__avedonComment(")
+    expect(client.code).toContain("'html'")
+    expect(client.code).toContain("__claimAdvanceUntilComment")
+    expect(client.code).not.toMatch(/cannot be claim-hydrated/)
     expect(client.code).not.toMatch(/__escape\(body\)/)
     const ssr = compileSsr(src, { filename: 'Html.ave' })
+    expect(ssr.code).toContain('<!--html-->')
+    expect(ssr.code).toContain('<!--/html-->')
     expect(ssr.code).toMatch(/\(body\)/)
     expect(ssr.code).not.toMatch(/__escape\(body\)/)
+  })
+
+  it('client slotted components use claim projection callbacks', () => {
+    const parentSrc = `<script>
+  import Card from './Card.ave'
+</script>
+<template>
+  <Card>
+    <button type="button">Go</button>
+  </Card>
+</template>`
+    const parent = compile(parentSrc, { filename: 'Home.ave', generate: 'client' })
+    expect(parent.code).not.toMatch(/slotted component: soft remount/)
+    expect(parent.code).toContain('__claimStackActive()')
+    expect(parent.code).toContain('__slotParent')
+
+    const card = compile(
+      `<template><div><slot>fb</slot></div></template>`,
+      { filename: 'Card.ave', generate: 'client', asUiComponent: true },
+    )
+    expect(card.code).toContain("typeof __ch === 'function'")
   })
 
   it('strips TypeScript from client script in client and SSR bundles', () => {
@@ -388,13 +415,29 @@ describe('fail-closed syntax', () => {
     ).toThrow(/Invalid \{@const\}/)
   })
 
-  it('rejects bind on a component tag', () => {
+  it('compiles bind:value on a component tag to value + onUpdate', () => {
+    const src = `<script>
+  import Card from './Card.ave'
+  import { signal } from '@avedon/runtime'
+  const v = signal('')
+</script>
+<template><Card bind:value={v} /></template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'client' })
+    expect(out.code).toContain('onUpdate:')
+    expect(out.code).toContain('value:')
+    // Must not shadow the onUpdate parameter (was `(__n) => { const __n = (__n) }`).
+    expect(out.code).toMatch(/onUpdate:\s*\(__next\)\s*=>/)
+    expect(out.code).not.toMatch(/const __n = \(__n\)/)
+    expect(() => compile(src, { filename: 'T.ave', generate: 'ssr' })).not.toThrow()
+  })
+
+  it('rejects bind:checked on a component tag', () => {
     const src = `<script>
   import Card from './Card.ave'
 </script>
-<template><Card bind:value={v} /></template>`
+<template><Card bind:checked={v} /></template>`
     expect(() => compile(src, { filename: 'T.ave', generate: 'ssr' })).toThrow(
-      /bind: is not supported on components/,
+      /Only bind:value is supported on components/,
     )
   })
 
@@ -622,8 +665,15 @@ describe('in:/out: transitions', () => {
 
   it('rejects unknown in: transitions', () => {
     expect(() =>
-      compile(`<template><div in:crossfade>x</div></template>`, { filename: 'T.ave', generate: 'client' }),
+      compile(`<template><div in:wiggle>x</div></template>`, { filename: 'T.ave', generate: 'client' }),
     ).toThrow(/Unsupported transition/)
+  })
+
+  it('emits crossfade send/receive helpers', () => {
+    const src = `<template><div in:crossfade={{ key: 'a' }} out:crossfade={{ key: 'a' }}>x</div></template>`
+    const out = compile(src, { filename: 'T.ave', generate: 'client' })
+    expect(out.code).toContain('__crossfadeSend')
+    expect(out.code).toContain('__crossfadeReceive')
   })
 })
 

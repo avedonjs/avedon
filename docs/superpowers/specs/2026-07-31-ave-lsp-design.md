@@ -1,19 +1,19 @@
 # Avedon `.ave` LSP (diagnostics v1)
 
-Updated: 2026-07-31
-**Status:** Implemented
+Updated: 2026-08-07
+**Status:** Implemented (diagnostics v1 + completion/hover/go-to-def v2 + script symbol index / definition ranges v3)
 **Plan:** `docs/superpowers/plans/2026-07-31-ave-lsp.md`
 
 ## Goal
 
 Ship a diagnostics-first language service for `.ave` files so editors show compile/parse squiggles with line/column, plus a VS Code/Cursor extension that speaks LSP.
 
-## Non-goals (v1)
+## Non-goals (still open)
 
-- Completion, hover, go-to-definition, rename
-- Embedded TypeScript language service inside `<script>`
+- Rename / find-references
+- Embedded TypeScript language service inside `<script>` (v3 indexes locals only)
 - Source maps for emitted JS
-- Marketplace publish (local VSIX / workspace install only)
+- Marketplace publish is optional — see `.github/workflows/publish-vscode.yml`
 
 ## Locked decisions
 

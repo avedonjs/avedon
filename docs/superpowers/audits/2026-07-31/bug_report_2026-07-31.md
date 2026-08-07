@@ -28,15 +28,15 @@
 | BUG-307 | MEDIUM | Attr names with `"` allowed in SSR → reject invalid names |
 | BUG-308 | MEDIUM | Nested hydrate cleared entire claim stack → pop to `__claimBase` depth |
 
-## Deferred
+## Deferred → Closed (2026-08-07)
 
 | ID | Notes |
 |----|-------|
-| DEF-001 | `{@html}` / slotted → soft-remount (spec v1) |
-| DEF-002 | Streaming `{#await}` OOO wrapper vs claim shape |
-| DEF-003 | Playground `evalMockServer` in parent origin (intentional REPL) |
-| DEF-004 | Scaffold CORS `origin: true` / XFF rate-limit trust |
-| DEF-005 | Node adapter missing Content-Type / nosniff on static |
+| DEF-001 | Closed by claim hydrate v1.1 (slotted / `{@html}` claim) |
+| DEF-002 | Closed by streaming `{#await}` claim + identity labs |
+| DEF-003 | Closed: playground `evalMockServer` moved to worker |
+| DEF-004 | Closed: scaffold CORS guidance; rate-limit `trustForwarded` docs |
+| DEF-005 | Closed: Node static `Content-Type` + `nosniff` |
 
 ## Testing
 

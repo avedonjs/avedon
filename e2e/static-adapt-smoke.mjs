@@ -1,5 +1,6 @@
 /**
- * Static adapter smoke: www happy path + basic-app must fail closed.
+ * Adapter smoke: www Cloudflare dogfood + staticAdapter fail-closed on basic-app.
+ * Also verifies staticAdapter happy path by temporarily swapping www config.
  */
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
@@ -23,46 +24,82 @@ function runBuild(cwd) {
   })
 }
 
-// --- Happy path: www (SSG-only) ---
+async function runWwwPrebuild() {
+  const pre = spawn(
+    process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
+    ['-F', 'www', 'run', 'prebuild'],
+    { cwd: root, stdio: 'pipe', shell: process.platform === 'win32' },
+  )
+  return new Promise((resolve) => {
+    let err = ''
+    pre.stderr.on('data', (c) => {
+      err += c
+    })
+    pre.stdout.on('data', (c) => {
+      err += c
+    })
+    pre.on('close', (code) => resolve({ code, err }))
+  })
+}
+
 const www = path.join(root, 'apps/www')
 const wwwBuild = path.join(www, 'build')
+const wwwConfig = path.join(www, 'avedon.config.ts')
+const wwwConfigBackup = fs.readFileSync(wwwConfig, 'utf8')
+
 fs.rmSync(wwwBuild, { recursive: true, force: true })
 fs.rmSync(path.join(www, '.avedon'), { recursive: true, force: true })
 
-// CLI build skips package.json prebuild; run www prebuild assets first.
-const pre = spawn(
-  process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-  ['-F', 'www', 'run', 'prebuild'],
-  { cwd: root, stdio: 'pipe', shell: process.platform === 'win32' },
-)
-const preOut = await new Promise((resolve) => {
-  let err = ''
-  pre.stderr.on('data', (c) => {
-    err += c
-  })
-  pre.stdout.on('data', (c) => {
-    err += c
-  })
-  pre.on('close', (code) => resolve({ code, err }))
-})
+const preOut = await runWwwPrebuild()
 if (preOut.code !== 0) {
   throw new Error('static-adapt-smoke: www prebuild failed\n' + preOut.err)
 }
 
+// --- Cloudflare dogfood (current www config) ---
 const wwwResult = await runBuild(www)
 if (wwwResult.code !== 0) {
-  throw new Error('static-adapt-smoke: www build failed\n' + wwwResult.err)
+  throw new Error('static-adapt-smoke: www CF build failed\n' + wwwResult.err)
 }
-for (const rel of ['client/index.html', 'client/assets/client.js']) {
+for (const rel of ['client/index.html', 'client/assets/client.js', 'worker.js', 'wrangler.jsonc']) {
   if (!fs.existsSync(path.join(wwwBuild, rel))) {
-    throw new Error('static-adapt-smoke: missing ' + rel)
+    throw new Error('static-adapt-smoke: missing ' + rel + ' from cloudflare adapter')
   }
 }
 if (fs.existsSync(path.join(wwwBuild, 'server.js'))) {
-  throw new Error('static-adapt-smoke: unexpected build/server.js from static adapter')
+  throw new Error('static-adapt-smoke: unexpected Node server.js from cloudflare adapter')
 }
-if (fs.existsSync(path.join(wwwBuild, 'worker.js'))) {
-  throw new Error('static-adapt-smoke: unexpected worker.js')
+
+// --- Static adapter happy path (temporary www config) ---
+fs.rmSync(wwwBuild, { recursive: true, force: true })
+fs.rmSync(path.join(www, '.avedon'), { recursive: true, force: true })
+fs.writeFileSync(
+  wwwConfig,
+  `import { staticAdapter } from '@avedon/adapter-static'
+
+export default {
+  adapter: staticAdapter({ out: 'build', notFoundHtml: true }),
+}
+`,
+)
+try {
+  const staticWww = await runBuild(www)
+  if (staticWww.code !== 0) {
+    throw new Error('static-adapt-smoke: www staticAdapter build failed\n' + staticWww.err)
+  }
+  if (!fs.existsSync(path.join(wwwBuild, 'client/index.html'))) {
+    throw new Error('static-adapt-smoke: static build missing client/index.html')
+  }
+  if (!fs.existsSync(path.join(wwwBuild, 'client/404.html'))) {
+    throw new Error('static-adapt-smoke: static build missing client/404.html')
+  }
+  if (fs.existsSync(path.join(wwwBuild, 'worker.js'))) {
+    throw new Error('static-adapt-smoke: unexpected worker.js from static adapter')
+  }
+  if (fs.existsSync(path.join(wwwBuild, 'server.js'))) {
+    throw new Error('static-adapt-smoke: unexpected server.js from static adapter')
+  }
+} finally {
+  fs.writeFileSync(wwwConfig, wwwConfigBackup)
 }
 
 // --- Fail path: basic-app has SSR routes ---

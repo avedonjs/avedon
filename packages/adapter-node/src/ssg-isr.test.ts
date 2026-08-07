@@ -5,7 +5,7 @@ import path from 'node:path'
 import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { isRegenerating, ssgHtmlPath, tryServeSsgIsr, writeHtmlAtomic } from './ssg-isr.js'
+import { isRegenerating, revalidatePath, ssgHtmlPath, tryServeSsgIsr, writeHtmlAtomic } from './ssg-isr.js'
 import type { Routes } from '@avedon/server'
 
 const appHtml =
@@ -111,5 +111,28 @@ describe('tryServeSsgIsr', () => {
       },
       { timeout: 3000 },
     )
+  })
+
+  it('revalidatePath regenerates an existing SSG file on demand', async () => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'avedon-isr-'))
+    const file = ssgHtmlPath(dir, '/')
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, '<html>old</html>')
+
+    const routes: Routes = [
+      {
+        path: '/',
+        render: 'ssg',
+        component: { render: () => '<p>new</p>' },
+      },
+    ]
+
+    const ok = await revalidatePath(
+      '/',
+      { clientDir: dir, routes, appHtml },
+      { wait: true },
+    )
+    expect(ok).toBe(true)
+    expect(fs.readFileSync(file, 'utf8')).toContain('<p>new</p>')
   })
 })

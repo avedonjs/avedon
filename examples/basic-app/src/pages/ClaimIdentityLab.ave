@@ -1,0 +1,22 @@
+<script>
+  import { signal } from '@avedon/runtime'
+  import NamedSlotCard from './NamedSlotCard.ave'
+
+  const likes = signal(0)
+  const snippet = '<em data-html-island>trusted</em>'
+</script>
+
+<template>
+  <main data-claim-identity-lab>
+    <h1>claim identity lab</h1>
+    <input data-focus-target type="text" value="keep-me" />
+    <video data-media-target width="160" height="90" muted playsinline></video>
+    <p data-likes>Likes: {likes}</p>
+    <button type="button" data-inc on:click={() => likes.set(likes.get() + 1)}>inc</button>
+    <div data-html-host>{@html snippet}</div>
+    <NamedSlotCard>
+      <strong slot="header" data-slot-header>Header</strong>
+      <button type="button" data-slot-btn>Slot btn</button>
+    </NamedSlotCard>
+  </main>
+</template>

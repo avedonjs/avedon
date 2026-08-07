@@ -1,0 +1,25 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+
+  const showA = signal(true)
+
+  function toggle() {
+    showA.set(!showA.get())
+  }
+</script>
+
+<template>
+  <main>
+    <h1>crossfade lab</h1>
+    <button type="button" data-crossfade-toggle on:click={toggle}>Toggle</button>
+    {#if showA}
+      <p data-crossfade-a in:crossfade={{ key: 'cf', duration: 80 }} out:crossfade={{ key: 'cf', duration: 80 }}>
+        Panel A
+      </p>
+    {:else}
+      <p data-crossfade-b in:crossfade={{ key: 'cf', duration: 80 }} out:crossfade={{ key: 'cf', duration: 80 }}>
+        Panel B
+      </p>
+    {/if}
+  </main>
+</template>

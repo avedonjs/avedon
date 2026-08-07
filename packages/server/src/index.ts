@@ -30,6 +30,7 @@ export type { RenderSsgOptions, SsgPage } from './ssg.js'
 
 export { createPathLock, isStale } from './isr.js'
 export type { PathLock } from './isr.js'
+export { loadRouteChain } from './load-chain.js'
 
 export { requireSession, getSession, createSession } from './session.js'
 

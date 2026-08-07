@@ -1,0 +1,12 @@
+<script>
+  export let value = ''
+  export let onUpdate
+
+  function onInput(e) {
+    if (onUpdate) onUpdate(e.currentTarget.value)
+  }
+</script>
+
+<template>
+  <input data-bind-child type="text" value={value} on:input={onInput} />
+</template>

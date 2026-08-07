@@ -101,6 +101,30 @@ try {
     throw new Error('Expected regenerated builtAt after revalidate window')
   }
 
+  // On-demand revalidatePath (Node): force regen without waiting for SWR window.
+  const { pathToFileURL } = await import('node:url')
+  const { revalidatePath } = await import(
+    pathToFileURL(path.join(root, 'packages/adapter-node/dist/index.js')).href
+  )
+  const serverApp = await import(
+    pathToFileURL(path.join(example, '.avedon/server/index.js')).href
+  )
+  const routes = serverApp.routes ?? serverApp.default
+  const appHtml = serverApp.appHtml
+  const clientDir = path.join(example, 'build/client')
+  const before = parseBuiltAt(await (await fetch(`${base}/isr-lab`)).text())
+  await new Promise((r) => setTimeout(r, 20))
+  const ok = await revalidatePath(
+    '/isr-lab',
+    { clientDir, routes, appHtml },
+    { wait: true },
+  )
+  if (!ok) throw new Error('revalidatePath returned false for /isr-lab')
+  const after = parseBuiltAt(await (await fetch(`${base}/isr-lab`)).text())
+  if (after === before) {
+    throw new Error('Expected revalidatePath to change builtAt')
+  }
+
   console.log('isr-smoke ok')
 } finally {
   killServer()

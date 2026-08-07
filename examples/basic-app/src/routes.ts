@@ -18,6 +18,11 @@ import StreamErrorLab from './pages/StreamErrorLab.ave'
 import Login from './pages/Login.ave'
 import KeyedEachLab from './pages/KeyedEachLab.ave'
 import NamedSlotsLab from './pages/NamedSlotsLab.ave'
+import ClaimIdentityLab from './pages/ClaimIdentityLab.ave'
+import CrossfadeLab from './pages/CrossfadeLab.ave'
+import NestedLoadShell from './pages/NestedLoadShell.ave'
+import NestedLoadLab from './pages/NestedLoadLab.ave'
+import ComponentBindLab from './pages/ComponentBindLab.ave'
 import ClassDirectiveLab from './pages/ClassDirectiveLab.ave'
 import StyleDirectiveLab from './pages/StyleDirectiveLab.ave'
 import StyleCssVarLab from './pages/StyleCssVarLab.ave'
@@ -322,6 +327,30 @@ const routes = defineRoutes([
     path: '/named-slots-lab',
     layout: Layout,
     component: NamedSlotsLab,
+    render: 'ssr',
+  },
+  {
+    path: '/claim-identity-lab',
+    layout: Layout,
+    component: ClaimIdentityLab,
+    render: 'ssr',
+  },
+  {
+    path: '/crossfade-lab',
+    layout: Layout,
+    component: CrossfadeLab,
+    render: 'ssr',
+  },
+  {
+    path: '/nested-load-lab',
+    layout: NestedLoadShell,
+    component: NestedLoadLab,
+    render: 'ssr',
+  },
+  {
+    path: '/component-bind-lab',
+    layout: Layout,
+    component: ComponentBindLab,
     render: 'ssr',
   },
   {

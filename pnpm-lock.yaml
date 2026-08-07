@@ -36,6 +36,9 @@ importers:
 
   apps/www:
     dependencies:
+      '@avedon/adapter-cloudflare':
+        specifier: workspace:*
+        version: link:../../packages/adapter-cloudflare
       '@avedon/adapter-static':
         specifier: workspace:*
         version: link:../../packages/adapter-static

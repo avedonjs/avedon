@@ -1,7 +1,7 @@
 # Hover / tap / viewport page preload
 
-Updated: 2026-07-30
-**Status:** Approved for implementation (2026-07-30)
+Updated: 2026-08-07
+**Status:** Implemented (2026-07-30) — follow-ups: JS module prefetch, `<Link>`, abort-on-leave (non-goals for v1)
 **Plan:** Cursor plan `hover_page_preload` (implement in-repo under `packages/runtime`)
 
 ## Goal

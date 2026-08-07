@@ -1,6 +1,7 @@
 import { createRenderStream, streamToString, type RenderStreamController } from '@avedon/runtime'
 import { matchRoute } from './match.js'
 import { createCookies } from './cookies.js'
+import { loadRouteChain } from './load-chain.js'
 import {
   renderShellPrefix,
   renderShellSuffixFromTemplate,
@@ -31,30 +32,32 @@ export async function renderSsgPage(
   const chain = matched.chain
   const mod = await resolveComponent(leaf.component)
   const params = matched.params
-  let data: Record<string, unknown> = {}
-  if (mod.load) {
-    const url = new URL(pagePath, 'http://ssg.local')
-    const request = new Request(url)
-    const cookies = createCookies(request, url)
-    const loaded = await mod.load({
-      params,
-      request,
-      url,
-      cookies,
-    })
-    if (loaded && !(loaded instanceof Response)) data = loaded
-  }
-
+  const layouts: AvedonComponentModule[] = []
   const cssParts: string[] = []
   if (mod.css) cssParts.push(mod.css)
-
-  const layouts: AvedonComponentModule[] = []
   for (let i = chain.length - 1; i >= 0; i--) {
     const r = chain[i]
     if (!r.layout) continue
     const layout = await resolveComponent(r.layout)
     layouts.push(layout)
     if (layout.css) cssParts.push(layout.css)
+  }
+
+  const url = new URL(pagePath, 'http://ssg.local')
+  const request = new Request(url)
+  const cookies = createCookies(request, url)
+  const loaded = await loadRouteChain(layouts, mod, {
+    params,
+    request,
+    url,
+    cookies,
+  })
+  let data: Record<string, unknown> = {}
+  if (loaded instanceof Response) {
+    // SSG cannot follow Response redirects from load; treat as empty props
+    data = {}
+  } else {
+    data = loaded
   }
 
   let writeBody: (ctrl: RenderStreamController) => Promise<void> = async (ctrl) => {

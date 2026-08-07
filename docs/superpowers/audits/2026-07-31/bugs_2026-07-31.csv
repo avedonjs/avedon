@@ -7,8 +7,8 @@ BUG-305,HIGH,FUNCTIONAL,packages/compiler/src/codegen.ts,~1740,Static SSR text n
 BUG-306,HIGH,FUNCTIONAL,packages/compiler/src/compile.ts,~115,Child.destroy wiped shared parent DOM,FIXED
 BUG-307,MEDIUM,SECURITY,packages/compiler/src/codegen.ts,~1658,Invalid attr names with quote breakout,FIXED
 BUG-308,MEDIUM,FUNCTIONAL,packages/compiler/src/compile.ts,~152,Nested hydrate cleared entire claim stack,FIXED
-DEF-001,LOW,FUNCTIONAL,packages/compiler/src/codegen.ts,n/a,"{@html}/slotted soft-remount (intentional v1)",DEFERRED
-DEF-002,MEDIUM,FUNCTIONAL,packages/runtime/src/stream.ts,n/a,Streaming await OOO vs claim shape,DEFERRED
-DEF-003,MEDIUM,SECURITY,apps/www/src/playground/mock-server.ts,n/a,evalMockServer in parent origin (REPL),DEFERRED
-DEF-004,MEDIUM,SECURITY,packages/create-avedon-app/template,n/a,Scaffold CORS origin:true / XFF rate limit,DEFERRED
-DEF-005,MEDIUM,SECURITY,packages/adapter-node/src/index.ts,n/a,Static files missing Content-Type/nosniff,DEFERRED
+DEF-001,LOW,FUNCTIONAL,packages/compiler/src/codegen.ts,n/a,"{@html}/slotted claim (v1.1)",CLOSED
+DEF-002,MEDIUM,FUNCTIONAL,packages/runtime/src/stream.ts,n/a,Streaming await claim shape,CLOSED
+DEF-003,MEDIUM,SECURITY,apps/www/src/playground/mock-server.worker.ts,n/a,evalMockServer in worker,CLOSED
+DEF-004,MEDIUM,SECURITY,packages/create-avedon-app/template,n/a,Scaffold CORS / rate-limit guidance,CLOSED
+DEF-005,MEDIUM,SECURITY,packages/adapter-node/src/index.ts,n/a,Static Content-Type/nosniff,CLOSED

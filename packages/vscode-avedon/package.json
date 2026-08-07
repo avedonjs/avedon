@@ -1,7 +1,7 @@
 {
   "name": "avedon-vscode",
   "displayName": "Avedon",
-  "description": "Language support for Avedon .ave files (diagnostics)",
+  "description": "Language support for Avedon .ave files (diagnostics, completion, hover, go-to-definition)",
   "version": "2.0.1",
   "private": true,
   "publisher": "avedonjs",

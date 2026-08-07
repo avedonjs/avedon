@@ -16,12 +16,12 @@ Guards stay on the route table and see `params`. Middleware never does.
 The scaffold includes this file. Typical setup:
 
 ```ts
-import { cors, logger, rateLimit } from '@avedon/server'
+import { logger, rateLimit } from '@avedon/server'
 
 export const middleware = [
   logger(),
   rateLimit({ max: 200 }),
-  cors({ origin: true }),
+  // Optional: cors({ origin: 'https://your.app' }) — avoid origin: true in production
 ]
 
 export default { middleware }
@@ -53,11 +53,12 @@ First argument is outermost (sees the request first; can short-circuit).
 | Helper | Role |
 |--------|------|
 | `logger({ format? })` | Logs method, path, status, duration (`dev` or `short`) |
-| `cors({ origin?, methods?, headers?, maxAge? })` | OPTIONS → 204; CORS headers. `origin: true` reflects the request `Origin` |
-| `rateLimit({ windowMs?, max?, key? })` | Process-local fixed window; over limit → `429` + `Retry-After` |
+| `cors({ origin?, methods?, headers?, maxAge? })` | OPTIONS → 204; CORS headers. Prefer an explicit origin allowlist over `origin: true` (reflects any `Origin`) |
+| `rateLimit({ windowMs?, max?, key?, trustForwarded? })` | Process-local fixed window; over limit → `429` + `Retry-After` |
 
 `rateLimit` uses an in-memory `Map` — fine for local/dev and single-instance demos. For multi-node production, use a shared store.
 
+**Forwarded IP:** the default key is a single `anon` bucket. Set `trustForwarded: true` only behind a reverse proxy you control (`cf-connecting-ip` / `x-forwarded-for`); clients can spoof `X-Forwarded-For` on a directly exposed process.
 ## Middleware vs guards
 
 | | Middleware | Guard |

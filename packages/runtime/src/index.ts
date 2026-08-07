@@ -44,6 +44,7 @@ export {
   claimComment,
   assertClaimExhausted,
   claimAdvancePastSiblings,
+  claimAdvanceUntilComment,
   claimPush,
   claimPop,
   claimCurrent,
@@ -60,6 +61,7 @@ export {
   AVEDON_SVG_NS,
 } from './claim.js'
 export type { ClaimCursor } from './claim.js'
+export { crossfadeSend, crossfadeReceive, __resetCrossfade } from './crossfade.js'
 export {
   preload,
   resolvePreloadMode,

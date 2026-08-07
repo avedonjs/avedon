@@ -74,7 +74,8 @@ Supported patterns include:
 - Class toggles: `class:active={cond}` (or `class:active` shorthand when the name matches an identifier)
 - Style properties: `style:color={c}` / `style:font-size={n}` / `style:--accent={c}` (or `style:color` shorthand)
 - Element actions: `use:action` / `use:action={params}` (client-only)
-- Intro/outro transitions: `transition:fade` / `fly` / `slide` / `scale` / `blur` / `draw`, plus intro-only `in:` / outro-only `out:` (optional `duration` / `delay` / `easing` CSS timing function; fly `x`/`y`; scale `start`; blur `amount`; draw uses SVG `getTotalLength` + stroke-dashoffset; client-only). Client SVG tags under `<svg>` use `createElementNS`.
+- Intro/outro transitions: `transition:fade` / `fly` / `slide` / `scale` / `blur` / `draw`, plus intro-only `in:` / outro-only `out:` (optional `duration` / `delay` / `easing` CSS timing function; fly `x`/`y`; scale `start`; blur `amount`; draw uses SVG `getTotalLength` + stroke-dashoffset; client-only). `in:crossfade={{ key }}` / `out:crossfade={{ key }}` morph between matched keys. Client SVG tags under `<svg>` use `createElementNS`.
+- Component `bind:value={signal}` — passes `value` + `onUpdate` props; the child should call `onUpdate(next)` when the value changes.
 - Forms: `method="POST"` with [actions](./loading-data.md)
 
 ## Using components

@@ -4,6 +4,7 @@ import {
   avedonText,
   avedonTextEmpty,
   avedonComment,
+  claimAdvanceUntilComment,
   claimComment,
   claimCurrent,
   claimElement,
@@ -142,5 +143,25 @@ describe('claim helpers', () => {
     } finally {
       globalThis.document = prevDoc
     }
+  })
+
+  it('claimAdvanceUntilComment consumes end marker and leaves following sibling', () => {
+    const end = { nodeType: 8, data: '/html' }
+    const after = { nodeType: 1, tagName: 'P' }
+    const c = createClaimCursor(
+      parentOf({ nodeType: 1, tagName: 'SPAN' }, { nodeType: 3, data: 'x' }, end, after),
+    )
+    claimAdvanceUntilComment(c, '/html')
+    expect(claimElement(c, 'p')).toBe(after)
+  })
+
+  it('claimAdvanceUntilComment does not strip empty comments inside the island', () => {
+    const empty = { nodeType: 8, data: '' }
+    const end = { nodeType: 8, data: '/html' }
+    const c = createClaimCursor(parentOf(empty, end))
+    claimAdvanceUntilComment(c, '/html')
+    assertClaimExhausted(c)
+    // empty comment was advanced over, not removed
+    expect(empty.nodeType).toBe(8)
   })
 })

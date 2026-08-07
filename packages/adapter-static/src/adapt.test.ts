@@ -152,4 +152,30 @@ describe('staticAdapter.adapt', () => {
       ),
     ).rejects.toThrow(/@avedon\/adapter-static/)
   })
+
+  it('writes 404.html when notFoundHtml is set', async () => {
+    const out = path.join(tmp, 'build')
+    await staticAdapter({ out, notFoundHtml: true }).adapt(mockBuilder(tmp))
+    expect(fs.readFileSync(path.join(out, 'client', '404.html'), 'utf8')).toContain('Not found')
+  })
+
+  it('writes Cloudflare _redirects stub when missing', async () => {
+    const out = path.join(tmp, 'build')
+    await staticAdapter({ out, redirects: 'cloudflare' }).adapt(mockBuilder(tmp))
+    expect(fs.readFileSync(path.join(out, 'client', '_redirects'), 'utf8')).toContain(
+      'Cloudflare Pages',
+    )
+  })
+
+  it('keeps existing public/_redirects', async () => {
+    const out = path.join(tmp, 'build')
+    const builder = mockBuilder(tmp)
+    const origWrite = builder.writeClient.bind(builder)
+    builder.writeClient = (dest) => {
+      origWrite(dest)
+      fs.writeFileSync(path.join(dest, '_redirects'), '/old /new 301\n')
+    }
+    await staticAdapter({ out, redirects: 'cloudflare' }).adapt(builder)
+    expect(fs.readFileSync(path.join(out, 'client', '_redirects'), 'utf8')).toBe('/old /new 301\n')
+  })
 })

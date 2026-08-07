@@ -71,6 +71,8 @@ Full walkthrough: [docs/quick-start.md](./docs/quick-start.md) or [https://avedo
 | `@avedon/adapter-node` | Node production server |
 | `@avedon/adapter-bun` | Bun.serve production server (SSG + ISR) |
 | `@avedon/adapter-cloudflare` | Cloudflare Workers + Assets (SSG; no ISR in v1) |
+| `@avedon/adapter-static` | Fail-closed static export (SSG HTML + assets) |
+| `@avedon/language-server` | `.ave` diagnostics language server (`avedon-language-server`) |
 | `avedon` | CLI (`create`, `dev`, `build`, `start`) |
 | `create-avedon-app` | App scaffold (`pnpm create avedon-app`) |
 
@@ -124,9 +126,12 @@ See [docs/routing.md](./docs/routing.md). Contributors working on the framework 
 
 ## Roadmap
 
-- ~~Language service / LSP for `.ave`~~ **diagnostics v1** — `@avedon/language-server` + VS Code/Cursor extension (`packages/vscode-avedon`); sibling `*.ave.d.ts` still provide types
-- Richer template directives (`{#key}`, transitions, named slots)
-- First-class CSS tooling integrations
+- ~~Language service / LSP for `.ave`~~ **diagnostics v1 + v2 + v3** — hover / completion / go-to-def + script symbol index; VSIX via CI (`packages/vscode-avedon`); Marketplace/Open VSX via optional publish workflow
+- ~~Richer template directives~~ (`{#key}`, transitions, named slots, binds, snippets, crossfade) — shipped
+- ~~Claim hydrate~~ (SSR DOM reuse) — v1.1: slotted / `{@html}` / streaming await claim + identity labs
+- ~~First-class CSS tooling~~ — Tailwind scaffold + [docs/styling.md](./docs/styling.md) (PostCSS / Uno)
+- Nested layout `load` merge + component `bind:value` — shipped (awaiting Version Packages with other open changesets)
+- Still non-goals without a product decision: stores, UI kit, file-based routing
 
 ## Community
 

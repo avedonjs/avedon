@@ -1,0 +1,14 @@
+<script lang="ts">
+  import { signal } from '@avedon/runtime'
+  import BindValueChild from './BindValueChild.ave'
+
+  const text = signal('hello')
+</script>
+
+<template>
+  <main>
+    <h1>component bind:value lab</h1>
+    <BindValueChild bind:value={text} />
+    <p data-bind-parent>{text}</p>
+  </main>
+</template>

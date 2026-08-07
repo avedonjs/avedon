@@ -1,6 +1,31 @@
 # memories.md
 
-Updated: 2026-07-31
+Updated: 2026-08-07
+
+## Development roadmap (2026-08-07)
+
+Plan: Cursor `Avedon sonraki roadmap` — creative feature loop stays paused.
+
+| Phase | Focus | Status |
+|-------|--------|--------|
+| R | Version Packages + Trusted Publisher | `@avedon/language-server@2.0.1` on npm OK; Version Packages **blocked until commit/push** of open changesets |
+| H | Phase-5 labs + Node adapt.test + audit/spec hygiene | done (this session) |
+| D | LSP v3 (script symbols / definition ranges) | done (this session) |
+| P | Deployment/rendering + create-app ISR wording | done (this session) |
+| M | VSIX Marketplace/Open VSX workflow | done — needs `VSCE_PAT` / `OVSX_PAT` secrets to publish |
+
+Also fixed: component `bind:value` onUpdate shadowed `__n` (`const __n = (__n)`) — `.changeset/fix-component-bind-shadow.md`.
+
+Prior plan phases 0–5 remain implemented on `main` (unreleased until Version Packages).
+
+**Baseline:** lockstep **2.0.1** published.
+
+## Next steps (2026-08-07)
+
+1. Commit + push accumulated `main` work (phases 0–5 + this roadmap session, including bind shadow fix + lsp-v3 changeset)
+2. Let Release workflow open **Version Packages** PR → merge → lockstep publish (expect **2.1.0**)
+3. Set `VSCE_PAT` / `OVSX_PAT` repo secrets when ready to publish the extension
+4. Creative feature spam stays paused; stores / UI kit / file-based routing remain non-goals without a product decision
 
 ## `.ave` LSP diagnostics v1 (2026-07-31)
 
@@ -9,8 +34,8 @@ Updated: 2026-07-31
 - Compiler: `diagnoseAve()`, `CompileError`/`CompileDiagnostic`, `parse().ranges`, template `fail()` with file offsets
 - Package: `@avedon/language-server` (`avedon-language-server` stdio)
 - Extension: `packages/vscode-avedon` (`avedon-vscode`, private) — language id `avedon`, TextMate, language client; VSIX via esbuild-bundled `dist/server.js` + `vsce --no-dependencies` (pnpm-safe)
-- Out of v1: completion/hover/go-to-def/rename/embedded TS LS; Marketplace publish later
-- Changeset: `.changeset/ave-lsp.md` (compiler + language-server)
+- v2 (2026-08-07): completion / hover / go-to-def in `features.ts`; VSIX CI artifact; still no rename / embedded TS LS; Marketplace optional
+- Changesets: `.changeset/ave-lsp.md`, `.changeset/lsp-v2.md`
 
 ## Claim hydrate (2026-07-31)
 
@@ -18,15 +43,10 @@ Updated: 2026-07-31
 - Plan: `docs/superpowers/plans/2026-07-31-claim-hydrate.md`
 - Runtime: `packages/runtime/src/claim.ts` — cursor claim helpers + `avedonEl`/`avedonText`/`avedonComment`
 - Compiler: mode via claim stack; SSR/stream `<!--if-->` / `<!--each-->` / … anchors; `hydrate()` claim-first, soft-remount on `HydrateMismatchError` in prod
-- v1 soft-remount still used for `{@html}` and slotted components
-- Changeset: `.changeset/claim-hydrate.md` (runtime + compiler minor)
-- **Audit fixes (2026-07-31):** BUG-301 text seps; BUG-302 mount abort + destroy before soft-remount; BUG-305 escape static SSR text; BUG-306 `__owned` node destroy (no `target.textContent=''`); BUG-308 claim stack depth on nested hydrate
-- **Reactivity fix (2026-07-31):** static `avedonText` claim no longer strict-equals SSR whitespace (layout shell indent); keyed/unkeyed `{#each}` claim init trims per-item outer whitespace text tokens so claim walk matches joined SSR HTML
-- **Claim hydrate CI fix (2026-07-31):** `skipClaimNoise` vs `skipWhitespace`; `avedonTextEmpty` creates missing empty reactive text; `{#await}` claim init strips SSR then-branch + remounts pending via fragment; `shouldClaim` only when `claimCurrent().parent === parent` (fragment/detached remount must create); `elClaimOpened` stack pairs `avedonEl`/`avedonElEnd`; await cursor resync after strip+insert; **`avedonComment('')` consumes `<!---->` text separators during claim** (fixes mixed static+signal text like `Likes: {likes}`)
-- **Security (same pass):** BUG-303 cookie CRLF; BUG-304 streaming redirect `\u003c`; BUG-307 attr name charset
-- Artefacts: `docs/superpowers/audits/2026-07-31/`
-- Unit: 778 green; Playwright identity labs still TODO per spec
-- Deferred: streaming await claim shape; playground evalMockServer parent-origin; scaffold CORS/XFF; node adapter Content-Type
+- Changeset: `.changeset/claim-hydrate.md` (runtime + compiler minor); v1.1: `.changeset/claim-hydrate-v1.1.md`
+- **v1.1 (2026-08-07):** slotted claim + `{@html}` markers; streaming await OOO claim; Playwright identity lab in basic-app / `e2e/browser-gaps.spec.ts`
+- **Audit fixes (2026-07-31):** BUG-301–308 + security BUG-303/304/307 — see `docs/superpowers/audits/2026-07-31/`
+- Deferred audit DEF-003/004/005 closed in security phase (2026-08-07)
 
 ## Version lockstep (2026-08-03)
 

@@ -10,6 +10,7 @@ import {
 } from 'vscode-languageserver/node.js'
 import { TextDocument } from 'vscode-languageserver-textdocument'
 import { diagnoseAve, type CompileDiagnostic } from '@avedon/compiler'
+import { getCompletions, getDefinition, getHover } from './features.js'
 
 const DEBOUNCE_MS = 150
 
@@ -34,6 +35,15 @@ export function toLspDiagnostics(
 export function diagnoseDocumentText(text: string, filename = 'file.ave'): CompileDiagnostic[] {
   return diagnoseAve(text, { filename })
 }
+
+export {
+  getCompletions,
+  getDefinition,
+  getHover,
+  extractComponentImportMap,
+  extractScriptSymbols,
+  definitionRangeForAveSource,
+} from './features.js'
 
 export function startLanguageServer(): void {
   const connection = createConnection(ProposedFeatures.all)
@@ -65,8 +75,31 @@ export function startLanguageServer(): void {
     return {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Incremental,
+        completionProvider: {
+          triggerCharacters: ['{', '#', '@', ':', '<'],
+        },
+        hoverProvider: true,
+        definitionProvider: true,
       },
     }
+  })
+
+  connection.onCompletion((params) => {
+    const doc = documents.get(params.textDocument.uri)
+    if (!doc) return []
+    return getCompletions(doc, params.position)
+  })
+
+  connection.onHover((params) => {
+    const doc = documents.get(params.textDocument.uri)
+    if (!doc) return null
+    return getHover(doc, params.position)
+  })
+
+  connection.onDefinition((params) => {
+    const doc = documents.get(params.textDocument.uri)
+    if (!doc) return null
+    return getDefinition(doc, params.position)
   })
 
   documents.onDidOpen((e) => scheduleValidate(e.document))

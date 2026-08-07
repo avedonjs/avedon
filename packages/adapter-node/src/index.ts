@@ -6,8 +6,8 @@ export type { AdapterBuilder, AdapterInterface }
 export type Builder = AdapterBuilder
 export type Adapter = AdapterInterface
 
-export { tryServeSsgIsr, ssgHtmlPath, writeHtmlAtomic, isRegenerating } from './ssg-isr.js'
-export type { ServeSsgIsrOptions } from './ssg-isr.js'
+export { tryServeSsgIsr, ssgHtmlPath, writeHtmlAtomic, isRegenerating, revalidatePath } from './ssg-isr.js'
+export type { ServeSsgIsrOptions, RevalidatePathContext } from './ssg-isr.js'
 export { resolveUnderRoot, ssgHtmlPathSafe } from './safe-path.js'
 
 export function nodeAdapter(options: { out?: string } = {}): AdapterInterface {
@@ -89,6 +89,30 @@ const handler = createHandler({
   session: serverApp.session,
 });
 
+const STATIC_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
+};
+
+function contentTypeFor(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return STATIC_TYPES[ext] || 'application/octet-stream';
+}
+
 function isDir(p) {
   try { return statSync(p).isDirectory(); } catch { return true; }
 }
@@ -121,6 +145,8 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (existsSync(filePath) && !isDir(filePath) && req.method === 'GET') {
+      res.setHeader('Content-Type', contentTypeFor(filePath));
+      res.setHeader('X-Content-Type-Options', 'nosniff');
       createReadStream(filePath).pipe(res);
       return;
     }

@@ -98,8 +98,25 @@ describe('rateLimit', () => {
     expect(res.headers.get('Retry-After')).toBeTruthy()
   })
 
-  it('uses cf-connecting-ip then x-forwarded-for for default key', async () => {
+  it('ignores forwarded headers unless trustForwarded is set', async () => {
     const mw = rateLimit({ max: 1, windowMs: 60_000 })
+    await mw({
+      request: new Request('http://localhost/', {
+        headers: { 'cf-connecting-ip': '1.2.3.4' },
+      }),
+      resolve: async () => new Response('ok'),
+    })
+    const blocked = await mw({
+      request: new Request('http://localhost/', {
+        headers: { 'x-forwarded-for': '9.9.9.9' },
+      }),
+      resolve: async () => new Response('ok'),
+    })
+    expect(blocked.status).toBe(429)
+  })
+
+  it('uses cf-connecting-ip then x-forwarded-for when trustForwarded', async () => {
+    const mw = rateLimit({ max: 1, windowMs: 60_000, trustForwarded: true })
     await mw({
       request: new Request('http://localhost/', {
         headers: { 'cf-connecting-ip': '1.2.3.4' },

@@ -61,7 +61,7 @@ Load secrets via your host’s env (`.env` files are app convention — not requ
 
 The scaffold includes a `tsconfig.json` that covers `src` and `avedon.config.ts`. Generated `*.ave.d.ts` files sit next to `.ave` components for editor typing.
 
-For **diagnostics** (compile/parse squiggles) in VS Code or Cursor, install the workspace extension — see [`packages/vscode-avedon/README.md`](../packages/vscode-avedon/README.md). The language server is also available as `@avedon/language-server` (`avedon-language-server`).
+For **editor support** (diagnostics, completion, hover, go-to-definition) in VS Code or Cursor, install the VSIX — see [`packages/vscode-avedon/README.md`](../packages/vscode-avedon/README.md). CI attaches `avedon-vscode-*.vsix` as a Build artifact. The language server is also available as `@avedon/language-server` (`avedon-language-server`).
 
 ## See also
 

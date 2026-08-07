@@ -8,7 +8,7 @@
   "overview": {
     "total_bugs_found": 2,
     "total_bugs_fixed": 2,
-    "bugs_deferred": 4,
+    "bugs_deferred": 0,
     "tests_passed": 773,
     "dependency_vulnerabilities": 0
   },

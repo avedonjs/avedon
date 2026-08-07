@@ -1,0 +1,18 @@
+<script lang="ts">
+  export let shellLabel
+  export let pageLabel
+</script>
+
+<script lang="ts" server>
+  export async function load() {
+    return { pageLabel: 'from-page' }
+  }
+</script>
+
+<template>
+  <main>
+    <h1>nested load lab</h1>
+    <p data-page-label>{pageLabel}</p>
+    <p data-merged-shell>{shellLabel}</p>
+  </main>
+</template>

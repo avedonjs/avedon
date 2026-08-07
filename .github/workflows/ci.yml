@@ -86,6 +86,17 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Package VS Code extension (VSIX)
+        run: pnpm -F avedon-vscode package
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: avedon-vscode
+          path: packages/vscode-avedon/*.vsix
+          if-no-files-found: error
+          retention-days: 14
+
   test:
     name: Test
     runs-on: ubuntu-latest

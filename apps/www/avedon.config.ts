@@ -1,5 +1,6 @@
-import { staticAdapter } from '@avedon/adapter-static'
+import { cloudflareAdapter } from '@avedon/adapter-cloudflare'
 
+/** Workers+Assets build; `build/client` is still deployed to Cloudflare Pages (pages.dev). */
 export default {
-  adapter: staticAdapter({ out: 'build' }),
+  adapter: cloudflareAdapter({ out: 'build', name: 'avedon' }),
 }

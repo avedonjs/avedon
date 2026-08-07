@@ -10,14 +10,15 @@ results:
   fixed:
     - BUG-301
     - BUG-302
-  deferred:
+  closed_deferred:
     - DEF-001
     - DEF-002
     - DEF-003
     - DEF-004
+    - DEF-005
   pnpm_audit_vulnerabilities: 0
   unit_tests_passed: 773
 ci_recommendations:
   - keep CodeQL javascript-typescript required on main
   - keep Dependabot alerts triage
-  - add Playwright claim-hydrate identity labs before npm publish of claim-hydrate
+  - claim-hydrate identity labs shipped in e2e/browser-gaps.spec.ts

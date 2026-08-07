@@ -1,5 +1,5 @@
 import CompileWorker from './compile.worker.ts?worker'
-import { evalMockServer, type MockServer } from './mock-server.js'
+import MockServerWorker from './mock-server.worker.ts?worker'
 
 const RUNTIME_MODULE = '/playground-runtime.js'
 
@@ -45,6 +45,66 @@ function compileInWorker(source: string): Promise<WorkerReply> {
     pending.set(id, { resolve })
     getWorker().postMessage({ type: 'compile', id, source })
   })
+}
+
+// ---------------------------------------------------------------------------
+// Mock server worker (isolates AsyncFunction eval off the docs page origin)
+// ---------------------------------------------------------------------------
+
+type MockReply =
+  | { type: 'ready'; id: number; props: Record<string, unknown> }
+  | { type: 'action-result'; id: number; result: unknown }
+  | { type: 'error'; id: number; message: string }
+
+let mockWorker: Worker | null = null
+let mockNextId = 0
+const mockPending = new Map<number, { resolve: (r: MockReply) => void; reject: (e: Error) => void }>()
+
+function getMockWorker(): Worker {
+  if (!mockWorker) {
+    mockWorker = new MockServerWorker()
+    mockWorker.addEventListener('message', (event: MessageEvent<MockReply>) => {
+      const reply = event.data
+      const entry = mockPending.get(reply.id)
+      if (entry) {
+        mockPending.delete(reply.id)
+        entry.resolve(reply)
+      }
+    })
+    mockWorker.addEventListener('error', (event) => {
+      for (const [id, entry] of mockPending) {
+        mockPending.delete(id)
+        entry.reject(new Error(event.message ?? 'Mock worker error'))
+      }
+    })
+  }
+  return mockWorker
+}
+
+function mockRequest(msg: object & { id: number }): Promise<MockReply> {
+  return new Promise((resolve, reject) => {
+    mockPending.set(msg.id, { resolve, reject })
+    getMockWorker().postMessage(msg)
+  })
+}
+
+async function initMockServer(serverScript: string): Promise<Record<string, unknown>> {
+  const id = mockNextId++
+  const reply = await mockRequest({ type: 'init', id, serverScript })
+  if (reply.type === 'error') throw new Error(reply.message)
+  if (reply.type !== 'ready') throw new Error('Unexpected mock worker reply')
+  return reply.props
+}
+
+async function runMockAction(
+  action: string,
+  fields: [string, FormDataEntryValue][],
+): Promise<unknown> {
+  const id = mockNextId++
+  const reply = await mockRequest({ type: 'action', id, action, fields })
+  if (reply.type === 'error') throw new Error(reply.message)
+  if (reply.type !== 'action-result') throw new Error('Unexpected mock worker reply')
+  return reply.result
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +253,8 @@ try {
 
 export class PlaygroundRunner {
   private iframe: HTMLIFrameElement | null = null
-  private mock: MockServer | null = null
+  private mockProps: Record<string, unknown> | null = null
+  private mockReady = false
   private source = ''
   private compiled: { code: string; css: string; serverScript: string } | null = null
   private onMessage: ((event: MessageEvent) => void) | null = null
@@ -217,7 +278,8 @@ export class PlaygroundRunner {
     if (this.onMessage) window.removeEventListener('message', this.onMessage)
     this.onMessage = null
     this.iframe = null
-    this.mock = null
+    this.mockProps = null
+    this.mockReady = false
     this.compiled = null
     this.source = ''
   }
@@ -244,14 +306,15 @@ export class PlaygroundRunner {
           }
         }
 
-        if (sourceChanged || !this.mock) {
-          this.mock = await evalMockServer(this.compiled!.serverScript)
+        if (sourceChanged || !this.mockReady) {
+          this.mockProps = await initMockServer(this.compiled!.serverScript)
+          this.mockReady = true
         }
       }
 
       if (!this.compiled) return { error: 'Preview not compiled' }
 
-      const props = overrideProps ?? this.mock?.props ?? {}
+      const props = overrideProps ?? this.mockProps ?? {}
       if (!this.runtimeUrl) this.runtimeUrl = await runtimeModuleDataUrl()
       this.iframe.srcdoc = buildIframeHtml({
         moduleCode: this.compiled.code,
@@ -267,13 +330,8 @@ export class PlaygroundRunner {
   }
 
   private async handleAction(action: string, fields: [string, FormDataEntryValue][]) {
-    if (!this.mock?.actions?.[action]) return
-    const fd = new FormData()
-    for (const [k, v] of fields) fd.append(k, v)
-    const res = await this.mock.actions[action]({
-      params: {},
-      request: { formData: async () => fd },
-    })
+    if (!this.mockReady) return
+    const res = await runMockAction(action, fields)
     if (res && typeof res === 'object' && 'data' in res) {
       await this.run(this.source, { data: (res as { data: unknown }).data }, { refreshOnly: true })
     }

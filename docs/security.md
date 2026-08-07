@@ -31,6 +31,14 @@ Client codegen inserts string `children` via a `<template>` element's `innerHTML
 
 Form `actions` use Origin/Referer same-origin checks — see [Middleware](./middleware.md). Pair with `SameSite` session cookies from [Session](./session.md).
 
+## Scaffold middleware
+
+The create-app template does **not** enable reflecting CORS (`origin: true`) or trust `X-Forwarded-For` for rate limits by default. Add an explicit CORS allowlist and `rateLimit({ trustForwarded: true })` only behind a trusted proxy.
+
+## Playground mock server
+
+Docs playground `load` / `actions` evaluation runs in a dedicated Web Worker (not on the docs page main thread), so untrusted REPL server script does not share the parent document origin’s DOM.
+
 ## Reporting vulnerabilities
 
 Do not report vulnerabilities in public issues. See [SECURITY.md](../SECURITY.md) in the avedon repository.

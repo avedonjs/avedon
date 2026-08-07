@@ -1,8 +1,8 @@
 # Component composition (UI components in `.ave`)
 
-Updated: 2026-07-26  
-**Status:** Approved for implementation (2026-07-26)  
-**Plan:** _(pending)_ `docs/superpowers/plans/2026-07-26-component-composition.md`
+Updated: 2026-08-07  
+**Status:** Implemented (exceeded original v1: named slots, binds, transitions, component `bind:value`)  
+**Plan:** `docs/superpowers/plans/2026-07-26-component-composition.md`
 
 ## Goal
 

@@ -20,6 +20,10 @@ Runs on the server (and during SSG) to provide data:
 
 Prefer returning `{ data: T }` so generated types flow to `export let data`. Helpers from `@avedon/server`: `json`, `notFound`, `redirect`, `error`.
 
+### Nested layout `load`
+
+Layouts may also export `load`. The server runs **outer layout → inner layout → page**, merging returned objects (later keys win). Shared shell props from a layout `load` are available to the layout template and to child pages unless the page overwrites them.
+
 ## Page head
 
 `load` may return a `head` object next to `data` to control the document head for that page:

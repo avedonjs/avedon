@@ -1,7 +1,7 @@
 # Claim hydrate (DOM reuse)
 
-Updated: 2026-07-31
-**Status:** Approved for implementation (2026-07-31)
+Updated: 2026-08-07
+**Status:** Implemented (2026-07-31) — v1.1 follow-ups done (2026-08-07): slotted/`{@html}` claim, streaming `{#await}` claim, Playwright identity labs
 **Plan:** `docs/superpowers/plans/2026-07-31-claim-hydrate.md`
 
 ## Goal

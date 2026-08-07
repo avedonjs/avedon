@@ -18,7 +18,7 @@
     {
       "id": "guides",
       "title": "Guides",
-      "slugs": ["middleware", "session", "security", "configuration", "deployment"]
+      "slugs": ["middleware", "session", "security", "configuration", "styling", "deployment"]
     }
   ]
 }

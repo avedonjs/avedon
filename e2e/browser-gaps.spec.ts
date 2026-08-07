@@ -1135,6 +1135,28 @@ test('transition:fade reaches full opacity', async ({ page }) => {
   await expect.poll(async () => target.evaluate((el) => getComputedStyle(el).opacity)).toBe('1')
 })
 
+test('crossfade toggles panels by key', async ({ page }) => {
+  await page.goto('/crossfade-lab')
+  await expect(page.locator('[data-crossfade-a]')).toHaveText('Panel A')
+  await page.locator('[data-crossfade-toggle]').click()
+  await expect(page.locator('[data-crossfade-b]')).toHaveText('Panel B', { timeout: 5_000 })
+  await expect(page.locator('[data-crossfade-a]')).toHaveCount(0)
+})
+
+test('nested layout load merges into page props', async ({ page }) => {
+  await page.goto('/nested-load-lab')
+  await expect(page.locator('[data-shell-label]')).toHaveText('from-layout')
+  await expect(page.locator('[data-page-label]')).toHaveText('from-page')
+  await expect(page.locator('[data-merged-shell]')).toHaveText('from-layout')
+})
+
+test('component bind:value syncs child input to parent signal', async ({ page }) => {
+  await page.goto('/component-bind-lab')
+  await expect(page.locator('[data-bind-parent]')).toHaveText('hello')
+  await page.locator('[data-bind-child]').fill('world')
+  await expect(page.locator('[data-bind-parent]')).toHaveText('world')
+})
+
 test('transition delay holds intro before fading in', async ({ page }) => {
   await page.goto('/transition-delay-lab')
   await page.getByRole('button', { name: 'Toggle' }).click()
@@ -2621,4 +2643,55 @@ test('bind:innerText syncs contenteditable', async ({ page }) => {
   await expect
     .poll(async () => page.locator('[data-text]').textContent())
     .toBe('HELLO!')
+})
+
+test('claim hydrate preserves SSR node identity for focus, media, slots, {@html}', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    ;(window as unknown as { __avedonClaimSnap?: Record<string, Element | null> }).__avedonClaimSnap =
+      undefined
+    const mark = () => {
+      const w = window as unknown as { __avedonClaimSnap?: Record<string, Element | null> }
+      if (w.__avedonClaimSnap) return
+      const input = document.querySelector('[data-focus-target]')
+      if (!input) return
+      w.__avedonClaimSnap = {
+        input,
+        media: document.querySelector('[data-media-target]'),
+        slotBtn: document.querySelector('[data-slot-btn]'),
+        html: document.querySelector('[data-html-island]'),
+      }
+    }
+    const obs = new MutationObserver(mark)
+    obs.observe(document.documentElement, { childList: true, subtree: true })
+    document.addEventListener('DOMContentLoaded', mark)
+  })
+
+  await page.goto('/claim-identity-lab')
+  await expect(page.locator('[data-claim-identity-lab]')).toBeVisible()
+  await expect(page.locator('[data-html-island]')).toHaveText('trusted')
+  await expect(page.locator('[data-slot-header]')).toHaveText('Header')
+  await page.locator('[data-inc]').click()
+  await expect(page.locator('[data-likes]')).toHaveText('Likes: 1')
+
+  const identity = await page.evaluate(() => {
+    const w = window as unknown as { __avedonClaimSnap?: Record<string, Element | null> }
+    const snap = w.__avedonClaimSnap
+    if (!snap) return { ok: false, reason: 'no-snap' }
+    return {
+      ok: true,
+      input: snap.input === document.querySelector('[data-focus-target]'),
+      media: snap.media === document.querySelector('[data-media-target]'),
+      slotBtn: snap.slotBtn === document.querySelector('[data-slot-btn]'),
+      html: snap.html === document.querySelector('[data-html-island]'),
+    }
+  })
+  expect(identity).toEqual({
+    ok: true,
+    input: true,
+    media: true,
+    slotBtn: true,
+    html: true,
+  })
 })

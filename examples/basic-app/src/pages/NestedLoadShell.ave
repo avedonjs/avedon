@@ -1,0 +1,17 @@
+<script lang="ts">
+  export let children
+  export let shellLabel
+</script>
+
+<script lang="ts" server>
+  export async function load() {
+    return { shellLabel: 'from-layout' }
+  }
+</script>
+
+<template>
+  <div data-nested-shell>
+    <p data-shell-label>{shellLabel}</p>
+    <slot />
+  </div>
+</template>

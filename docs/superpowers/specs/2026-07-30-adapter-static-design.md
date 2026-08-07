@@ -1,7 +1,7 @@
 # `@avedon/adapter-static` design
 
-Updated: 2026-07-30  
-**Status:** Approved for implementation (2026-07-30)  
+Updated: 2026-08-07  
+**Status:** Implemented (2026-07-30) — follow-ups: `404.html` / host `_redirects` presets, SPA fallback  
 **Plan:** `docs/superpowers/plans/2026-07-30-adapter-static.md`  
 **Scope:** Ship a fail-closed static export adapter so `avedon build` emits only `out/client/` (assets + SSG HTML), wire `create-avedon-app --adapter=static`, and dogfood on `apps/www`.
 

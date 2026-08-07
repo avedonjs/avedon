@@ -20,6 +20,44 @@ export function ssgHtmlPath(clientDir: string, pathname: string): string {
   return safe
 }
 
+export type RevalidatePathContext = {
+  clientDir: string
+  routes: Routes
+  appHtml: string
+  clientEntry?: string
+  clientCss?: string[]
+}
+
+/**
+ * On-demand regenerate of an already-built SSG HTML file (Node/Bun).
+ * Returns false when the file is missing or the path is unsafe.
+ * Does not create paths that were never built at `avedon build` time.
+ */
+export async function revalidatePath(
+  pathname: string,
+  ctx: RevalidatePathContext,
+  opts?: { wait?: boolean },
+): Promise<boolean> {
+  const file = ssgHtmlPathSafe(ctx.clientDir, pathname)
+  if (!file || !existsSync(file)) return false
+
+  const run = async () => {
+    const page = await renderSsgPage(ctx.routes, pathname, ctx.appHtml, {
+      clientEntry: ctx.clientEntry,
+      clientCss: ctx.clientCss,
+    })
+    if (!page) return
+    writeHtmlAtomic(file, page.html)
+  }
+
+  if (opts?.wait) {
+    await run()
+    return true
+  }
+  regenLock.run(pathname, run)
+  return true
+}
+
 export type ServeSsgIsrOptions = {
   req: IncomingMessage
   res: ServerResponse
@@ -65,6 +103,7 @@ export function tryServeSsgIsr(opts: ServeSsgIsrOptions): boolean {
   }
 
   res.setHeader('content-type', 'text/html; charset=utf-8')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
   if (req.method === 'HEAD') {
     res.end()
     return true

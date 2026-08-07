@@ -193,7 +193,7 @@ export function formatNextSteps(result: ScaffoldResult): string {
   if (adapter === 'cloudflare') {
     extra += '\n  Production: pnpm build && pnpm start  (cd build && wrangler deploy)'
     extra += '\n  Set SESSION_SECRET: wrangler secret put SESSION_SECRET'
-    extra += '\n  Note: ISR / revalidate is not supported on Workers'
+    extra += '\n  Note: ISR / revalidate / revalidatePath are not supported on Workers — use Node or Bun for stale-while-revalidate'
   }
   if (adapter === 'bun') {
     extra += '\n  Production: pnpm build && bun run build/server.js'
