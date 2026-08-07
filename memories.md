@@ -47,7 +47,7 @@ Also fixed during release: component `bind:value` `__n` shadow; SSR signal-scrip
 
 ## Version lockstep (2026-08-03)
 
-All publishable packages share one version via Changesets `fixed` in `.changeset/config.json`. Baseline **2.0.1** published: https://github.com/avedonjs/avedon/actions/runs/30848747080  
+All publishable packages share one version via Changesets `fixed` in `.changeset/config.json`. Current: **3.0.0** (2026-08-07) — https://github.com/avedonjs/avedon/actions/runs/31191533095. Prior baseline **2.0.1**: https://github.com/avedonjs/avedon/actions/runs/30848747080  
 Any future changeset bumps every package together. Private `avedon-vscode` synced by `scripts/sync-private-package-versions.mjs` on `pnpm changeset:version`.
 
 ## Release queue (2026-07-31)
